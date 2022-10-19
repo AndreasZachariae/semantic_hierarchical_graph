@@ -1,6 +1,8 @@
 import networkx as nx
 import matplotlib.pyplot as plt
+# from mpl_toolkits.mplot3d import Axes3D
 from typing import List, Tuple
+import numpy as np
 
 node_attributes = {
     'label': 'corridor',
@@ -32,8 +34,11 @@ class SHGraph():
         self.g = [nx.Graph() for i in range(hierachy_level)]
 
     def add_connection(self, level: int, node_1: str, node_2: str):
-        self.g[0].add_edge(self.get_unique_node_name(level, node_1), self.get_unique_node_name(level, node_2), euclid_distance=self.get_euclidean_distance(
-            self.g[0].nodes[self.get_unique_node_name(level, node_1)]['pos'], self.g[0].nodes[self.get_unique_node_name(level, node_2)]['pos']))
+        self.g[0].add_edge(self.get_unique_node_name(level, node_1),
+                           self.get_unique_node_name(level, node_2),
+                           euclid_distance=self.get_euclidean_distance(
+            self.g[0].nodes[self.get_unique_node_name(level, node_1)]['pos'],
+            self.g[0].nodes[self.get_unique_node_name(level, node_2)]['pos']))
 
     def get_euclidean_distance(self, pos_1, pos_2):
         return ((pos_1[0] - pos_2[0]) ** 2 + (pos_1[1] - pos_2[1]) ** 2) ** 0.5
@@ -43,6 +48,37 @@ class SHGraph():
 
     def get_unique_node_name(self, level: int, label: str):
         return str(level) + '_' + label
+
+    def draw_single_level(self, level: int):
+        nx.draw(self.g[level],
+                pos=nx.get_node_attributes(self.g[0], 'pos'),
+                labels=nx.get_node_attributes(self.g[0], 'label'),
+                with_labels=True)
+
+        plt.show()
+
+    def draw_multiple_level(self):
+        pos = nx.get_node_attributes(self.g[0], 'pos')
+        node_xyz = np.array([pos[v] for v in sorted(self.g[0])])
+        edge_xyz = np.array([(pos[u], pos[v]) for u, v in self.g[0].edges])
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection="3d")
+        ax.scatter(*node_xyz.T, s=100, ec="w")
+        for vizedge in edge_xyz:
+            ax.plot(*vizedge.T, color="tab:gray")
+
+        ax.grid(False)
+        # Suppress tick labels
+        for dim in (ax.xaxis, ax.yaxis, ax.zaxis):
+            dim.set_ticks([])
+        # Set axes labels
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.set_zlabel("z")
+
+        fig.tight_layout()
+        plt.show()
 
 
 def main():
@@ -64,10 +100,8 @@ def main():
 
     # G.g.add_nodes_from(floor_1.g)
 
-    pos = nx.get_node_attributes(G.g[0], 'pos')
-
-    nx.draw(G.g[0], pos, with_labels=True)
-    plt.show()
+    G.draw_single_level(level=0)
+    G.draw_multiple_level()
 
 
 if __name__ == "__main__":
