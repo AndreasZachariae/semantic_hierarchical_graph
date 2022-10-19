@@ -45,7 +45,7 @@ class TreeNode:
 
 class Level():
     def __init__(self, parent: nx.Graph):
-        self.graph = nx.Graph()
+        self.graph = nx.Graph(name="Building F", parent=parent)
         self.parent: nx.Graph = parent
 
 
@@ -54,6 +54,7 @@ class SHGraph():
 
     def __init__(self, hierachy_level: int) -> None:
         self.g = [nx.Graph() for i in range(hierachy_level)]
+        self.root_graph = nx.Graph(name="LTC Campus", parent=None, pos=(0, 0, 0))
 
     def add_connection(self, level: int, label_1: str, label_2: str):
         self.g[level].add_edge(self.get_unique_name(level, label_1),
