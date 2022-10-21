@@ -1,7 +1,7 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 # from mpl_toolkits.mplot3d import Axes3D
-from typing import List, Tuple, TypeVar, Generic, Type
+from typing import List, Tuple, TypeVar, Generic
 import numpy as np
 
 node_attributes = {
@@ -20,10 +20,11 @@ edge_attributes = {
 hierarchy_levels = {
     'campus': 0,
     'building': 1,
-    'floor': 2,
-    'room': 3,
-    'location': 4,
-    'gridmap': 5,
+    'wing': 2,
+    'floor': 3,
+    'room': 4,
+    'location': 5,
+    'gridmap': 6
 }
 
 # 3 Alternatives:
@@ -36,24 +37,24 @@ T = TypeVar('T', bound='SHNode')
 
 class SHNode(Generic[T]):
     def __init__(self, unique_name: str, parent_node, pos: Tuple[float, float, float], is_root: bool = False, is_leaf: bool = False):
-        self.unique_name = unique_name
-        self.is_root = is_root
-        self.is_leaf = is_leaf
+        self.unique_name: str = unique_name
+        self.is_root: bool = is_root
+        self.is_leaf: bool = is_leaf
         self.pos: Tuple[float, float, float] = pos
-        self.pos_abs: Tuple[float, float, float] = pos + parent_node.pos_abs if not is_root else pos
+        self.pos_abs: Tuple[float, float, float] = tuple(np.add(pos, parent_node.pos_abs)) if not is_root else pos
         self.parent_node: SHNode = parent_node
         self.child_graph: nx.Graph = nx.Graph()
 
-    def add_child(self, name: str, pos: Tuple[float, float, float], is_leaf: bool = False, **data):
+    def _add_child(self, name: str, pos: Tuple[float, float, float], is_leaf: bool = False, **data):
         # Child of type SHNode with unique name on that level
 
         self.child_graph.add_node(SHNode(unique_name=name, parent_node=self, pos=pos, is_leaf=is_leaf),
                                   name=name, **data)
 
-    def add_connection(self, child_name_1: str, child_name_2: str, **data):
-        self.child_graph.add_edge(self.get_child(child_name_1), self.get_child(child_name_2), **data)
+    def _add_connection(self, child_name_1: str, child_name_2: str, **data):
+        self.child_graph.add_edge(self._get_child(child_name_1), self._get_child(child_name_2), **data)
 
-    def get_child(self, name: str) -> T:
+    def _get_child(self, name: str) -> T:
         for node in self.child_graph.nodes:
             if node.unique_name == name:
                 return node
@@ -71,11 +72,10 @@ class SHNode(Generic[T]):
             s[node.unique_name] = node.get_dict()
         return s
 
-    def get_parent_node(self):
-        return self.parent_node
-
-    def draw_child_graph(self):
-        pos_dict = {node: node.pos_abs[0:2] for node in self.get_childs()}
+    def draw_child_graph(self, view_axis: int = 2):
+        pos_index = [0, 1, 2]
+        pos_index.remove(view_axis)
+        pos_dict = {node: (node.pos_abs[pos_index[0]], node.pos_abs[pos_index[1]]) for node in self.get_childs()}
 
         nx.draw(self.child_graph,
                 pos=pos_dict,
@@ -86,14 +86,39 @@ class SHNode(Generic[T]):
 
 
 class SHGraph(SHNode):
-    def __init__(self, levels: int, root_name: str, root_pos: Tuple[float, float, float]):
-        self.root_graph = nx.Graph()
+    def __init__(self,  root_name: str, root_pos: Tuple[float, float, float]):
+        self.root_graph: nx.Graph = nx.Graph()
+        self.leaf_graph: nx.Graph = nx.Graph()
         self.root_graph.add_node(self, name=root_name)
         super().__init__(unique_name=root_name,
                          parent_node=self.root_graph[self], pos=root_pos, is_root=True)
-        self.levels = levels
 
-    def add_node(self, level: int, name: str, parent: str, pos: Tuple[float, float, float], **data):
+    def add_child(self, hierarchy: List[str], name: str, pos: Tuple[float, float, float], is_leaf: bool = False, **data):
+        self.get_child(hierarchy)._add_child(name, pos, is_leaf, **data,)
+        if is_leaf:
+            self.leaf_graph.add_node(self.get_child(hierarchy + [name]), name=name, **data)
+
+    def add_connection(self, hierarchy_1: List[str], hierarchy_2: List[str], **data):
+        needs_connection: bool = False
+        for index, (name_1, name_2) in enumerate(zip(hierarchy_1, hierarchy_2)):
+            if name_1 != name_2:
+                print(hierarchy_1[:index], hierarchy_2[:index])
+                print(name_1, name_2)
+                self.get_child(hierarchy_1[:index])._add_connection(name_1, name_2, **data)
+                needs_connection = True
+                continue
+            if needs_connection:
+                print(hierarchy_1[:index], hierarchy_2[:index])
+                print(name_1, name_2)
+                self.get_child(hierarchy_1[:index])._add_connection(name_1, name_2, **data)
+
+    def get_child(self, hierarchy: List[str]) -> SHNode:
+        child = self
+        for name in hierarchy:
+            child = child._get_child(name)
+        return child
+
+    def draw_leaf_graph(self):
         pass
 
     def create_graph_from_dict(self):
@@ -189,25 +214,51 @@ def main():
     # print(G.nodes[child])
     # print([data["name"] for n, data in G.nodes(data=True)])
 
-    G = SHGraph(levels=5, root_name="LTC Campus", root_pos=(0, 0, 0))
-    # G.add_node(level=0, name="Building F", parent="LTC Campus", pos=(1, 1, 0))
+    G = SHGraph(root_name="LTC Campus", root_pos=(0, 0, 0))
 
-    # G = SHNode(unique_name="LTC Campus", is_root=True)
+    # G._add_child(name="Building F", pos=(-5, 0, 0))
+    # G._get_child("Building F")._add_child(name="Floor 0", pos=(0, 0, 0))
+    # G._get_child("Building F")._get_child("Floor 0")._add_child(name="Staircase", pos=(0, -1, 0))
+    # G.add_connection("Building F", "Building A", name="path_1", type="path")
 
-    G.add_child(name="Building F", pos=(1, 1, 0))
-    G.add_child(name="Building A", pos=(1, 0, 0))
-    G.add_connection("Building F", "Building A", name="path_1", type="path")
-    G.get_child("Building F").add_child(name="Floor 1", pos=(1, 1, 1))
-    G.get_child("Building F").add_child(name="Floor 2", pos=(1, 1, 2))
-    G.get_child("Building F").add_child(name="Floor 3", pos=(1, 1, 3))
-    G.get_child("Building A").add_child(name="Floor 1", pos=(1, 0, 1))
-    G.get_child("Building A").add_child(name="Floor 2", pos=(1, 0, 2))
-    G.get_child("Building A").add_child(name="Floor 3", pos=(1, 0, 3))
-    G.get_child("Building F").get_child("Floor 1").add_child(name="Room 1", pos=(1, 1, 1))
-    print(G.get_dict())
-    print(G.get_childs("name"))
+    G.add_child(hierarchy=[], name="Building A", pos=(0, 0, 0))
+    G.add_child(hierarchy=[], name="Building B", pos=(5, 0, 0))
+    G.add_child(hierarchy=[], name="Building C", pos=(5, 5, 0))
+    G.add_child(hierarchy=[], name="Building D", pos=(0, 5, 0))
+    G.add_child(hierarchy=[], name="Building E", pos=(-5, 5, 0))
+    G.add_child(hierarchy=[], name="Building F", pos=(-5, 0, 0))
+    G.add_child(hierarchy=["Building F"], name="Floor 0", pos=(0, 0, 0))
+    G.add_child(hierarchy=["Building F"], name="Floor 1", pos=(0, 0, 1))
+    G.add_child(hierarchy=["Building F"], name="Floor 2", pos=(0, 0, 2))
+    G.add_child(hierarchy=["Building F"], name="Floor 3", pos=(0, 0, 3))
+    G.add_child(hierarchy=["Building A"], name="Floor 0", pos=(0, 0, 0))
+    G.add_child(hierarchy=["Building A"], name="Floor 1", pos=(0, 0, 1))
+    G.add_child(hierarchy=["Building A"], name="Floor 2", pos=(0, 0, 2))
+    G.add_child(hierarchy=["Building A"], name="Floor 3", pos=(0, 0, 3))
+    G.add_child(hierarchy=["Building F", "Floor 1"], name="Staircase", pos=(0, -1, 0))
+    G.add_child(hierarchy=["Building F", "Floor 1"], name="IRAS", pos=(0, 1, 0))
+    G.add_child(hierarchy=["Building F", "Floor 1"], name="xLab", pos=(1, 1, 0))
+    G.add_child(hierarchy=["Building F", "Floor 1"], name="Kitchen", pos=(2, 1, 0))
+    G.add_child(hierarchy=["Building F", "Floor 1"], name="Corridor", pos=(1, 0, 0))
+    G.add_child(hierarchy=["Building F", "Floor 1"], name="Meeting Room", pos=(1, -1, 0))
+    G.add_child(hierarchy=["Building F", "Floor 0"], name="Staircase", pos=(0, -1, 0))
+    G.add_child(hierarchy=["Building F", "Floor 0"], name="Lab", pos=(0, 0, 0))
+    G.add_child(hierarchy=["Building F", "Floor 0"], name="Workshop", pos=(1, -1, 0))
+    G.add_child(hierarchy=["Building F", "Floor 0"], name="RoboEduLab", pos=(0, 1, 0))
+
+    # print(G.get_dict())
+    # print(G.get_childs("name"))
+    # [print(node.pos, node.pos_abs) for node in G._get_child("Building F").get_childs()]
+
+    G.add_connection(["Building F", "Floor 0", "Staircase"],
+                     ["Building F", "Floor 0", "Lab"], name="floor_door", type="door")
+    G.add_connection(["Building F", "Floor 0", "Staircase"],
+                     ["Building F", "Floor 3", "Staircase"], name="stair_F", type="stair")
+
     G.draw_child_graph()
-    G.get_child("Building F").draw_child_graph()
+    G.get_child(["Building F"]).draw_child_graph(view_axis=0)
+    G.get_child(["Building F", "Floor 0"]).draw_child_graph()
+    # G.get_child(["Building F", "Floor 1"]).draw_child_graph()
 
 
 if __name__ == "__main__":
