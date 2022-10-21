@@ -96,7 +96,10 @@ class SHGraph(SHNode):
     def add_child(self, hierarchy: List[str], name: str, pos: Tuple[float, float, float], is_leaf: bool = False, **data):
         self.get_child(hierarchy)._add_child(name, pos, is_leaf, **data,)
         if is_leaf:
-            self.leaf_graph.add_node(self.get_child(hierarchy + [name]), name=name, **data)
+            print("add", name)
+            hierarchy.append(name)
+            self.leaf_graph.add_node(self.get_child(hierarchy),
+                                  name=name, **data)
 
     def add_connection(self, hierarchy_1: List[str], hierarchy_2: List[str], **data):
         needs_connection: bool = False
@@ -119,7 +122,16 @@ class SHGraph(SHNode):
         return child
 
     def draw_leaf_graph(self):
-        pass
+        pos_index = [0, 1, 2]
+        pos_index.remove(2)
+        pos_dict = {node: (node.pos_abs[pos_index[0]], node.pos_abs[pos_index[1]]) for node in self.leaf_graph.nodes()}
+
+        nx.draw(self.leaf_graph,
+                pos=pos_dict,
+                labels=nx.get_node_attributes(self.leaf_graph, 'name'),
+                with_labels=True)
+
+        plt.show()
 
     def create_graph_from_dict(self):
         pass
@@ -235,16 +247,16 @@ def main():
     G.add_child(hierarchy=["Building A"], name="Floor 1", pos=(0, 0, 1))
     G.add_child(hierarchy=["Building A"], name="Floor 2", pos=(0, 0, 2))
     G.add_child(hierarchy=["Building A"], name="Floor 3", pos=(0, 0, 3))
-    G.add_child(hierarchy=["Building F", "Floor 1"], name="Staircase", pos=(0, -1, 0))
-    G.add_child(hierarchy=["Building F", "Floor 1"], name="IRAS", pos=(0, 1, 0))
-    G.add_child(hierarchy=["Building F", "Floor 1"], name="xLab", pos=(1, 1, 0))
-    G.add_child(hierarchy=["Building F", "Floor 1"], name="Kitchen", pos=(2, 1, 0))
-    G.add_child(hierarchy=["Building F", "Floor 1"], name="Corridor", pos=(1, 0, 0))
-    G.add_child(hierarchy=["Building F", "Floor 1"], name="Meeting Room", pos=(1, -1, 0))
-    G.add_child(hierarchy=["Building F", "Floor 0"], name="Staircase", pos=(0, -1, 0))
-    G.add_child(hierarchy=["Building F", "Floor 0"], name="Lab", pos=(0, 0, 0))
-    G.add_child(hierarchy=["Building F", "Floor 0"], name="Workshop", pos=(1, -1, 0))
-    G.add_child(hierarchy=["Building F", "Floor 0"], name="RoboEduLab", pos=(0, 1, 0))
+    G.add_child(hierarchy=["Building F", "Floor 1"], name="Staircase", pos=(0, -1, 0), is_leaf=True)
+    G.add_child(hierarchy=["Building F", "Floor 1"], name="IRAS", pos=(0, 1, 0), is_leaf=True)
+    G.add_child(hierarchy=["Building F", "Floor 1"], name="xLab", pos=(1, 1, 0), is_leaf=True)
+    G.add_child(hierarchy=["Building F", "Floor 1"], name="Kitchen", pos=(2, 1, 0), is_leaf=True)
+    G.add_child(hierarchy=["Building F", "Floor 1"], name="Corridor", pos=(1, 0, 0), is_leaf=True)
+    G.add_child(hierarchy=["Building F", "Floor 1"], name="Meeting Room", pos=(1, -1, 0), is_leaf=True)
+    G.add_child(hierarchy=["Building F", "Floor 0"], name="Staircase", pos=(0, -1, 0), is_leaf=True)
+    G.add_child(hierarchy=["Building F", "Floor 0"], name="Lab", pos=(0, 0, 0), is_leaf=True)
+    G.add_child(hierarchy=["Building F", "Floor 0"], name="Workshop", pos=(1, -1, 0), is_leaf=True)
+    G.add_child(hierarchy=["Building F", "Floor 0"], name="RoboEduLab", pos=(0, 1, 0), is_leaf=True)
 
     # print(G.get_dict())
     # print(G.get_childs("name"))
@@ -259,6 +271,9 @@ def main():
     G.get_child(["Building F"]).draw_child_graph(view_axis=0)
     G.get_child(["Building F", "Floor 0"]).draw_child_graph()
     # G.get_child(["Building F", "Floor 1"]).draw_child_graph()
+
+    G.draw_leaf_graph()
+
 
 
 if __name__ == "__main__":
