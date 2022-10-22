@@ -55,6 +55,8 @@ class SHNode(Generic[T]):
         self.child_graph.add_edge(self._get_child(child_name_1), self._get_child(child_name_2), **data)
 
     def _get_child(self, name: str) -> T:
+        # Could be way more efficient if using hierarchy_list as hashable node instead of SHNode object
+        # Drawback: node.pos etc is not that easy, has to get the data dict all the time graph.nodes(data=True)
         for node in self.child_graph.nodes:
             if node.unique_name == name:
                 return node
@@ -96,24 +98,29 @@ class SHGraph(SHNode):
     def add_child(self, hierarchy: List[str], name: str, pos: Tuple[float, float, float], is_leaf: bool = False, **data):
         self.get_child(hierarchy)._add_child(name, pos, is_leaf, **data,)
         if is_leaf:
-            print("add", name)
             hierarchy.append(name)
             self.leaf_graph.add_node(self.get_child(hierarchy),
                                   name=name, **data)
 
     def add_connection(self, hierarchy_1: List[str], hierarchy_2: List[str], **data):
-        needs_connection: bool = False
+        add_hierarchy_bridge: bool = False
         for index, (name_1, name_2) in enumerate(zip(hierarchy_1, hierarchy_2)):
-            if name_1 != name_2:
-                print(hierarchy_1[:index], hierarchy_2[:index])
-                print(name_1, name_2)
+            if add_hierarchy_bridge:
+                print("New hierarchy connection between:")
+                print(name_1, hierarchy_2[index-1] + "_h_bridge", "in graph:", hierarchy_1[:index])
+                print(name_2, hierarchy_1[index-1] + "_h_bridge", "in graph:", hierarchy_2[:index])
+                self.get_child(hierarchy_1[:index])._add_child(hierarchy_2[index-1] + "_h_bridge",pos=(0,0,0), type="hierarchy_bridge")
+                self.get_child(hierarchy_1[:index])._add_connection(name_1, hierarchy_2[index-1] + "_h_bridge", **data)
+                self.get_child(hierarchy_2[:index])._add_child(hierarchy_1[index-1] + "_h_bridge",pos=(0,0,0), type="hierarchy_bridge")
+                self.get_child(hierarchy_2[:index])._add_connection(name_2, hierarchy_1[index-1] + "_h_bridge", **data)
+            elif name_1 != name_2:
+                print("New connection between:",name_1, name_2, "in graph:", hierarchy_1[:index])
                 self.get_child(hierarchy_1[:index])._add_connection(name_1, name_2, **data)
-                needs_connection = True
-                continue
-            if needs_connection:
-                print(hierarchy_1[:index], hierarchy_2[:index])
-                print(name_1, name_2)
-                self.get_child(hierarchy_1[:index])._add_connection(name_1, name_2, **data)
+                add_hierarchy_bridge = True
+            if name_1 == hierarchy_1[-1]:
+                node_1 = self.get_child(hierarchy_1)
+                if node_1.is_leaf:
+                    self.leaf_graph.add_edge(node_1, self.get_child(hierarchy_2), **data)
 
     def get_child(self, hierarchy: List[str]) -> SHNode:
         child = self
@@ -122,18 +129,36 @@ class SHGraph(SHNode):
         return child
 
     def draw_leaf_graph(self):
-        pos_index = [0, 1, 2]
-        pos_index.remove(2)
-        pos_dict = {node: (node.pos_abs[pos_index[0]], node.pos_abs[pos_index[1]]) for node in self.leaf_graph.nodes()}
+        node_xyz = np.array([node.pos_abs for node in self.leaf_graph.nodes()])
+        edge_xyz = np.array([(u.pos_abs, v.pos_abs) for u, v in self.leaf_graph.edges])
 
-        nx.draw(self.leaf_graph,
-                pos=pos_dict,
-                labels=nx.get_node_attributes(self.leaf_graph, 'name'),
-                with_labels=True)
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection="3d")
+        ax.scatter(*node_xyz.T, s=100, ec="w")
 
+        for node in self.leaf_graph.nodes():
+            ax.text(node.pos_abs[0], node.pos_abs[1], node.pos_abs[2],  node.unique_name, size=7, color='k') 
+
+        for vizedge in edge_xyz:
+            ax.plot(*vizedge.T, color="tab:gray")
+
+        ax.grid(False)
+        # Suppress tick labels
+        for dim in (ax.xaxis, ax.yaxis, ax.zaxis):  # type: ignore
+            dim.set_ticks([])
+        # Set axes labels
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.set_zlabel("z")  # type: ignore
+
+        fig.tight_layout()
         plt.show()
 
+
     def create_graph_from_dict(self):
+        pass
+
+    def plan(self, start_hierarchy: List[str], goal_hierarchy: List[str]):
         pass
 
 
@@ -257,6 +282,9 @@ def main():
     G.add_child(hierarchy=["Building F", "Floor 0"], name="Lab", pos=(0, 0, 0), is_leaf=True)
     G.add_child(hierarchy=["Building F", "Floor 0"], name="Workshop", pos=(1, -1, 0), is_leaf=True)
     G.add_child(hierarchy=["Building F", "Floor 0"], name="RoboEduLab", pos=(0, 1, 0), is_leaf=True)
+    G.add_child(hierarchy=["Building F", "Floor 3"], name="Staircase", pos=(0, -1, 0), is_leaf=True)
+    G.add_child(hierarchy=["Building F", "Floor 3"], name="Office", pos=(1, 0, 0), is_leaf=True)
+    G.add_child(hierarchy=["Building A", "Floor 1"], name="Cantina", pos=(1, 0, 0), is_leaf=True)
 
     # print(G.get_dict())
     # print(G.get_childs("name"))
@@ -266,11 +294,14 @@ def main():
                      ["Building F", "Floor 0", "Lab"], name="floor_door", type="door")
     G.add_connection(["Building F", "Floor 0", "Staircase"],
                      ["Building F", "Floor 3", "Staircase"], name="stair_F", type="stair")
+    G.add_connection(["Building F", "Floor 1", "Kitchen"],
+                     ["Building A", "Floor 1", "Cantina"], name="terrace_door", type="door")
 
-    G.draw_child_graph()
-    G.get_child(["Building F"]).draw_child_graph(view_axis=0)
-    G.get_child(["Building F", "Floor 0"]).draw_child_graph()
+    # G.draw_child_graph()
+    # G.get_child(["Building F"]).draw_child_graph(view_axis=0)
+    # G.get_child(["Building F", "Floor 0"]).draw_child_graph()
     # G.get_child(["Building F", "Floor 1"]).draw_child_graph()
+    # G.get_child(["Building F", "Floor 3"]).draw_child_graph()
 
     G.draw_leaf_graph()
 
