@@ -51,11 +51,11 @@ class SHNode(Generic[T]):
         self.child_graph.add_node(SHNode(unique_name=name, parent_node=self, pos=pos, is_leaf=is_leaf),
                                   name=name, **data)
 
-    def _add_connection(self, child_name_1: str, child_name_2: str, distance: Optional[float]=None, **data):
+    def _add_connection(self, child_name_1: str, child_name_2: str, distance: Optional[float] = None, **data):
         child_1 = self._get_child(child_name_1)
         child_2 = self._get_child(child_name_2)
         if distance is None:
-            distance=self.get_euclidean_distance(child_1.pos_abs, child_2.pos_abs)
+            distance = self.get_euclidean_distance(child_1.pos_abs, child_2.pos_abs)
         self.child_graph.add_edge(child_1, child_2, distance=distance, **data)
 
     def _get_child(self, name: str) -> T:
@@ -80,6 +80,13 @@ class SHNode(Generic[T]):
 
     def get_euclidean_distance(self, pos_1: Tuple, pos_2: Tuple) -> float:
         return ((pos_1[0] - pos_2[0]) ** 2 + (pos_1[1] - pos_2[1]) ** 2 + (pos_1[2] - pos_2[2]) ** 2) ** 0.5
+
+    def _plan(self, start_name: str, goal_name: str):
+        return nx.shortest_path(self.child_graph,
+                                source=self._get_child(start_name),
+                                target=self._get_child(goal_name),
+                                weight="distance",
+                                method="dijkstra")
 
     def draw_child_graph(self, view_axis: int = 2):
         pos_index = [0, 1, 2]
@@ -107,21 +114,25 @@ class SHGraph(SHNode):
         if is_leaf:
             hierarchy.append(name)
             self.leaf_graph.add_node(self.get_child(hierarchy),
-                                  name=name, **data)
+                                     name=name, **data)
 
-    def add_connection(self, hierarchy_1: List[str], hierarchy_2: List[str], distance: Optional[float]=None, **data):
+    def add_connection(self, hierarchy_1: List[str], hierarchy_2: List[str], distance: Optional[float] = None, **data):
         add_hierarchy_bridge: bool = False
         for index, (name_1, name_2) in enumerate(zip(hierarchy_1, hierarchy_2)):
             if add_hierarchy_bridge:
                 print("New hierarchy connection between:")
                 print(name_1, hierarchy_2[index-1] + "_h_bridge", "in graph:", hierarchy_1[:index])
                 print(name_2, hierarchy_1[index-1] + "_h_bridge", "in graph:", hierarchy_2[:index])
-                self.get_child(hierarchy_1[:index])._add_child(hierarchy_2[index-1] + "_h_bridge",pos=(0,0,0), type="hierarchy_bridge")
-                self.get_child(hierarchy_1[:index])._add_connection(name_1, hierarchy_2[index-1] + "_h_bridge", distance, **data)
-                self.get_child(hierarchy_2[:index])._add_child(hierarchy_1[index-1] + "_h_bridge",pos=(0,0,0), type="hierarchy_bridge")
-                self.get_child(hierarchy_2[:index])._add_connection(name_2, hierarchy_1[index-1] + "_h_bridge", distance, **data)
+                self.get_child(hierarchy_1[:index])._add_child(hierarchy_2[index-1] +
+                                                               "_h_bridge", pos=(0, 0, 0), type="hierarchy_bridge")
+                self.get_child(hierarchy_1[:index])._add_connection(
+                    name_1, hierarchy_2[index-1] + "_h_bridge", distance, **data)
+                self.get_child(hierarchy_2[:index])._add_child(hierarchy_1[index-1] +
+                                                               "_h_bridge", pos=(0, 0, 0), type="hierarchy_bridge")
+                self.get_child(hierarchy_2[:index])._add_connection(
+                    name_2, hierarchy_1[index-1] + "_h_bridge", distance, **data)
             elif name_1 != name_2:
-                print("New connection between:",name_1, name_2, "in graph:", hierarchy_1[:index])
+                print("New connection between:", name_1, name_2, "in graph:", hierarchy_1[:index])
                 self.get_child(hierarchy_1[:index])._add_connection(name_1, name_2, distance, **data)
                 add_hierarchy_bridge = True
             if name_1 == hierarchy_1[-1]:
@@ -129,7 +140,7 @@ class SHGraph(SHNode):
                 if node_1.is_leaf:
                     node_2 = self.get_child(hierarchy_2)
                     if distance is None:
-                        distance=self.get_euclidean_distance(node_1.pos, node_2.pos)
+                        distance = self.get_euclidean_distance(node_1.pos, node_2.pos)
                     self.leaf_graph.add_edge(node_1, node_2, distance=distance, **data)
 
     def get_child(self, hierarchy: List[str]) -> SHNode:
@@ -147,7 +158,7 @@ class SHGraph(SHNode):
         ax.scatter(*node_xyz.T, s=100, ec="w")
 
         for node in self.leaf_graph.nodes():
-            ax.text(node.pos_abs[0], node.pos_abs[1], node.pos_abs[2],  node.unique_name, size=7, color='k') 
+            ax.text(node.pos_abs[0], node.pos_abs[1], node.pos_abs[2],  node.unique_name, size=7, color='k')
 
         for vizedge in edge_xyz:
             ax.plot(*vizedge.T, color="tab:gray")
@@ -168,7 +179,39 @@ class SHGraph(SHNode):
         pass
 
     def plan(self, start_hierarchy: List[str], goal_hierarchy: List[str]):
-        pass
+        complete_path = []
+        parent_path = []
+        for index, (start, goal) in enumerate(zip(start_hierarchy, goal_hierarchy)):
+            if index == 0:
+                parent_path = self._plan(start, goal)
+                continue
+            for i, node in enumerate(parent_path):
+                print("Start node:", start)
+                print("Goal node:", goal)
+                print("parent name:", node.unique_name)
+                print("child graph:", node.get_childs("name"))
+
+                plan_start = start.copy()
+                plan_goal = goal.copy()
+                # change content of varibale on conditions and plan with one command
+
+                if i+1 != len(parent_path):
+                    if parent_path[i+1].unique_name != start_hierarchy[index-1]:
+                        if node.unique_name != start_hierarchy[index-1]:
+                            print("from", parent_path[i-1].unique_name + "_h_bridge")
+                            print("to:", parent_path[i+1].unique_name + "_h_bridge")
+                            complete_path = node._plan(parent_path[i-1].unique_name + "_h_bridge",
+                                                       parent_path[i+1].unique_name + "_h_bridge")
+                        else:
+                            print("from:", start)
+                            print("to:", parent_path[i+1].unique_name + "_h_bridge")
+                            complete_path = node._plan(start, parent_path[i+1].unique_name + "_h_bridge")
+                    else:
+                        complete_path = node._plan(start, parent_path[i+1].unique_name)
+                else:
+                    complete_path = node._plan(start, goal)
+                print("path:", [node.unique_name for node in complete_path])
+        print("finished")
 
 
 def main():
@@ -269,15 +312,16 @@ def main():
     G.add_connection(["Building F", "Floor 1", "Kitchen"],
                      ["Building A", "Floor 1", "Cantina"], distance=10.0, name="terrace_door", type="door")
 
-    G.draw_child_graph()
-    G.get_child(["Building F"]).draw_child_graph(view_axis=0)
-    G.get_child(["Building F", "Floor 0"]).draw_child_graph()
-    G.get_child(["Building F", "Floor 1"]).draw_child_graph()
-    G.get_child(["Building F", "Floor 2"]).draw_child_graph()
-    G.get_child(["Building F", "Floor 3"]).draw_child_graph()
+    # G.draw_child_graph()
+    # G.get_child(["Building F"]).draw_child_graph(view_axis=0)
+    # G.get_child(["Building F", "Floor 0"]).draw_child_graph()
+    # G.get_child(["Building F", "Floor 1"]).draw_child_graph()
+    # G.get_child(["Building F", "Floor 2"]).draw_child_graph()
+    # G.get_child(["Building F", "Floor 3"]).draw_child_graph()
 
-    G.draw_leaf_graph()
+    # G.draw_leaf_graph()
 
+    G.plan(["Building F", "Floor 2"], ["Building A", "Floor 1"])
 
 
 if __name__ == "__main__":
