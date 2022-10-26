@@ -58,6 +58,65 @@ class SHNode(Generic[T]):
             distance = self.get_euclidean_distance(child_1.pos_abs, child_2.pos_abs)
         self.child_graph.add_edge(child_1, child_2, distance=distance, **data)
 
+    def _add_connection_recursive(self, child_1_name, child_2_name, hierarchy_1: List[str], hierarchy_2: List[str], hierarchy_mask: List[bool],
+                                  hierarchy_level: int, distance: Optional[float] = None, **data):
+        if self.is_leaf:
+            print("Leaf reached:", self.unique_name)
+            return
+
+        print("Childs:", hierarchy_1[hierarchy_level], hierarchy_2[hierarchy_level])
+        child_1 = self._get_child(hierarchy_1[hierarchy_level])
+        # child_2 = self._get_child(hierarchy_2[hierarchy_level])
+
+        # if childs are on the same branch they don't need a connection
+        if hierarchy_mask[hierarchy_level] == True:
+            child_1._add_connection_recursive(child_1.unique_name, hierarchy_2[hierarchy_level], hierarchy_1, hierarchy_2,
+                                              hierarchy_mask, hierarchy_level + 1, distance, **data)
+            return
+
+        print("New connection between:", child_1_name, child_2_name, "in graph:", hierarchy_1[:hierarchy_level])
+        print(self.get_childs("name"))
+
+        if not self.is_child(child_2_name):
+            self._add_child(child_2_name, pos=(0, 0, 0), is_leaf=child_1.is_leaf, type="hierarchy_bridge")
+
+        self._add_connection(child_1_name, child_2_name, distance, **data)
+
+        child_1._add_connection_recursive(child_1.unique_name, hierarchy_2[hierarchy_level], hierarchy_1, hierarchy_2,
+                                          hierarchy_mask, hierarchy_level + 1, distance, **data)
+
+        ########################################
+
+        # if child_1 is a leaf, no need to go deeper
+        if child_1.is_leaf:
+            return
+
+        # child_1_bridge = self.get_hierarchy_bridge_name(hierarchy_1, hierarchy_mask, hierarchy_level)
+        child_2_bridge = self.get_hierarchy_bridge_name(hierarchy_2, hierarchy_mask, hierarchy_level)
+
+        is_leaf = False
+        if hierarchy_level + 1 < len(hierarchy_1):
+            grandchild_1 = child_1._get_child(hierarchy_1[hierarchy_level+1])
+            is_leaf = grandchild_1.is_leaf
+
+        print("Add new bridge node:", child_2_bridge, "in graph:", hierarchy_1[:hierarchy_level+1])
+        # print("Add new bridge node:", child_1_bridge, "in graph:", hierarchy_2[:hierarchy_level+1])
+        child_1._add_child(child_2_bridge, pos=(0, 0, 0), is_leaf=is_leaf, type="hierarchy_bridge")
+        # child_2._add_child(child_1_bridge, pos=(0, 0, 0), is_leaf=is_leaf, type="hierarchy_bridge")
+
+        child_1._add_connection_recursive(hierarchy_1[hierarchy_level+1], child_2_bridge, hierarchy_1, hierarchy_2,
+                                          hierarchy_mask, hierarchy_level + 1, distance, **data)
+        child_2._add_connection_recursive(hierarchy_2[hierarchy_level+1], child_1_bridge, hierarchy_1, hierarchy_2,
+                                          hierarchy_mask, hierarchy_level + 1, distance, **data)
+
+    def get_hierarchy_bridge_name(self, hierarchy: List[str], hierarchy_mask: List[bool], hierarchy_level: int):
+        bridge_name = ""
+        for i, node_name in enumerate(hierarchy[:hierarchy_level]):
+            if hierarchy_mask[i] == False:
+                bridge_name += node_name + "_"
+        bridge_name += hierarchy[hierarchy_level] + "_h_bridge"
+        return bridge_name
+
     def _get_child(self, name: str) -> T:
         # Could be way more efficient if using hierarchy_list as hashable node instead of SHNode object
         # Drawback: node.pos etc is not that easy, has to get the data dict all the time graph.nodes(data=True)
@@ -100,14 +159,16 @@ class SHNode(Generic[T]):
         start_name = start_hierarchy[hierarchy_level]
         goal_name = goal_hierarchy[hierarchy_level]
 
-        # if start and goal are not in the same branch
-        if hierarchy_mask[hierarchy_level] == False:
-            # if start is not on the same branch as parent
-            if prev_parent is not None:
-                start_name = prev_parent.unique_name + "_h_bridge"
-            # if goal/next parent_node is not on same hierarchy as start
-            if next_parent is not None:
-                goal_name = next_parent.unique_name + "_h_bridge"
+        # if hierarchy == 0 skip this step and plan in root_graph
+        if hierarchy_level > 0:
+            # if start and goal are not in the same branch
+            if hierarchy_mask[hierarchy_level-1] == False:
+                # if start is not on the same branch as parent
+                if prev_parent is not None:
+                    start_name = prev_parent.unique_name + "_h_bridge"
+                # if goal/next parent_node is not on same hierarchy as start
+                if next_parent is not None:
+                    goal_name = next_parent.unique_name + "_h_bridge"
 
         # # if start is not on same hierarchy as parent_node
         # if self.parent_node.unique_name != start_hierarchy[index-1]:
@@ -204,6 +265,11 @@ class SHGraph(SHNode):
                         distance = self.get_euclidean_distance(node_1.pos, node_2.pos)
                     self.leaf_graph.add_edge(node_1, node_2, distance=distance, **data)
 
+    def add_connection_recursive(self, hierarchy_1: List[str], hierarchy_2: List[str], distance: Optional[float] = None, **data):
+        hierarchy_mask = self.compare_hierarchy(hierarchy_1, hierarchy_2)
+        self._add_connection_recursive(hierarchy_1[0], hierarchy_2[0], hierarchy_1, hierarchy_2, hierarchy_mask,
+                                       hierarchy_level=0, distance=distance, **data)
+
     def get_child(self, hierarchy: List[str]) -> SHNode:
         child = self
         for name in hierarchy:
@@ -285,7 +351,7 @@ class SHGraph(SHNode):
         # parent_path: List[SHNode] = self._plan(start_hierarchy[0], goal_hierarchy[0])
 
     def compare_hierarchy(self, hierarchy_1: List[str], hierarchy_2: List[str]) -> List[bool]:
-        hierarchy_mask = [True]
+        hierarchy_mask = []
         different_branch = False
         for start, goal in zip(hierarchy_1, hierarchy_2):
             if start != goal or different_branch:
@@ -355,6 +421,9 @@ def main():
     # print(G.get_dict())
     # print(G.get_childs("name"))
     # [print(node.pos, node.pos_abs) for node in G._get_child("Building F").get_childs()]
+
+    G.add_connection_recursive(["Building F", "Floor 1", "Kitchen"],
+                               ["Building A", "Floor 1", "Cantina"], distance=10.0, name="terrace_door", type="door")
 
     G.add_connection(["Building F", "Floor 0", "Staircase"],
                      ["Building F", "Floor 0", "Lab"], name="floor_door", type="door")
