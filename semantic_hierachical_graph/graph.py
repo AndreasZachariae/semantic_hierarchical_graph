@@ -72,6 +72,9 @@ class SHNode(Generic[T]):
         else:
             return [value for n, value in self.child_graph.nodes(data=key)]  # type: ignore
 
+    def is_child(self, node: T) -> bool:
+        return self.child_graph.has_node(node)
+
     def get_dict(self) -> dict:
         s = {}
         for node in self.child_graph.nodes:
@@ -81,12 +84,66 @@ class SHNode(Generic[T]):
     def get_euclidean_distance(self, pos_1: Tuple, pos_2: Tuple) -> float:
         return ((pos_1[0] - pos_2[0]) ** 2 + (pos_1[1] - pos_2[1]) ** 2 + (pos_1[2] - pos_2[2]) ** 2) ** 0.5
 
-    def _plan(self, start_name: str, goal_name: str):
+    def _plan(self, start_name: str, goal_name: str) -> List[T]:
         return nx.shortest_path(self.child_graph,
                                 source=self._get_child(start_name),
                                 target=self._get_child(goal_name),
                                 weight="distance",
-                                method="dijkstra")
+                                method="dijkstra")  # type: ignore
+
+    def _plan_recursive(self, start_hierarchy: List[str], goal_hierarchy: List[str], hierarchy_mask: List[bool],
+                        hierarchy_level: int, prev_parent: Optional[T], next_parent: Optional[T]):
+        if self.is_leaf:
+            print("Leaf reached:", self.unique_name)
+            return
+
+        start_name = start_hierarchy[hierarchy_level]
+        goal_name = goal_hierarchy[hierarchy_level]
+
+        # if start and goal are not in the same branch
+        if hierarchy_mask[hierarchy_level] == False:
+            # if start is not on the same branch as parent
+            if prev_parent is not None:
+                start_name = prev_parent.unique_name + "_h_bridge"
+            # if goal/next parent_node is not on same hierarchy as start
+            if next_parent is not None:
+                goal_name = next_parent.unique_name + "_h_bridge"
+
+        # # if start is not on same hierarchy as parent_node
+        # if self.parent_node.unique_name != start_hierarchy[index-1]:
+        #     start_name = prev_parent.unique_name + "_h_bridge"
+
+        # # if not the last node in parent_path
+        # if i+1 < len(parent_path):
+        #     # if goal/next parent_node is not on same hierarchy as start
+        #     if parent_path[i+1].unique_name != start_hierarchy[index-1]:
+        #         goal_name = parent_path[i+1].unique_name + "_h_bridge"
+
+        # parent_path = parent_node._plan(start_name, goal_name)
+
+        # if "h_bridge" in parent_node.unique_name:
+        #     continue
+
+        print("----------------------------")
+        print("Node name:", self.unique_name)
+        print("Child graph:", self.get_childs("name"))
+        print("Start node:", start_name)
+        print("Goal node:", goal_name)
+        child_path = self._plan(start_name, goal_name)
+
+        print("path:", [node.unique_name for node in child_path])
+
+        prev_parent = None
+        hierarchy_level += 1
+        for i, node in enumerate(child_path):
+            if i+1 < len(child_path):
+                next_parent = child_path[i+1]
+            else:
+                next_parent = None
+
+            node._plan_recursive(start_hierarchy, goal_hierarchy, hierarchy_mask,
+                                 hierarchy_level, prev_parent, next_parent)
+            prev_parent = node
 
     def draw_child_graph(self, view_axis: int = 2):
         pos_index = [0, 1, 2]
@@ -123,12 +180,16 @@ class SHGraph(SHNode):
                 print("New hierarchy connection between:")
                 print(name_1, hierarchy_2[index-1] + "_h_bridge", "in graph:", hierarchy_1[:index])
                 print(name_2, hierarchy_1[index-1] + "_h_bridge", "in graph:", hierarchy_2[:index])
-                self.get_child(hierarchy_1[:index])._add_child(hierarchy_2[index-1] +
-                                                               "_h_bridge", pos=(0, 0, 0), type="hierarchy_bridge")
+                is_leaf = False
+                if name_1 == hierarchy_1[-1]:
+                    node_1 = self.get_child(hierarchy_1)
+                    is_leaf = node_1.is_leaf
+                self.get_child(hierarchy_1[:index])._add_child(hierarchy_2[index-1] + "_h_bridge",
+                                                               pos=(0, 0, 0), is_leaf=is_leaf, type="hierarchy_bridge")
                 self.get_child(hierarchy_1[:index])._add_connection(
                     name_1, hierarchy_2[index-1] + "_h_bridge", distance, **data)
-                self.get_child(hierarchy_2[:index])._add_child(hierarchy_1[index-1] +
-                                                               "_h_bridge", pos=(0, 0, 0), type="hierarchy_bridge")
+                self.get_child(hierarchy_2[:index])._add_child(hierarchy_1[index-1] + "_h_bridge",
+                                                               pos=(0, 0, 0), is_leaf=is_leaf, type="hierarchy_bridge")
                 self.get_child(hierarchy_2[:index])._add_connection(
                     name_2, hierarchy_1[index-1] + "_h_bridge", distance, **data)
             elif name_1 != name_2:
@@ -179,39 +240,61 @@ class SHGraph(SHNode):
         pass
 
     def plan(self, start_hierarchy: List[str], goal_hierarchy: List[str]):
-        complete_path = []
-        parent_path = []
-        for index, (start, goal) in enumerate(zip(start_hierarchy, goal_hierarchy)):
+        # complete_path: List[SHNode] = []
+        parent_path: List[SHNode] = []
+        for index, (start_name, goal_name) in enumerate(zip(start_hierarchy, goal_hierarchy)):
             if index == 0:
-                parent_path = self._plan(start, goal)
+                parent_path = self._plan(start_name, goal_name)
                 continue
-            for i, node in enumerate(parent_path):
-                print("Start node:", start)
-                print("Goal node:", goal)
-                print("parent name:", node.unique_name)
-                print("child graph:", node.get_childs("name"))
+            for i, parent_node in enumerate(parent_path):
+                # node : SHNode = node
+                new_parent_path: List[SHNode] = []
+                plan_start = start_name
+                plan_goal = goal_name
 
-                plan_start = start.copy()
-                plan_goal = goal.copy()
-                # change content of varibale on conditions and plan with one command
+                # if parent_node is not on same hierarchy as start
+                if parent_node.unique_name != start_hierarchy[index-1]:
+                    plan_start = parent_path[i-1].unique_name + "_h_bridge"
 
-                if i+1 != len(parent_path):
+                # if not the last node in parent_path
+                if i+1 < len(parent_path):
+                    # if goal/next parent_node is not on same hierarchy as start
                     if parent_path[i+1].unique_name != start_hierarchy[index-1]:
-                        if node.unique_name != start_hierarchy[index-1]:
-                            print("from", parent_path[i-1].unique_name + "_h_bridge")
-                            print("to:", parent_path[i+1].unique_name + "_h_bridge")
-                            complete_path = node._plan(parent_path[i-1].unique_name + "_h_bridge",
-                                                       parent_path[i+1].unique_name + "_h_bridge")
-                        else:
-                            print("from:", start)
-                            print("to:", parent_path[i+1].unique_name + "_h_bridge")
-                            complete_path = node._plan(start, parent_path[i+1].unique_name + "_h_bridge")
-                    else:
-                        complete_path = node._plan(start, parent_path[i+1].unique_name)
-                else:
-                    complete_path = node._plan(start, goal)
-                print("path:", [node.unique_name for node in complete_path])
+                        plan_goal = parent_path[i+1].unique_name + "_h_bridge"
+
+                new_parent_path = parent_node._plan(plan_start, plan_goal)
+
+                if "h_bridge" in parent_node.unique_name:
+                    continue
+
+                print("----------------------------")
+                print("parent name:", parent_node.unique_name)
+                print("child graph:", parent_node.get_childs("name"))
+                print("Start node:", plan_start)
+                print("Goal node:", plan_goal)
+                print("path:", [node.unique_name for node in new_parent_path])
+            # parent_path = new_parent_path
         print("finished")
+
+    def plan_recursive(self, start_hierarchy: List[str], goal_hierarchy: List[str]):
+
+        hierarchy_mask = self.compare_hierarchy(start_hierarchy, goal_hierarchy)
+        self._plan_recursive(start_hierarchy, goal_hierarchy, hierarchy_mask,
+                             hierarchy_level=0, prev_parent=None, next_parent=None)
+
+        # parent_path: List[SHNode] = self._plan(start_hierarchy[0], goal_hierarchy[0])
+
+    def compare_hierarchy(self, hierarchy_1: List[str], hierarchy_2: List[str]) -> List[bool]:
+        hierarchy_mask = [True]
+        different_branch = False
+        for start, goal in zip(hierarchy_1, hierarchy_2):
+            if start != goal or different_branch:
+                hierarchy_mask.append(False)
+                different_branch = True
+            else:
+                hierarchy_mask.append(True)
+
+        return hierarchy_mask
 
 
 def main():
@@ -321,7 +404,7 @@ def main():
 
     # G.draw_leaf_graph()
 
-    G.plan(["Building F", "Floor 2"], ["Building A", "Floor 1"])
+    G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 1", "Cantina"])
 
 
 if __name__ == "__main__":
