@@ -60,56 +60,42 @@ class SHNode(Generic[T]):
 
     def _add_connection_recursive(self, child_1_name, child_2_name, hierarchy_1: List[str], hierarchy_2: List[str], hierarchy_mask: List[bool],
                                   hierarchy_level: int, distance: Optional[float] = None, **data):
-        if self.is_leaf:
-            print("Leaf reached:", self.unique_name)
-            return
-
-        print("Childs:", hierarchy_1[hierarchy_level], hierarchy_2[hierarchy_level])
+        print("----------------------------")
+        print("Childs:", child_1_name, child_2_name)
         child_1 = self._get_child(hierarchy_1[hierarchy_level])
-        # child_2 = self._get_child(hierarchy_2[hierarchy_level])
 
-        # if childs are on the same branch they don't need a connection
+        # if childs are the same, they don't need a connection
         if hierarchy_mask[hierarchy_level] == True:
-            child_1._add_connection_recursive(child_1.unique_name, hierarchy_2[hierarchy_level], hierarchy_1, hierarchy_2,
+            child_1._add_connection_recursive(hierarchy_1[hierarchy_level+1], hierarchy_2[hierarchy_level+1], hierarchy_1, hierarchy_2,
                                               hierarchy_mask, hierarchy_level + 1, distance, **data)
             return
 
-        print("New connection between:", child_1_name, child_2_name, "in graph:", hierarchy_1[:hierarchy_level])
-        print(self.get_childs("name"))
-
-        if not self.is_child(child_2_name):
+        # if node does not exist in graph, create new bridge_node
+        if self._get_child(child_2_name, supress_error=True) is None:
+            print("Add new bridge node:", child_2_name, "in graph:", hierarchy_1[:hierarchy_level])
             self._add_child(child_2_name, pos=(0, 0, 0), is_leaf=child_1.is_leaf, type="hierarchy_bridge")
 
+        print("New connection between:", child_1_name, child_2_name, "in graph:", hierarchy_1[:hierarchy_level])
+        print("Graph nodes:", self.get_childs("name"))
         self._add_connection(child_1_name, child_2_name, distance, **data)
-
-        child_1._add_connection_recursive(child_1.unique_name, hierarchy_2[hierarchy_level], hierarchy_1, hierarchy_2,
-                                          hierarchy_mask, hierarchy_level + 1, distance, **data)
-
-        ########################################
 
         # if child_1 is a leaf, no need to go deeper
         if child_1.is_leaf:
+            print(child_1.unique_name, " is leaf")
             return
 
-        # child_1_bridge = self.get_hierarchy_bridge_name(hierarchy_1, hierarchy_mask, hierarchy_level)
-        child_2_bridge = self.get_hierarchy_bridge_name(hierarchy_2, hierarchy_mask, hierarchy_level)
+        # if childs are on the same graph but different, add bridges on each branch
+        if hierarchy_level == 0 or hierarchy_mask[hierarchy_level-1] == True:
+            child_1_bridge = self._get_hierarchy_bridge_name(hierarchy_1, hierarchy_mask, hierarchy_level)
+            child_2 = self._get_child(hierarchy_2[hierarchy_level])
+            child_2._add_connection_recursive(hierarchy_2[hierarchy_level+1], child_1_bridge, hierarchy_2, hierarchy_1,
+                                              hierarchy_mask, hierarchy_level + 1, distance, **data)
 
-        is_leaf = False
-        if hierarchy_level + 1 < len(hierarchy_1):
-            grandchild_1 = child_1._get_child(hierarchy_1[hierarchy_level+1])
-            is_leaf = grandchild_1.is_leaf
-
-        print("Add new bridge node:", child_2_bridge, "in graph:", hierarchy_1[:hierarchy_level+1])
-        # print("Add new bridge node:", child_1_bridge, "in graph:", hierarchy_2[:hierarchy_level+1])
-        child_1._add_child(child_2_bridge, pos=(0, 0, 0), is_leaf=is_leaf, type="hierarchy_bridge")
-        # child_2._add_child(child_1_bridge, pos=(0, 0, 0), is_leaf=is_leaf, type="hierarchy_bridge")
-
+        child_2_bridge = self._get_hierarchy_bridge_name(hierarchy_2, hierarchy_mask, hierarchy_level)
         child_1._add_connection_recursive(hierarchy_1[hierarchy_level+1], child_2_bridge, hierarchy_1, hierarchy_2,
                                           hierarchy_mask, hierarchy_level + 1, distance, **data)
-        child_2._add_connection_recursive(hierarchy_2[hierarchy_level+1], child_1_bridge, hierarchy_1, hierarchy_2,
-                                          hierarchy_mask, hierarchy_level + 1, distance, **data)
 
-    def get_hierarchy_bridge_name(self, hierarchy: List[str], hierarchy_mask: List[bool], hierarchy_level: int):
+    def _get_hierarchy_bridge_name(self, hierarchy: List[str], hierarchy_mask: List[bool], hierarchy_level: int):
         bridge_name = ""
         for i, node_name in enumerate(hierarchy[:hierarchy_level]):
             if hierarchy_mask[i] == False:
@@ -117,13 +103,16 @@ class SHNode(Generic[T]):
         bridge_name += hierarchy[hierarchy_level] + "_h_bridge"
         return bridge_name
 
-    def _get_child(self, name: str) -> T:
+    def _get_child(self, name: str, supress_error: bool = False) -> T:
         # Could be way more efficient if using hierarchy_list as hashable node instead of SHNode object
-        # Drawback: node.pos etc is not that easy, has to get the data dict all the time graph.nodes(data=True)
+        # Drawback: node.pos etc is not that easy, has to get the data dict all the time with graph.nodes(data=True)
         for node in self.child_graph.nodes:
             if node.unique_name == name:
                 return node
-        raise ValueError("Child with name {} not found".format(name))
+        if not supress_error:
+            raise ValueError("Child with name {} not found".format(name))
+        else:
+            return None  # type: ignore
 
     def get_childs(self, key=None) -> List[T]:
         if key is None:
@@ -229,46 +218,31 @@ class SHGraph(SHNode):
 
     def add_child(self, hierarchy: List[str], name: str, pos: Tuple[float, float, float], is_leaf: bool = False, **data):
         self.get_child(hierarchy)._add_child(name, pos, is_leaf, **data,)
+
+        # Add leaf node to leaf_graph for visualization
         if is_leaf:
             hierarchy.append(name)
             self.leaf_graph.add_node(self.get_child(hierarchy),
                                      name=name, **data)
 
-    def add_connection(self, hierarchy_1: List[str], hierarchy_2: List[str], distance: Optional[float] = None, **data):
-        add_hierarchy_bridge: bool = False
-        for index, (name_1, name_2) in enumerate(zip(hierarchy_1, hierarchy_2)):
-            if add_hierarchy_bridge:
-                print("New hierarchy connection between:")
-                print(name_1, hierarchy_2[index-1] + "_h_bridge", "in graph:", hierarchy_1[:index])
-                print(name_2, hierarchy_1[index-1] + "_h_bridge", "in graph:", hierarchy_2[:index])
-                is_leaf = False
-                if name_1 == hierarchy_1[-1]:
-                    node_1 = self.get_child(hierarchy_1)
-                    is_leaf = node_1.is_leaf
-                self.get_child(hierarchy_1[:index])._add_child(hierarchy_2[index-1] + "_h_bridge",
-                                                               pos=(0, 0, 0), is_leaf=is_leaf, type="hierarchy_bridge")
-                self.get_child(hierarchy_1[:index])._add_connection(
-                    name_1, hierarchy_2[index-1] + "_h_bridge", distance, **data)
-                self.get_child(hierarchy_2[:index])._add_child(hierarchy_1[index-1] + "_h_bridge",
-                                                               pos=(0, 0, 0), is_leaf=is_leaf, type="hierarchy_bridge")
-                self.get_child(hierarchy_2[:index])._add_connection(
-                    name_2, hierarchy_1[index-1] + "_h_bridge", distance, **data)
-            elif name_1 != name_2:
-                print("New connection between:", name_1, name_2, "in graph:", hierarchy_1[:index])
-                self.get_child(hierarchy_1[:index])._add_connection(name_1, name_2, distance, **data)
-                add_hierarchy_bridge = True
-            if name_1 == hierarchy_1[-1]:
-                node_1 = self.get_child(hierarchy_1)
-                if node_1.is_leaf:
-                    node_2 = self.get_child(hierarchy_2)
-                    if distance is None:
-                        distance = self.get_euclidean_distance(node_1.pos, node_2.pos)
-                    self.leaf_graph.add_edge(node_1, node_2, distance=distance, **data)
+    def add_child_recursive(self):
+        pass
 
     def add_connection_recursive(self, hierarchy_1: List[str], hierarchy_2: List[str], distance: Optional[float] = None, **data):
+        if len(hierarchy_1) != len(hierarchy_2):
+            raise ValueError("Hierarchies must have same length")
+
         hierarchy_mask = self.compare_hierarchy(hierarchy_1, hierarchy_2)
         self._add_connection_recursive(hierarchy_1[0], hierarchy_2[0], hierarchy_1, hierarchy_2, hierarchy_mask,
                                        hierarchy_level=0, distance=distance, **data)
+
+        # Add leaf node connections to leaf_graph for visualization
+        node_1 = self.get_child(hierarchy_1)
+        if node_1.is_leaf:
+            node_2 = self.get_child(hierarchy_2)
+            if distance is None:
+                distance = self.get_euclidean_distance(node_1.pos, node_2.pos)
+            self.leaf_graph.add_edge(node_1, node_2, distance=distance, **data)
 
     def get_child(self, hierarchy: List[str]) -> SHNode:
         child = self
@@ -277,7 +251,7 @@ class SHGraph(SHNode):
         return child
 
     def draw_leaf_graph(self):
-        node_xyz = np.array([node.pos_abs for node in self.leaf_graph.nodes()])
+        node_xyz = np.array([node.pos_abs for node in self.leaf_graph.nodes()])  # type: ignore
         edge_xyz = np.array([(u.pos_abs, v.pos_abs) for u, v in self.leaf_graph.edges])
 
         fig = plt.figure()
@@ -285,7 +259,8 @@ class SHGraph(SHNode):
         ax.scatter(*node_xyz.T, s=100, ec="w")
 
         for node in self.leaf_graph.nodes():
-            ax.text(node.pos_abs[0], node.pos_abs[1], node.pos_abs[2],  node.unique_name, size=7, color='k')
+            ax.text(node.pos_abs[0], node.pos_abs[1], node.pos_abs[2],  # type: ignore
+                    node.unique_name, size=7, color='k')  # type: ignore
 
         for vizedge in edge_xyz:
             ax.plot(*vizedge.T, color="tab:gray")
@@ -364,11 +339,6 @@ class SHGraph(SHNode):
 
 
 def main():
-    # G = TestGraph(3)
-    # G.create_example_data()
-    # G.draw_single_level(level=0)
-    # G.draw_multiple_level()
-
     # G = nx.Graph(name="LTC Campus", level=0, pos=(0, 0, 0))
     # child = nx.Graph()
     # G.add_node(child, name="Building F", level=1, parent=G, pos=(1, 1, 0))
@@ -424,56 +394,55 @@ def main():
 
     G.add_connection_recursive(["Building F", "Floor 1", "Kitchen"],
                                ["Building A", "Floor 1", "Cantina"], distance=10.0, name="terrace_door", type="door")
-
-    G.add_connection(["Building F", "Floor 0", "Staircase"],
-                     ["Building F", "Floor 0", "Lab"], name="floor_door", type="door")
-    G.add_connection(["Building F", "Floor 0", "Lab"],
-                     ["Building F", "Floor 0", "Workshop"], name="door", type="door")
-    G.add_connection(["Building F", "Floor 0", "Lab"],
-                     ["Building F", "Floor 0", "RoboEduLab"], name="door", type="door")
-    G.add_connection(["Building F", "Floor 0", "Staircase"],
-                     ["Building F", "Floor 1", "Staircase"], distance=4.0, name="stair_F", type="stair")
-    G.add_connection(["Building F", "Floor 1", "Staircase"],
-                     ["Building F", "Floor 1", "Corridor"], name="floor_door", type="door")
-    G.add_connection(["Building F", "Floor 1", "Corridor"],
-                     ["Building F", "Floor 1", "IRAS"], name="open", type="open")
-    G.add_connection(["Building F", "Floor 1", "Corridor"],
-                     ["Building F", "Floor 1", "xLab"], name="open", type="open")
-    G.add_connection(["Building F", "Floor 1", "Corridor"],
-                     ["Building F", "Floor 1", "Meeting Room"], name="door", type="door")
-    G.add_connection(["Building F", "Floor 1", "Corridor"],
-                     ["Building F", "Floor 1", "Kitchen"], name="open", type="open")
-    G.add_connection(["Building F", "Floor 1", "Staircase"],
-                     ["Building F", "Floor 2", "Staircase"], distance=4.0, name="stair_F", type="stair")
-    G.add_connection(["Building F", "Floor 2", "Staircase"],
-                     ["Building F", "Floor 2", "Corridor"], name="floor_door", type="door")
-    G.add_connection(["Building F", "Floor 2", "Corridor"],
-                     ["Building F", "Floor 2", "Seminar Room 1"], name="door", type="door")
-    G.add_connection(["Building F", "Floor 2", "Corridor"],
-                     ["Building F", "Floor 2", "Seminar Room 2"], name="door", type="door")
-    G.add_connection(["Building F", "Floor 2", "Corridor"],
-                     ["Building F", "Floor 2", "Seminar Room 3"], name="door", type="door")
-    G.add_connection(["Building F", "Floor 2", "Corridor"],
-                     ["Building F", "Floor 2", "Office"], name="door", type="door")
-    G.add_connection(["Building F", "Floor 2", "Corridor"],
-                     ["Building F", "Floor 2", "Kitchen"], name="open", type="open")
-    G.add_connection(["Building F", "Floor 2", "Staircase"],
-                     ["Building F", "Floor 3", "Staircase"], distance=4.0, name="stair_F", type="stair")
-    G.add_connection(["Building F", "Floor 3", "Staircase"],
-                     ["Building F", "Floor 3", "Office"], name="floor_door", type="door")
-    G.add_connection(["Building F", "Floor 1", "Kitchen"],
-                     ["Building A", "Floor 1", "Cantina"], distance=10.0, name="terrace_door", type="door")
+    G.add_connection_recursive(["Building F", "Floor 0", "Staircase"],
+                               ["Building F", "Floor 0", "Lab"], name="floor_door", type="door")
+    G.add_connection_recursive(["Building F", "Floor 0", "Lab"],
+                               ["Building F", "Floor 0", "Workshop"], name="door", type="door")
+    G.add_connection_recursive(["Building F", "Floor 0", "Lab"],
+                               ["Building F", "Floor 0", "RoboEduLab"], name="door", type="door")
+    G.add_connection_recursive(["Building F", "Floor 0", "Staircase"],
+                               ["Building F", "Floor 1", "Staircase"], distance=4.0, name="stair_F", type="stair")
+    G.add_connection_recursive(["Building F", "Floor 1", "Staircase"],
+                               ["Building F", "Floor 1", "Corridor"], name="floor_door", type="door")
+    G.add_connection_recursive(["Building F", "Floor 1", "Corridor"],
+                               ["Building F", "Floor 1", "IRAS"], name="open", type="open")
+    G.add_connection_recursive(["Building F", "Floor 1", "Corridor"],
+                               ["Building F", "Floor 1", "xLab"], name="open", type="open")
+    G.add_connection_recursive(["Building F", "Floor 1", "Corridor"],
+                               ["Building F", "Floor 1", "Meeting Room"], name="door", type="door")
+    G.add_connection_recursive(["Building F", "Floor 1", "Corridor"],
+                               ["Building F", "Floor 1", "Kitchen"], name="open", type="open")
+    G.add_connection_recursive(["Building F", "Floor 1", "Staircase"],
+                               ["Building F", "Floor 2", "Staircase"], distance=4.0, name="stair_F", type="stair")
+    G.add_connection_recursive(["Building F", "Floor 2", "Staircase"],
+                               ["Building F", "Floor 2", "Corridor"], name="floor_door", type="door")
+    G.add_connection_recursive(["Building F", "Floor 2", "Corridor"],
+                               ["Building F", "Floor 2", "Seminar Room 1"], name="door", type="door")
+    G.add_connection_recursive(["Building F", "Floor 2", "Corridor"],
+                               ["Building F", "Floor 2", "Seminar Room 2"], name="door", type="door")
+    G.add_connection_recursive(["Building F", "Floor 2", "Corridor"],
+                               ["Building F", "Floor 2", "Seminar Room 3"], name="door", type="door")
+    G.add_connection_recursive(["Building F", "Floor 2", "Corridor"],
+                               ["Building F", "Floor 2", "Office"], name="door", type="door")
+    G.add_connection_recursive(["Building F", "Floor 2", "Corridor"],
+                               ["Building F", "Floor 2", "Kitchen"], name="open", type="open")
+    G.add_connection_recursive(["Building F", "Floor 2", "Staircase"],
+                               ["Building F", "Floor 3", "Staircase"], distance=4.0, name="stair_F", type="stair")
+    G.add_connection_recursive(["Building F", "Floor 3", "Staircase"],
+                               ["Building F", "Floor 3", "Office"], name="floor_door", type="door")
+    # G.add_connection_recursive(["Building F", "Floor 1", "Kitchen"],
+    #                            ["Building A", "Floor 1", "Cantina"], distance=10.0, name="terrace_door", type="door")
 
     # G.draw_child_graph()
     # G.get_child(["Building F"]).draw_child_graph(view_axis=0)
     # G.get_child(["Building F", "Floor 0"]).draw_child_graph()
     # G.get_child(["Building F", "Floor 1"]).draw_child_graph()
     # G.get_child(["Building F", "Floor 2"]).draw_child_graph()
-    # G.get_child(["Building F", "Floor 3"]).draw_child_graph()
+    # G.get_child(["Building A", "Floor 1"]).draw_child_graph()
 
-    # G.draw_leaf_graph()
+    G.draw_leaf_graph()
 
-    G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 1", "Cantina"])
+    # G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 1", "Cantina"])
 
 
 if __name__ == "__main__":
