@@ -1,9 +1,7 @@
-import json
 import networkx as nx
 import matplotlib.pyplot as plt
 # from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
-import collections.abc
 
 from semantic_hierarchical_graph.node import SHNode
 
@@ -51,29 +49,3 @@ def draw_graph_3d(graph: nx.Graph, path=None):
 
     fig.tight_layout()
     plt.show()
-
-
-def path_to_leaf_path(path: dict):
-    leaf_path = []
-    for node, dict in path.items():
-        if node.is_leaf and not "h_bridge" in node.unique_name:
-            leaf_path.append(node)
-        else:
-            leaf_path.extend(path_to_leaf_path(dict))
-    return leaf_path
-
-
-def map_names_to_nodes(obj):
-    if isinstance(obj, collections.abc.Mapping):
-        return {k.unique_name: map_names_to_nodes(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [map_names_to_nodes(elem) for elem in obj]
-    else:
-        return obj.unique_name
-
-
-def save_dict_to_json(dict, file_path: str, convert_to_names: bool = True):
-    if convert_to_names:
-        dict = map_names_to_nodes(dict)
-    with open(file_path, 'w') as outfile:
-        json.dump(dict, outfile, indent=4, sort_keys=False)

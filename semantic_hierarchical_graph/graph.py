@@ -2,6 +2,8 @@ import networkx as nx
 from typing import Dict, List, Tuple, Optional
 
 from semantic_hierarchical_graph.node import SHNode
+import semantic_hierarchical_graph.utils as util
+
 
 node_attributes = {
     'label': 'corridor',
@@ -65,7 +67,7 @@ class SHGraph(SHNode):
         if node_1.is_leaf:
             node_2 = self.get_child(hierarchy_2)
             if distance is None:
-                distance = self.get_euclidean_distance(node_1.pos, node_2.pos)
+                distance = util.get_euclidean_distance(node_1.pos, node_2.pos)
             self.leaf_graph.add_edge(node_1, node_2, distance=distance, **data)
 
     def get_child(self, hierarchy: List[str]) -> SHNode:

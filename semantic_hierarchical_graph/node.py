@@ -2,6 +2,9 @@ import networkx as nx
 from typing import Dict, List, Tuple, TypeVar, Generic, Optional
 import numpy as np
 
+import semantic_hierarchical_graph.utils as util
+
+
 T = TypeVar('T', bound='SHNode')
 
 
@@ -25,7 +28,7 @@ class SHNode(Generic[T]):
         child_1 = self._get_child(child_name_1)
         child_2 = self._get_child(child_name_2)
         if distance is None:
-            distance = self.get_euclidean_distance(child_1.pos_abs, child_2.pos_abs)
+            distance = util.get_euclidean_distance(child_1.pos_abs, child_2.pos_abs)
         self.child_graph.add_edge(child_1, child_2, distance=distance, **data)
 
     def _add_connection_recursive(self, child_1_name, child_2_name, hierarchy_1: List[str], hierarchy_2: List[str], hierarchy_mask: List[bool],
@@ -112,9 +115,6 @@ class SHNode(Generic[T]):
         for node in self.child_graph.nodes:
             s[node.unique_name] = node.get_dict()
         return s
-
-    def get_euclidean_distance(self, pos_1: Tuple, pos_2: Tuple) -> float:
-        return ((pos_1[0] - pos_2[0]) ** 2 + (pos_1[1] - pos_2[1]) ** 2 + (pos_1[2] - pos_2[2]) ** 2) ** 0.5
 
     def _plan(self, start_name: str, goal_name: str) -> List[T]:
         return nx.shortest_path(self.child_graph,

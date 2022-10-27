@@ -1,5 +1,6 @@
 from semantic_hierarchical_graph.graph import SHGraph
 import semantic_hierarchical_graph.visualization as vis
+import semantic_hierarchical_graph.utils as util
 
 
 def main():
@@ -51,6 +52,9 @@ def main():
     G.add_child(hierarchy=["Building F", "Floor 3"], name="Staircase", pos=(0, -1, 0), is_leaf=True)
     G.add_child(hierarchy=["Building F", "Floor 3"], name="Office", pos=(1, 0, 0), is_leaf=True)
     G.add_child(hierarchy=["Building A", "Floor 1"], name="Cantina", pos=(1, 0, 0), is_leaf=True)
+    G.add_child(hierarchy=["Building A", "Floor 1"], name="Staircase", pos=(0, -1, 0), is_leaf=True)
+    G.add_child(hierarchy=["Building A", "Floor 0"], name="Staircase", pos=(0, -1, 0), is_leaf=True)
+    G.add_child(hierarchy=["Building A", "Floor 0"], name="Entrance", pos=(1, 0, 0), is_leaf=True)
 
     # print(G.get_dict())
     # print(G.get_childs("name"))
@@ -94,8 +98,14 @@ def main():
                                ["Building F", "Floor 3", "Office"], name="floor_door", type="door")
     G.add_connection_recursive(["Building F", "Floor 1", "Kitchen"],
                                ["Building A", "Floor 1", "Cantina"], distance=10.0, name="terrace_door", type="door")
+    G.add_connection_recursive(["Building A", "Floor 1", "Staircase"],
+                               ["Building A", "Floor 1", "Cantina"], name="floor_door", type="door")
+    G.add_connection_recursive(["Building A", "Floor 1", "Staircase"],
+                               ["Building A", "Floor 0", "Staircase"], distance=4.0, name="stair_A", type="stair")
+    G.add_connection_recursive(["Building A", "Floor 0", "Staircase"],
+                               ["Building A", "Floor 0", "Entrance"], name="floor_door", type="door")
 
-    vis.draw_child_graph(G)
+    # vis.draw_child_graph(G)
     # G.get_child(["Building F"]).draw_child_graph(view_axis=0)
     # G.get_child(["Building F", "Floor 0"]).draw_child_graph()
     # G.get_child(["Building F", "Floor 1"]).draw_child_graph()
@@ -104,14 +114,16 @@ def main():
 
     # vis.draw_graph_3d(G.leaf_graph)
 
-    path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 1", "Cantina"])
+    # path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 1", "Cantina"])
+    # path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building F", "Floor 3", "Office"])
+    path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 0", "Entrance"])
     # print(G.get_dict())
 
-    # vis.save_dict_to_json(path_dict, "data/path.json")
+    # util.save_dict_to_json(path_dict, "data/path.json")
 
-    leaf_path_list = vis.path_to_leaf_path(path_dict)
+    leaf_path_list = util.path_to_leaf_path(path_dict)
 
-    print(vis.map_names_to_nodes(leaf_path_list))
+    # print(util.map_names_to_nodes(leaf_path_list))
 
     vis.draw_graph_3d(G.leaf_graph, leaf_path_list)
 
