@@ -105,7 +105,6 @@ def main():
     vis.draw_graph_3d(G.leaf_graph)
 
     path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 1", "Cantina"])
-    print(path_dict)
     # print(G.get_dict())
 
     vis.save_dict_to_json(path_dict, "data/path.json")

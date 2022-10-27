@@ -83,7 +83,7 @@ class SHGraph(SHNode):
 
         child_path: List[SHNode] = self._plan(start_hierarchy[0], goal_hierarchy[0])
         path_dict = {}
-        path_dict[self.unique_name] = self._plan_recursive(start_hierarchy[0], goal_hierarchy[0], start_hierarchy, goal_hierarchy, child_path,
-                                                           hierarchy_level=0)
+        path_dict[self] = self._plan_recursive(start_hierarchy[0], goal_hierarchy[0], start_hierarchy, goal_hierarchy, child_path,
+                                               hierarchy_level=0)
 
         return path_dict

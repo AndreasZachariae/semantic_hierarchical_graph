@@ -3,6 +3,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 # from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
+import collections.abc
 
 from semantic_hierarchical_graph.node import SHNode
 
@@ -48,6 +49,15 @@ def draw_graph_3d(graph: nx.Graph):
     plt.show()
 
 
-def save_dict_to_json(dict: dict, file_path: str):
+def map_names_to_nodes(ob):
+    if isinstance(ob, collections.abc.Mapping):
+        return {k.unique_name: map_names_to_nodes(v) for k, v in ob.items()}
+    else:
+        return ob.unique_name
+
+
+def save_dict_to_json(dict: dict, file_path: str, convert_to_names: bool = True):
+    if convert_to_names:
+        dict = map_names_to_nodes(dict)
     with open(file_path, 'w') as outfile:
         json.dump(dict, outfile, indent=4, sort_keys=False)

@@ -138,13 +138,13 @@ class SHNode(Generic[T]):
             # if node is leaf, no deeper planning
             if node.is_leaf:
                 print("Leaf reached:", node.unique_name)
-                path_dict[node.unique_name] = {}
+                path_dict[node] = {}
                 continue
 
             # if node is bridge, go to next in path
             if "_h_bridge" in node.unique_name:
                 print("Bridge reached:", node.unique_name)
-                path_dict[node.unique_name] = {}
+                path_dict[node] = {}
                 continue
 
             # if current node is not the start node, start from bridge
@@ -192,6 +192,6 @@ class SHNode(Generic[T]):
 
             child_path_dict = node._plan_recursive(start_name, goal_name, start_hierarchy, goal_hierarchy, path,
                                                    hierarchy_level + 1, bridge_start, bridge_goal)
-            path_dict[node.unique_name] = child_path_dict
+            path_dict[node] = child_path_dict
 
         return path_dict
