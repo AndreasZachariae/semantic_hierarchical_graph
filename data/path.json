@@ -19,7 +19,14 @@
             "Building F_h_bridge": {},
             "Floor 1": {
                 "Building F_Floor 1_h_bridge": {},
-                "Cantina": {}
+                "Cantina": {},
+                "Staircase": {},
+                "Floor 0_h_bridge": {}
+            },
+            "Floor 0": {
+                "Floor 1_h_bridge": {},
+                "Staircase": {},
+                "Entrance": {}
             }
         }
     }
