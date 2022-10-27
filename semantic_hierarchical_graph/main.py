@@ -102,12 +102,18 @@ def main():
     # G.get_child(["Building F", "Floor 2"]).draw_child_graph()
     # G.get_child(["Building A", "Floor 1"]).draw_child_graph()
 
-    vis.draw_graph_3d(G.leaf_graph)
+    # vis.draw_graph_3d(G.leaf_graph)
 
     path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 1", "Cantina"])
     # print(G.get_dict())
 
-    vis.save_dict_to_json(path_dict, "data/path.json")
+    # vis.save_dict_to_json(path_dict, "data/path.json")
+
+    leaf_path_list = vis.path_to_leaf_path(path_dict)
+
+    print(vis.map_names_to_nodes(leaf_path_list))
+
+    vis.draw_graph_3d(G.leaf_graph, leaf_path_list)
 
 
 if __name__ == "__main__":

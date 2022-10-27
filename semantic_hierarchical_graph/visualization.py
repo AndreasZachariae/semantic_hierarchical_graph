@@ -21,13 +21,13 @@ def draw_child_graph(node: SHNode, view_axis: int = 2):
     plt.show()
 
 
-def draw_graph_3d(graph: nx.Graph):
+def draw_graph_3d(graph: nx.Graph, path=None):
     node_xyz = np.array([node.pos_abs for node in graph.nodes()])  # type: ignore
     edge_xyz = np.array([(u.pos_abs, v.pos_abs) for u, v in graph.edges])
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection="3d")
-    ax.scatter(*node_xyz.T, s=100, ec="w")
+    ax.scatter(*node_xyz.T, s=100, ec="w")  # type: ignore
 
     for node in graph.nodes():
         ax.text(node.pos_abs[0], node.pos_abs[1], node.pos_abs[2],  # type: ignore
@@ -35,6 +35,10 @@ def draw_graph_3d(graph: nx.Graph):
 
     for vizedge in edge_xyz:
         ax.plot(*vizedge.T, color="tab:gray")
+
+    if path is not None:
+        path_xyz = np.array([node.pos_abs for node in path])
+        ax.plot(*path_xyz.T, color="tab:red")
 
     ax.grid(False)
     # Suppress tick labels
@@ -49,14 +53,26 @@ def draw_graph_3d(graph: nx.Graph):
     plt.show()
 
 
-def map_names_to_nodes(ob):
-    if isinstance(ob, collections.abc.Mapping):
-        return {k.unique_name: map_names_to_nodes(v) for k, v in ob.items()}
+def path_to_leaf_path(path: dict):
+    leaf_path = []
+    for node, dict in path.items():
+        if node.is_leaf and not "h_bridge" in node.unique_name:
+            leaf_path.append(node)
+        else:
+            leaf_path.extend(path_to_leaf_path(dict))
+    return leaf_path
+
+
+def map_names_to_nodes(obj):
+    if isinstance(obj, collections.abc.Mapping):
+        return {k.unique_name: map_names_to_nodes(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [map_names_to_nodes(elem) for elem in obj]
     else:
-        return ob.unique_name
+        return obj.unique_name
 
 
-def save_dict_to_json(dict: dict, file_path: str, convert_to_names: bool = True):
+def save_dict_to_json(dict, file_path: str, convert_to_names: bool = True):
     if convert_to_names:
         dict = map_names_to_nodes(dict)
     with open(file_path, 'w') as outfile:
