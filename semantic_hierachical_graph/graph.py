@@ -1,3 +1,4 @@
+import json
 import networkx as nx
 import matplotlib.pyplot as plt
 # from mpl_toolkits.mplot3d import Axes3D
@@ -161,17 +162,20 @@ class SHNode(Generic[T]):
 
         # child_path = self._plan(start_name, goal_name)
 
+        path_dict = {}
         same_hierarchy_paths: Dict[T, List[T]] = {}
         for i, node in enumerate(child_path):
 
             # if node is leaf, no deeper planning
             if node.is_leaf:
                 print("Leaf reached:", node.unique_name)
-                return
+                path_dict[node.unique_name] = {}
+                continue
 
             # if node is bridge, go to next in path
             if "_h_bridge" in node.unique_name:
                 print("Bridge reached:", node.unique_name)
+                path_dict[node.unique_name] = {}
                 continue
 
             # if current node is not the start node, start from bridge
@@ -216,8 +220,12 @@ class SHNode(Generic[T]):
                     bridge_goal = same_hierarchy_paths[self._get_child(goal_name[:-9])][1].unique_name
                 if "_h_bridge" in start_name:
                     bridge_start = same_hierarchy_paths[self._get_child(start_name[:-9])][-2].unique_name
-            node._plan_recursive(start_name, goal_name, start_hierarchy, goal_hierarchy, path,
-                                 hierarchy_level + 1, bridge_start, bridge_goal)
+
+            child_path_dict = node._plan_recursive(start_name, goal_name, start_hierarchy, goal_hierarchy, path,
+                                                   hierarchy_level + 1, bridge_start, bridge_goal)
+            path_dict[node.unique_name] = child_path_dict
+
+        return path_dict
 
     def draw_child_graph(self, view_axis: int = 2):
         pos_index = [0, 1, 2]
@@ -304,11 +312,16 @@ class SHGraph(SHNode):
     def create_graph_from_dict(self):
         pass
 
-    def plan_recursive(self, start_hierarchy: List[str], goal_hierarchy: List[str]):
+    def plan_recursive(self, start_hierarchy: List[str], goal_hierarchy: List[str]) -> Dict:
+        if len(start_hierarchy) != len(goal_hierarchy):
+            raise ValueError("Hierarchies must have same length")
 
         child_path: List[SHNode] = self._plan(start_hierarchy[0], goal_hierarchy[0])
-        self._plan_recursive(start_hierarchy[0], goal_hierarchy[0], start_hierarchy, goal_hierarchy, child_path,
-                             hierarchy_level=0)
+        path_dict = {}
+        path_dict[self.unique_name] = self._plan_recursive(start_hierarchy[0], goal_hierarchy[0], start_hierarchy, goal_hierarchy, child_path,
+                                                           hierarchy_level=0)
+
+        return path_dict
 
 
 def main():
@@ -413,7 +426,12 @@ def main():
 
     # G.draw_leaf_graph()
 
-    G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 1", "Cantina"])
+    path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 1", "Cantina"])
+    print(path_dict)
+    # print(G.get_dict())
+
+    with open("path.json", "w") as outfile:
+        json.dump(path_dict, outfile, indent=4, sort_keys=False)
 
 
 if __name__ == "__main__":
