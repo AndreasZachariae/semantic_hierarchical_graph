@@ -1,7 +1,7 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 # from mpl_toolkits.mplot3d import Axes3D
-from typing import List, Tuple, TypeVar, Generic, Optional
+from typing import Dict, List, Tuple, TypeVar, Generic, Optional
 import numpy as np
 
 node_attributes = {
@@ -100,8 +100,22 @@ class SHNode(Generic[T]):
         for i, node_name in enumerate(hierarchy[:hierarchy_level]):
             if hierarchy_mask[i] == False:
                 bridge_name += node_name + "_"
-        bridge_name += hierarchy[hierarchy_level] + "_h_bridge"
+        if hierarchy_level < len(hierarchy):
+            bridge_name += hierarchy[hierarchy_level] + "_"
+        bridge_name += "h_bridge"
         return bridge_name
+
+    def _compare_hierarchy(self, hierarchy_1: List[str], hierarchy_2: List[str]) -> List[bool]:
+        hierarchy_mask = []
+        different_branch = False
+        for start, goal in zip(hierarchy_1, hierarchy_2):
+            if start != goal or different_branch:
+                hierarchy_mask.append(False)
+                different_branch = True
+            else:
+                hierarchy_mask.append(True)
+
+        return hierarchy_mask
 
     def _get_child(self, name: str, supress_error: bool = False) -> T:
         # Could be way more efficient if using hierarchy_list as hashable node instead of SHNode object
@@ -139,61 +153,75 @@ class SHNode(Generic[T]):
                                 weight="distance",
                                 method="dijkstra")  # type: ignore
 
-    def _plan_recursive(self, start_hierarchy: List[str], goal_hierarchy: List[str], hierarchy_mask: List[bool],
-                        hierarchy_level: int, prev_parent: Optional[T], next_parent: Optional[T]):
-        if self.is_leaf:
-            print("Leaf reached:", self.unique_name)
-            return
+    def _plan_recursive(self, start_name: str, goal_name: str, start_hierarchy: List[str], goal_hierarchy: List[str], child_path: List[T],
+                        hierarchy_level: int, bridge_start=None, bridge_goal=None):
 
-        start_name = start_hierarchy[hierarchy_level]
-        goal_name = goal_hierarchy[hierarchy_level]
-
-        # if hierarchy == 0 skip this step and plan in root_graph
-        if hierarchy_level > 0:
-            # if start and goal are not in the same branch
-            if hierarchy_mask[hierarchy_level-1] == False:
-                # if start is not on the same branch as parent
-                if prev_parent is not None:
-                    start_name = prev_parent.unique_name + "_h_bridge"
-                # if goal/next parent_node is not on same hierarchy as start
-                if next_parent is not None:
-                    goal_name = next_parent.unique_name + "_h_bridge"
-
-        # # if start is not on same hierarchy as parent_node
-        # if self.parent_node.unique_name != start_hierarchy[index-1]:
-        #     start_name = prev_parent.unique_name + "_h_bridge"
-
-        # # if not the last node in parent_path
-        # if i+1 < len(parent_path):
-        #     # if goal/next parent_node is not on same hierarchy as start
-        #     if parent_path[i+1].unique_name != start_hierarchy[index-1]:
-        #         goal_name = parent_path[i+1].unique_name + "_h_bridge"
-
-        # parent_path = parent_node._plan(start_name, goal_name)
-
-        # if "h_bridge" in parent_node.unique_name:
-        #     continue
-
+        # start_name = start_hierarchy[hierarchy_level]
+        # goal_name = goal_hierarchy[hierarchy_level]
         print("----------------------------")
-        print("Node name:", self.unique_name)
+        print("Node name:", self.unique_name, "in graph:")
         print("Child graph:", self.get_childs("name"))
         print("Start node:", start_name)
         print("Goal node:", goal_name)
-        child_path = self._plan(start_name, goal_name)
+
+        # child_path = self._plan(start_name, goal_name)
 
         print("path:", [node.unique_name for node in child_path])
 
-        prev_parent = None
         hierarchy_level += 1
+        same_hierarchy_paths: Dict[T, List[T]] = {}
         for i, node in enumerate(child_path):
-            if i+1 < len(child_path):
-                next_parent = child_path[i+1]
-            else:
-                next_parent = None
 
-            node._plan_recursive(start_hierarchy, goal_hierarchy, hierarchy_mask,
-                                 hierarchy_level, prev_parent, next_parent)
-            prev_parent = node
+            # if node is leaf, no deeper planning
+            if node.is_leaf:
+                print("Leaf reached:", node.unique_name)
+                return
+
+            # if node is bridge, no deeper planning
+            if "_h_bridge" in node.unique_name:
+                print("Bridge reached:", node.unique_name)
+                continue
+
+            # if current node is not the start node, start from bridge
+            if node.unique_name != start_name:
+                if "_h_bridge" in child_path[i-1].unique_name:
+                    child_start_name = child_path[i-1].unique_name[:-9] + "_" + str(bridge_start) + "_h_bridge"
+                else:
+                    child_start_name = child_path[i-1].unique_name + "_h_bridge"
+            else:
+                child_start_name = start_hierarchy[hierarchy_level]
+
+            # if current node is not the goal node, go to next bridge
+            if node.unique_name != goal_name:
+                if "_h_bridge" in child_path[i+1].unique_name:
+                    child_goal_name = child_path[i+1].unique_name[:-9] + "_" + str(bridge_goal) + "_h_bridge"
+                else:
+                    child_goal_name = child_path[i+1].unique_name + "_h_bridge"
+            else:
+                child_goal_name = goal_hierarchy[hierarchy_level]
+
+            path = node._plan(child_start_name, child_goal_name)
+            print("path:", [node.unique_name for node in path])
+            same_hierarchy_paths[node] = path
+
+            # node._plan_recursive(start_name, goal_name, start_hierarchy, goal_hierarchy, new_hierarchy, hierarchy_mask,
+            #                      hierarchy_level, prev_parent, next_parent)
+
+        print("same_hierarchy_paths:", {key.unique_name: [
+              item.unique_name for item in value] for key, value in same_hierarchy_paths.items()})
+
+        for node, path in same_hierarchy_paths.items():
+            start_name = path[0].unique_name
+            goal_name = path[-1].unique_name
+            if not path[0].is_leaf:
+                if "_h_bridge" in goal_name:
+                    bridge_goal = same_hierarchy_paths[self._get_child(goal_name[:-9])][1].unique_name
+                    print(bridge_goal)
+                if "_h_bridge" in start_name:
+                    bridge_start = same_hierarchy_paths[self._get_child(start_name[:-9])][-2].unique_name
+                    print(bridge_start)
+            node._plan_recursive(start_name, goal_name, start_hierarchy, goal_hierarchy, path,
+                                 hierarchy_level, bridge_start, bridge_goal)
 
     def draw_child_graph(self, view_axis: int = 2):
         pos_index = [0, 1, 2]
@@ -232,7 +260,7 @@ class SHGraph(SHNode):
         if len(hierarchy_1) != len(hierarchy_2):
             raise ValueError("Hierarchies must have same length")
 
-        hierarchy_mask = self.compare_hierarchy(hierarchy_1, hierarchy_2)
+        hierarchy_mask = self._compare_hierarchy(hierarchy_1, hierarchy_2)
         self._add_connection_recursive(hierarchy_1[0], hierarchy_2[0], hierarchy_1, hierarchy_2, hierarchy_mask,
                                        hierarchy_level=0, distance=distance, **data)
 
@@ -319,23 +347,9 @@ class SHGraph(SHNode):
 
     def plan_recursive(self, start_hierarchy: List[str], goal_hierarchy: List[str]):
 
-        hierarchy_mask = self.compare_hierarchy(start_hierarchy, goal_hierarchy)
-        self._plan_recursive(start_hierarchy, goal_hierarchy, hierarchy_mask,
-                             hierarchy_level=0, prev_parent=None, next_parent=None)
-
-        # parent_path: List[SHNode] = self._plan(start_hierarchy[0], goal_hierarchy[0])
-
-    def compare_hierarchy(self, hierarchy_1: List[str], hierarchy_2: List[str]) -> List[bool]:
-        hierarchy_mask = []
-        different_branch = False
-        for start, goal in zip(hierarchy_1, hierarchy_2):
-            if start != goal or different_branch:
-                hierarchy_mask.append(False)
-                different_branch = True
-            else:
-                hierarchy_mask.append(True)
-
-        return hierarchy_mask
+        child_path: List[SHNode] = self._plan(start_hierarchy[0], goal_hierarchy[0])
+        self._plan_recursive(start_hierarchy[0], goal_hierarchy[0], start_hierarchy, goal_hierarchy, child_path,
+                             hierarchy_level=0)
 
 
 def main():
@@ -392,8 +406,6 @@ def main():
     # print(G.get_childs("name"))
     # [print(node.pos, node.pos_abs) for node in G._get_child("Building F").get_childs()]
 
-    G.add_connection_recursive(["Building F", "Floor 1", "Kitchen"],
-                               ["Building A", "Floor 1", "Cantina"], distance=10.0, name="terrace_door", type="door")
     G.add_connection_recursive(["Building F", "Floor 0", "Staircase"],
                                ["Building F", "Floor 0", "Lab"], name="floor_door", type="door")
     G.add_connection_recursive(["Building F", "Floor 0", "Lab"],
@@ -430,8 +442,8 @@ def main():
                                ["Building F", "Floor 3", "Staircase"], distance=4.0, name="stair_F", type="stair")
     G.add_connection_recursive(["Building F", "Floor 3", "Staircase"],
                                ["Building F", "Floor 3", "Office"], name="floor_door", type="door")
-    # G.add_connection_recursive(["Building F", "Floor 1", "Kitchen"],
-    #                            ["Building A", "Floor 1", "Cantina"], distance=10.0, name="terrace_door", type="door")
+    G.add_connection_recursive(["Building F", "Floor 1", "Kitchen"],
+                               ["Building A", "Floor 1", "Cantina"], distance=10.0, name="terrace_door", type="door")
 
     # G.draw_child_graph()
     # G.get_child(["Building F"]).draw_child_graph(view_axis=0)
@@ -440,9 +452,9 @@ def main():
     # G.get_child(["Building F", "Floor 2"]).draw_child_graph()
     # G.get_child(["Building A", "Floor 1"]).draw_child_graph()
 
-    G.draw_leaf_graph()
+    # G.draw_leaf_graph()
 
-    # G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 1", "Cantina"])
+    G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 1", "Cantina"])
 
 
 if __name__ == "__main__":
