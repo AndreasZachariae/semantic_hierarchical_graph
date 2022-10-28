@@ -79,6 +79,7 @@ class SHGraph(SHNode):
     def create_graph_from_dict(self):
         pass
 
+    # @util.timing
     def plan_recursive(self, start_hierarchy: List[str], goal_hierarchy: List[str]) -> Dict:
         if len(start_hierarchy) != len(goal_hierarchy):
             raise ValueError("Hierarchies must have same length")
@@ -89,3 +90,19 @@ class SHGraph(SHNode):
                                                hierarchy_level=0)
 
         return path_dict
+
+    # @util.timing
+    def plan(self, start_hierarchy: List[str], goal_hierarchy: List[str]) -> List[SHNode]:
+        if len(start_hierarchy) != len(goal_hierarchy):
+            raise ValueError("Hierarchies must have same length")
+
+        start_node = self.get_child(start_hierarchy)
+        goal_node = self.get_child(goal_hierarchy)
+
+        path_list = nx.shortest_path(self.leaf_graph,
+                                     source=start_node,
+                                     target=goal_node,
+                                     weight="distance",
+                                     method="dijkstra")
+
+        return path_list  # type: ignore
