@@ -32,9 +32,7 @@ class SHNode(Generic[T]):
         self.child_graph.add_edge(child_1, child_2, distance=distance, **data)
 
     def _add_connection_recursive(self, child_1_name, child_2_name, hierarchy_1: List[str], hierarchy_2: List[str], hierarchy_mask: List[bool],
-                                  hierarchy_level: int, distance: Optional[float] = None, **data):
-        print("----------------------------")
-        print("Childs:", child_1_name, child_2_name)
+                                  hierarchy_level: int, distance: Optional[float] = None, debug=False, **data):
         child_1 = self._get_child(hierarchy_1[hierarchy_level])
 
         # if childs are the same, they don't need a connection
@@ -45,16 +43,20 @@ class SHNode(Generic[T]):
 
         # if node does not exist in graph, create new bridge_node
         if self._get_child(child_2_name, supress_error=True) is None:
-            print("Add new bridge node:", child_2_name, "in graph:", hierarchy_1[:hierarchy_level])
+            if debug:
+                print("Add new bridge node:", child_2_name, "in graph:", hierarchy_1[:hierarchy_level])
             self._add_child(child_2_name, pos=(0, 0, 0), is_leaf=child_1.is_leaf, type="hierarchy_bridge")
 
-        print("New connection between:", child_1_name, child_2_name, "in graph:", hierarchy_1[:hierarchy_level])
-        print("Graph nodes:", self.get_childs("name"))
+        if debug:
+            print("----------------------------")
+            print("New connection between:", child_1_name, child_2_name, "in graph:", hierarchy_1[:hierarchy_level])
+            print("Graph nodes:", self.get_childs("name"))
         self._add_connection(child_1_name, child_2_name, distance, **data)
 
         # if child_1 is a leaf, no need to go deeper
         if child_1.is_leaf:
-            print(child_1.unique_name, " is leaf")
+            if debug:
+                print(child_1.unique_name, " is leaf")
             return
 
         # if childs are on the same graph but different, add bridges on each branch
@@ -124,12 +126,7 @@ class SHNode(Generic[T]):
                                 method="dijkstra")  # type: ignore
 
     def _plan_recursive(self, start_name: str, goal_name: str, start_hierarchy: List[str], goal_hierarchy: List[str], child_path: List[T],
-                        hierarchy_level: int, bridge_start=None, bridge_goal=None) -> Dict:
-
-        # start_name = start_hierarchy[hierarchy_level]
-        # goal_name = goal_hierarchy[hierarchy_level]
-
-        # child_path = self._plan(start_name, goal_name)
+                        hierarchy_level: int, bridge_start=None, bridge_goal=None, debug=False) -> Dict:
 
         path_dict = {}
         same_hierarchy_paths: Dict[T, List[T]] = {}
@@ -137,13 +134,15 @@ class SHNode(Generic[T]):
 
             # if node is leaf, no deeper planning
             if node.is_leaf:
-                print("Leaf reached:", node.unique_name)
+                if debug:
+                    print("Leaf reached:", node.unique_name)
                 path_dict[node] = {}
                 continue
 
             # if node is bridge, go to next in path
             if "_h_bridge" in node.unique_name:
-                print("Bridge reached:", node.unique_name)
+                if debug:
+                    print("Bridge reached:", node.unique_name)
                 path_dict[node] = {}
                 continue
 
@@ -168,18 +167,16 @@ class SHNode(Generic[T]):
             path = node._plan(child_start_name, child_goal_name)
             same_hierarchy_paths[node] = path
 
-            print("----------------------------")
-            print("Node name:", node.unique_name, "in graph:", self.unique_name)
-            print("Child graph:", node.get_childs("name"))
-            print("Start node:", child_start_name)
-            print("Goal node:", child_goal_name)
-            print("path:", [node.unique_name for node in path])
+            if debug:
+                print("----------------------------")
+                print("Node name:", node.unique_name, "in graph:", self.unique_name)
+                print("Child graph:", node.get_childs("name"))
+                print("Start node:", child_start_name)
+                print("Goal node:", child_goal_name)
+                print("path:", [node.unique_name for node in path])
 
-            # node._plan_recursive(start_name, goal_name, start_hierarchy, goal_hierarchy, new_hierarchy, hierarchy_mask,
-            #                      hierarchy_level, prev_parent, next_parent)
-
-        print("same_hierarchy_paths:", {key.unique_name: [
-              item.unique_name for item in value] for key, value in same_hierarchy_paths.items()})
+        # print("same_hierarchy_paths:", {key.unique_name: [
+        #       item.unique_name for item in value] for key, value in same_hierarchy_paths.items()})
 
         for node, path in same_hierarchy_paths.items():
             start_name = path[0].unique_name
