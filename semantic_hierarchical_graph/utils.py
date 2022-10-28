@@ -1,5 +1,8 @@
+from functools import wraps
 import json
 import collections.abc
+from time import time
+import timeit
 from typing import List, Tuple
 
 
@@ -31,3 +34,27 @@ def save_dict_to_json(dict, file_path: str, convert_to_names: bool = True):
         dict = map_names_to_nodes(dict)
     with open(file_path, 'w') as outfile:
         json.dump(dict, outfile, indent=4, sort_keys=False)
+
+
+def timing(f):
+    @wraps(f)
+    def wrap(*args, **kw):
+        ts = time()
+        result = f(*args, **kw)
+        te = time()
+        print('func:%r args:[%r, %r] took: %2.6f sec' % (f.__name__, args, kw, te-ts))
+        return result
+    return wrap
+
+
+def planning_time():
+    # python -m timeit -r 10 -s 'from semantic_hierarchical_graph.main import main; G = main()'
+    #                           'G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 0", "Entrance"])'
+    setup_code = '''from semantic_hierarchical_graph.main import main
+                    G = main()
+                 '''
+
+    test_code = '''G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 0", "Entrance"])'''
+    result = timeit.Timer(test_code, setup_code, globals=globals()).repeat(10)
+
+    print(result)

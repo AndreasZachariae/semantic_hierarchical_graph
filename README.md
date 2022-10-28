@@ -48,3 +48,21 @@ Solution path:
     }
 }
 ```
+## Compare durations
+
+Comparison for graph shown above with **3 levels of hierarchy and 23 leaf nodes**
+
+Recursive function in hierarchical tree: 
+
+```bash
+python -m timeit -r 10 -s 'from semantic_hierarchical_graph.main import main; G = main()' 'G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 0", "Entrance"])'
+
+5000 loops, best of 10: 85.7 usec per loop
+```
+Package networkx.shortest_path on full leaf graph:
+
+```bash
+python -m timeit -r 10 -s 'from semantic_hierarchical_graph.main import main; G = main()' 'G.plan(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 0", "Entrance"])'
+
+10000 loops, best of 10: 24.3 usec per loop
+```

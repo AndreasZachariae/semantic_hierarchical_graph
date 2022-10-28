@@ -119,13 +119,17 @@ def main():
     path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 0", "Entrance"])
     # print(G.get_dict())
 
+    # leaf_path_list = G.plan(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 0", "Entrance"])
+
     # util.save_dict_to_json(path_dict, "data/path.json")
 
     leaf_path_list = util.path_to_leaf_path(path_dict)
 
-    # print(util.map_names_to_nodes(leaf_path_list))
+    print(util.map_names_to_nodes(leaf_path_list))
 
     vis.draw_graph_3d(G.leaf_graph, leaf_path_list)
+
+    return G
 
 
 if __name__ == "__main__":
