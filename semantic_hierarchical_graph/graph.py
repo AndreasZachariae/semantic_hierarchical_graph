@@ -68,7 +68,7 @@ class SHGraph(SHNode):
             node_2 = self.get_child(hierarchy_2)
             if distance is None:
                 distance = util.get_euclidean_distance(node_1.pos, node_2.pos)
-            self.leaf_graph.add_edge(node_1, node_2, distance=distance, **data)
+            self.leaf_graph.add_edge(node_1, node_2, distance=distance, color="black", **data)
 
     def get_child(self, hierarchy: List[str]) -> SHNode:
         child = self

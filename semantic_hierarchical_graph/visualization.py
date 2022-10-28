@@ -1,19 +1,35 @@
+from typing import Dict, List, Optional
 import networkx as nx
 import matplotlib.pyplot as plt
 # from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
+from semantic_hierarchical_graph.graph import SHGraph
+import semantic_hierarchical_graph.utils as util
 
-from semantic_hierarchical_graph.node import SHNode
 
+def draw_child_graph(root_node: SHGraph, child_hierarchy: List[str], path_dict: Optional[Dict] = None, view_axis: int = 2):
+    child = root_node.get_child(child_hierarchy)
 
-def draw_child_graph(node: SHNode, view_axis: int = 2):
     pos_index = [0, 1, 2]
     pos_index.remove(view_axis)
-    pos_dict = {node: (node.pos_abs[pos_index[0]], node.pos_abs[pos_index[1]]) for node in node.get_childs()}
+    pos_dict = {node: (node.pos_abs[pos_index[0]], node.pos_abs[pos_index[1]]) for node in child.get_childs()}
 
-    nx.draw(node.child_graph,
+    if path_dict is not None:
+        path_list = util.path_dict_to_child_path_list(path_dict, child_hierarchy)
+        # print(util.map_names_to_nodes(path_list))
+        edge_colors = []
+        for u, v in child.child_graph.edges:
+            if u in path_list and v in path_list:
+                edge_colors.append('red')
+            else:
+                edge_colors.append(child.child_graph[u][v]["color"])
+    else:
+        edge_colors = None
+
+    nx.draw(child.child_graph,
             pos=pos_dict,
-            labels=nx.get_node_attributes(node.child_graph, 'name'),
+            edge_color=edge_colors,
+            labels=nx.get_node_attributes(child.child_graph, 'name'),
             with_labels=True)
 
     plt.show()
@@ -29,7 +45,7 @@ def draw_graph_3d(graph: nx.Graph, path=None):
 
     for node in graph.nodes():
         ax.text(node.pos_abs[0], node.pos_abs[1], node.pos_abs[2],  # type: ignore
-                node.unique_name, size=7, color='k')  # type: ignore
+                node.unique_name, size=9, color='k')  # type: ignore
 
     for vizedge in edge_xyz:
         ax.plot(*vizedge.T, color="tab:gray")

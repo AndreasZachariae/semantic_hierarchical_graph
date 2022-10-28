@@ -10,14 +10,34 @@ def get_euclidean_distance(pos_1: Tuple, pos_2: Tuple) -> float:
     return ((pos_1[0] - pos_2[0]) ** 2 + (pos_1[1] - pos_2[1]) ** 2 + (pos_1[2] - pos_2[2]) ** 2) ** 0.5
 
 
-def path_to_leaf_path(path: dict):
+def path_dict_to_leaf_path_list(path: dict):
     leaf_path = []
     for node, dict in path.items():
         if node.is_leaf and not "h_bridge" in node.unique_name:
             leaf_path.append(node)
         else:
-            leaf_path.extend(path_to_leaf_path(dict))
+            leaf_path.extend(path_dict_to_leaf_path_list(dict))
     return leaf_path
+
+
+def path_dict_to_child_path_list(path: dict, child_hierarchy: List[str]):
+    child_path = []
+    if len(path) == 1:
+        path = list(path.values())[0]
+
+        # if path from root_node is asked
+        if len(child_hierarchy) == 0:
+            [child_path.append(k) for k, v in path.items()]
+            return child_path
+
+    for node, dict in path.items():
+        if node.unique_name == child_hierarchy[0]:
+            if len(child_hierarchy) > 1:
+                child_path.extend(path_dict_to_child_path_list(dict, child_hierarchy[1:]))
+            else:
+                [child_path.append(k) for k, v in dict.items()]
+
+    return child_path
 
 
 def map_names_to_nodes(obj):

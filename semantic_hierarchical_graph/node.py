@@ -27,9 +27,11 @@ class SHNode(Generic[T]):
     def _add_connection(self, child_name_1: str, child_name_2: str, distance: Optional[float] = None, **data):
         child_1 = self._get_child(child_name_1)
         child_2 = self._get_child(child_name_2)
+        color = "gray"
         if distance is None:
             distance = util.get_euclidean_distance(child_1.pos_abs, child_2.pos_abs)
-        self.child_graph.add_edge(child_1, child_2, distance=distance, **data)
+            color = "black"
+        self.child_graph.add_edge(child_1, child_2, distance=distance, color=color, **data)
 
     def _add_connection_recursive(self, child_1_name, child_2_name, hierarchy_1: List[str], hierarchy_2: List[str], hierarchy_mask: List[bool],
                                   hierarchy_level: int, distance: Optional[float] = None, debug=False, **data):
@@ -45,7 +47,7 @@ class SHNode(Generic[T]):
         if self._get_child(child_2_name, supress_error=True) is None:
             if debug:
                 print("Add new bridge node:", child_2_name, "in graph:", hierarchy_1[:hierarchy_level])
-            self._add_child(child_2_name, pos=(0, 0, 0), is_leaf=child_1.is_leaf, type="hierarchy_bridge")
+            self._add_child(child_2_name, pos=(-2, -2, -2), is_leaf=child_1.is_leaf, type="hierarchy_bridge")
 
         if debug:
             print("----------------------------")
@@ -93,7 +95,7 @@ class SHNode(Generic[T]):
         return hierarchy_mask
 
     def _get_child(self, name: str, supress_error: bool = False) -> T:
-        # Could be way more efficient if using hierarchy_list as hashable node instead of SHNode object
+        # Could be way more efficient if using hierarchy as hashable node instead of SHNode object
         # Drawback: node.pos etc is not that easy, has to get the data dict all the time with graph.nodes(data=True)
         for node in self.child_graph.nodes:
             if node.unique_name == name:
@@ -187,8 +189,7 @@ class SHNode(Generic[T]):
                 if "_h_bridge" in start_name:
                     bridge_start = same_hierarchy_paths[self._get_child(start_name[:-9])][-2].unique_name
 
-            child_path_dict = node._plan_recursive(start_name, goal_name, start_hierarchy, goal_hierarchy, path,
+            path_dict[node] = node._plan_recursive(start_name, goal_name, start_hierarchy, goal_hierarchy, path,
                                                    hierarchy_level + 1, bridge_start, bridge_goal)
-            path_dict[node] = child_path_dict
 
         return path_dict

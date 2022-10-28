@@ -105,27 +105,26 @@ def main():
     G.add_connection_recursive(["Building A", "Floor 0", "Staircase"],
                                ["Building A", "Floor 0", "Entrance"], name="floor_door", type="door")
 
-    # vis.draw_child_graph(G)
-    # G.get_child(["Building F"]).draw_child_graph(view_axis=0)
-    # G.get_child(["Building F", "Floor 0"]).draw_child_graph()
-    # G.get_child(["Building F", "Floor 1"]).draw_child_graph()
-    # G.get_child(["Building F", "Floor 2"]).draw_child_graph()
-    # G.get_child(["Building A", "Floor 1"]).draw_child_graph()
-
-    # vis.draw_graph_3d(G.leaf_graph)
-
     # path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 1", "Cantina"])
     # path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building F", "Floor 3", "Office"])
     path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 0", "Entrance"])
-    # print(G.get_dict())
 
     # leaf_path_list = G.plan(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 0", "Entrance"])
 
     # util.save_dict_to_json(path_dict, "data/path.json")
 
-    leaf_path_list = util.path_to_leaf_path(path_dict)
-
+    leaf_path_list = util.path_dict_to_leaf_path_list(path_dict)
     print(util.map_names_to_nodes(leaf_path_list))
+
+    # child_path_list = util.path_dict_to_child_path_list(path_dict, [])
+    # print(util.map_names_to_nodes(child_path_list))
+
+    # vis.draw_child_graph(G, [], path_dict)
+    # vis.draw_child_graph(G, ["Building F"], path_dict, view_axis=0)
+    # vis.draw_child_graph(G, ["Building F", "Floor 0"], path_dict)
+    # vis.draw_child_graph(G, ["Building F", "Floor 1"], path_dict)
+    # vis.draw_child_graph(G, ["Building F", "Floor 2"], path_dict)
+    # vis.draw_child_graph(G, ["Building A", "Floor 1"], path_dict)
 
     vis.draw_graph_3d(G.leaf_graph, leaf_path_list)
 
