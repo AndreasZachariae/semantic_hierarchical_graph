@@ -65,3 +65,14 @@ def draw_graph_3d(graph: nx.Graph, path=None):
 
     fig.tight_layout()
     plt.show()
+
+def plot_times():
+    fig = plt.figure()
+    ax = fig.add_axes([0,0,1,1])
+    type = ['recursive', 'leaf graph']
+    times = [85.7, 24.3]
+    ax.set_ylabel('Time in μs')
+    ax.set_title('Time comparison leaf graph vs. H-Graph')
+    ax.bar(type,times)
+    fig.tight_layout()
+    plt.show()

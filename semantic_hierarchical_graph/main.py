@@ -105,9 +105,9 @@ def main():
     G.add_connection_recursive(["Building A", "Floor 0", "Staircase"],
                                ["Building A", "Floor 0", "Entrance"], name="floor_door", type="door")
 
-    # path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 1", "Cantina"])
+    path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 1", "Cantina"])
     # path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building F", "Floor 3", "Office"])
-    path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 0", "Entrance"])
+    # path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 0", "Entrance"])
 
     # leaf_path_list = G.plan(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 0", "Entrance"])
 
@@ -121,10 +121,11 @@ def main():
 
     # vis.draw_child_graph(G, [], path_dict)
     # vis.draw_child_graph(G, ["Building F"], path_dict, view_axis=0)
+    # vis.draw_child_graph(G, ["Building A"], path_dict, view_axis=0)
     # vis.draw_child_graph(G, ["Building F", "Floor 0"], path_dict)
-    # vis.draw_child_graph(G, ["Building F", "Floor 1"], path_dict)
     # vis.draw_child_graph(G, ["Building F", "Floor 2"], path_dict)
     # vis.draw_child_graph(G, ["Building A", "Floor 1"], path_dict)
+    # vis.draw_child_graph(G, ["Building A", "Floor 0"], path_dict)
 
     vis.draw_graph_3d(G.leaf_graph, leaf_path_list)
 
