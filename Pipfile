@@ -6,6 +6,8 @@ name = "pypi"
 [packages]
 networkx = "*"
 matplotlib = "*"
+opencv-python = "*"
+largestinteriorrectangle = "*"
 
 [dev-packages]
 autopep8 = "*"
