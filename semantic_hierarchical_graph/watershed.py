@@ -36,23 +36,22 @@ def marker_controlled_watershed(img: np.ndarray):
     # Now, mark the region of unknown with zero
     markers[unknown == 255] = 0
 
-    markers = cv2.watershed(img, markers)
+    ws = cv2.watershed(img, markers)
     img[markers == -1] = [255, 0, 0]
 
-    # show_imgs(img, markers)
+    # show_imgs(img, ws)
 
-    return markers, dist_transform
+    return ws, dist_transform
 
 
-def largest_rectangle_per_region(markers: np.ndarray, base_size: Tuple[int, int] = (10, 30)):
-    # print(markers.max())
-    # region_bool = np.where(markers == 10, True, False)
+def largest_rectangle_per_region(ws: np.ndarray, base_size: Tuple[int, int] = (10, 30)):
+    # print(ws.max())
 
-    original_markers = markers.copy()
+    original_ws = ws.copy()
 
-    for i in range(2, markers.max() + 1):
+    for i in range(2, ws.max() + 1):
         while True:
-            region_bool = np.where(markers == i, True, False)
+            region_bool = np.where(ws == i, True, False)
             region = region_bool.astype("uint8") * 255
             contours, _ = cv2.findContours(region, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
             c_max = max(contours, key=cv2.contourArea)
@@ -64,19 +63,19 @@ def largest_rectangle_per_region(markers: np.ndarray, base_size: Tuple[int, int]
             contour = c_max[:, 0, :]
             rectangle = lir.lir(region_bool, contour)
 
-            markers = cv2.rectangle(markers, rectangle, (1), -1)
-            original_markers = cv2.rectangle(original_markers, rectangle, (21), 2)
-            # original_markers = path_from_rectangle(rectangle, original_markers, base_size)
+            ws = cv2.rectangle(ws, rectangle, (1), -1)
+            original_ws = cv2.rectangle(original_ws, rectangle, (21), 2)
+            # original_ws = path_from_rectangle(rectangle, original_ws, base_size)
 
-    show_imgs(original_markers)
+    show_imgs(original_ws)
 
 
-def path_from_rectangle(rectangle: np.ndarray, markers: np.ndarray, base_size: Tuple[int, int]) -> np.ndarray:
+def path_from_rectangle(rectangle: np.ndarray, ws: np.ndarray, base_size: Tuple[int, int]) -> np.ndarray:
     x, y, w, h = rectangle
 
     if w < base_size[0] or h < base_size[0]:
         print("corridor too small")
-        return markers
+        return ws
 
     if w < 2 * base_size[0] or h < 2 * base_size[0]:
         if w < h:
@@ -86,30 +85,30 @@ def path_from_rectangle(rectangle: np.ndarray, markers: np.ndarray, base_size: T
             point_1 = (x + base_size[0], y+h//2)
             point_2 = (x + w-base_size[0], y+h//2)
 
-        cv2.line(markers, point_1, point_2, (25), 2)
+        cv2.line(ws, point_1, point_2, (25), 2)
     else:
         rect = (x + base_size[0], y + base_size[0], w - 2 * base_size[0], h - 2 * base_size[0])
-        markers = cv2.rectangle(markers, rect, (25), 2)
+        ws = cv2.rectangle(ws, rect, (25), 2)
 
-    return markers
+    return ws
 
 
-def find_bridge_nodes(markers: np.ndarray, dist_transform: np.ndarray):
-    max_row, max_col = markers.shape
-    edges = np.where(markers == -1)
-    adjacent = np.eye(markers.max()+1)
-    # np.zeros(shape=(markers.max()+1, markers.max()+1))
-    adjacent_edges: List[List[List]] = [[[] for i in range(markers.max()+1)] for j in range(markers.max()+1)]
+def find_bridge_nodes(ws: np.ndarray, dist_transform: np.ndarray):
+    max_row, max_col = ws.shape
+    edges = np.where(ws == -1)
+    adjacent = np.eye(ws.max()+1)
+    # np.zeros(shape=(ws.max()+1, ws.max()+1))
+    adjacent_edges: Dict[Tuple, List] = {}  # [[[] for i in range(ws.max()+1)] for j in range(ws.max()+1)]
     for edge_row, edge_col in zip(edges[0], edges[1]):
         neighbors = set()
         if edge_row-1 >= 0:
-            neighbors.add(markers[edge_row-1, edge_col])
+            neighbors.add(ws[edge_row-1, edge_col])
         if edge_row+1 < max_row:
-            neighbors.add(markers[edge_row+1, edge_col])
+            neighbors.add(ws[edge_row+1, edge_col])
         if edge_col-1 >= 0:
-            neighbors.add(markers[edge_row, edge_col-1])
+            neighbors.add(ws[edge_row, edge_col-1])
         if edge_col+1 < max_col:
-            neighbors.add(markers[edge_row, edge_col+1])
+            neighbors.add(ws[edge_row, edge_col+1])
 
         neighbors.discard(1)
         neighbors.discard(-1)
@@ -122,25 +121,29 @@ def find_bridge_nodes(markers: np.ndarray, dist_transform: np.ndarray):
             n1, n2 = n2, n1
 
         adjacent[n1, n2] = 1
-        # adjacent[n2, n1] = 1
 
-        if adjacent_edges[n1][n2] == []:
-            adjacent_edges[n1][n2] = [(edge_row, edge_col)]
+        if (n1, n2) in adjacent_edges:
+            adjacent_edges[(n1, n2)].append((edge_row, edge_col))
         else:
-            adjacent_edges[n1][n2].append((edge_row, edge_col))
+            adjacent_edges[(n1, n2)] = [(edge_row, edge_col)]
 
         # print("Bridge node found at", (edge_row, edge_col), "with neighbors", neighbors)
 
-    print("Adjacent matrix", adjacent)
-    # print("Adjacent edges", adjacent_edges)
+    # print("Adjacent matrix", adjacent)
 
-    for rows in adjacent_edges:
-        for col in rows:
-            for edge in col:
-                if edge != []:
-                    markers[edge[0], edge[1]] = 30
+    for adj_marker, edge in adjacent_edges.items():
+        border = np.zeros(shape=ws.shape, dtype="uint8")
+        for pixel in edge:
+            border[pixel] = 255
+        ret, connected_edges = cv2.connectedComponents(border)
 
-    show_imgs(markers, dist_transform)
+        for i in range(1, connected_edges.max() + 1):
+            connected_edge = np.where(connected_edges == i)
+            connected_edge = list(zip(connected_edge[0], connected_edge[1]))
+            bridge_pixel = max(connected_edge, key=lambda x: dist_transform[x[0], x[1]])
+            ws = cv2.circle(ws, (bridge_pixel[1], bridge_pixel[0]), 4, (25), -1)
+
+    show_imgs(ws)
 
 
 def show_imgs(img: np.ndarray, img_2: np.ndarray = None):
@@ -156,7 +159,7 @@ def show_imgs(img: np.ndarray, img_2: np.ndarray = None):
 if __name__ == '__main__':
     img = cv2.imread('data/map_benchmark_ryu.png')
 
-    markers, dist_transform = marker_controlled_watershed(img)
-    find_bridge_nodes(markers, dist_transform)
-    # largest_rectangle_per_region(markers)
-    # show_imgs(markers)
+    ws, dist_transform = marker_controlled_watershed(img)
+    find_bridge_nodes(ws, dist_transform)
+    # largest_rectangle_per_region(ws)
+    # show_imgs(ws)
