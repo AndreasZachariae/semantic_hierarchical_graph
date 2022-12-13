@@ -67,7 +67,7 @@ def largest_rectangle_per_region(ws: np.ndarray, base_size: Tuple[int, int] = (1
             original_ws = cv2.rectangle(original_ws, rectangle, (21), 2)
             # original_ws = path_from_rectangle(rectangle, original_ws, base_size)
 
-    show_imgs(original_ws)
+    show_imgs(original_ws, name="map_benchmark_ryu_rectangles", save=True)
 
 
 def path_from_rectangle(rectangle: np.ndarray, ws: np.ndarray, base_size: Tuple[int, int]) -> np.ndarray:
@@ -143,23 +143,28 @@ def find_bridge_nodes(ws: np.ndarray, dist_transform: np.ndarray):
             bridge_pixel = max(connected_edge, key=lambda x: dist_transform[x[0], x[1]])
             ws = cv2.circle(ws, (bridge_pixel[1], bridge_pixel[0]), 4, (25), -1)
 
-    show_imgs(ws)
+    show_imgs(ws, name="map_benchmark_ryu_bridge_points", save=True)
 
 
-def show_imgs(img: np.ndarray, img_2: np.ndarray = None):
+def show_imgs(img: np.ndarray, img_2: np.ndarray = None, name=None, save=False):
     if img_2 is not None:
         plt.subplot(211), plt.imshow(img)
         plt.subplot(212), plt.imshow(img_2)
     else:
+        # img = cv2.applyColorMap(img.astype("uint8"), cv2.COLORMAP_JET)
         plt.imshow(img)
-    plt.show()
-    # plt.savefig('data/map_benchmark_ryu_result.png')
+
+    if save:
+        plt.savefig('data/' + name + '.png')
+    else:
+        plt.show()
 
 
 if __name__ == '__main__':
     img = cv2.imread('data/map_benchmark_ryu.png')
 
     ws, dist_transform = marker_controlled_watershed(img)
+    ws2 = ws.copy()
     find_bridge_nodes(ws, dist_transform)
-    # largest_rectangle_per_region(ws)
+    largest_rectangle_per_region(ws2)
     # show_imgs(ws)
