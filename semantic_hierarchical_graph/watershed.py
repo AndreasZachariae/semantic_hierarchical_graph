@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 import largestinteriorrectangle as lir
 
 
-def marker_controlled_watershed(img: np.ndarray):
+def marker_controlled_watershed(img: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     # convert to binary
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     ret, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
@@ -25,10 +25,10 @@ def marker_controlled_watershed(img: np.ndarray):
 
     # Finding unknown region
     sure_fg = np.uint8(sure_fg)
-    unknown = cv2.subtract(sure_bg, sure_fg)
+    unknown = cv2.subtract(sure_bg, sure_fg) # type: ignore
 
     # Marker labelling
-    ret, markers = cv2.connectedComponents(sure_fg)
+    ret, markers = cv2.connectedComponents(sure_fg) # type: ignore
 
     # Add one to all labels so that sure background is not 0, but 1
     markers = markers + 1
@@ -44,16 +44,15 @@ def marker_controlled_watershed(img: np.ndarray):
     return ws, dist_transform
 
 
-def largest_rectangle_per_region(ws: np.ndarray, base_size: Tuple[int, int] = (10, 30)):
-    # print(ws.max())
-
-    original_ws = ws.copy()
-
-    for i in range(2, ws.max() + 1):
+def largest_rectangle_per_region(ws: np.ndarray, base_size: Tuple[int, int] = (10, 30)) -> Dict[int, List]:
+    ws_tmp = ws.copy()
+    largest_rectangles: Dict[int, List] = {}
+    for i in range(2, ws_tmp.max() + 1):
         while True:
-            region_bool = np.where(ws == i, True, False)
+            region_bool = np.where(ws_tmp == i, True, False)
             region = region_bool.astype("uint8") * 255
-            contours, _ = cv2.findContours(region, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+            # TODO: Changed from cv2.RETR_TREE to EXTERNAL because it is faster and hierarchy doesn't matter
+            contours, hierarchy = cv2.findContours(region, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
             c_max = max(contours, key=cv2.contourArea)
 
             if cv2.contourArea(c_max) < 9 * base_size[0] * base_size[1]:
@@ -63,11 +62,32 @@ def largest_rectangle_per_region(ws: np.ndarray, base_size: Tuple[int, int] = (1
             contour = c_max[:, 0, :]
             rectangle = lir.lir(region_bool, contour)
 
-            ws = cv2.rectangle(ws, rectangle, (1), -1)
-            original_ws = cv2.rectangle(original_ws, rectangle, (21), 2)
+            if i in largest_rectangles:
+                largest_rectangles[i].append(rectangle)
+            else:
+                largest_rectangles[i] = [rectangle]
+
+            # save hierrahcy only for first iteration per room
+            # get index of max contour
+            # compare with index not always 0
+            holes = np.where(hierarchy[0,:,3]==0)
+            print(hierarchy[:3])
+            print(holes)
+
+            # append list op holes
+            # use shapely
+            # Polygon(contour, holes_list])
+
+            # cv2.drawContours(region, [c_max],-1,(50))
+            # show_imgs(region)
+            # contours, _ = cv2.findContours(region_inverted, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+
+
+            ws_tmp = cv2.rectangle(ws_tmp, rectangle, (1), -1)
             # original_ws = path_from_rectangle(rectangle, original_ws, base_size)
 
-    show_imgs(original_ws, name="map_benchmark_ryu_rectangles", save=True)
+    # show_imgs(ws_tmp)
+    return largest_rectangles
 
 
 def path_from_rectangle(rectangle: np.ndarray, ws: np.ndarray, base_size: Tuple[int, int]) -> np.ndarray:
@@ -93,12 +113,11 @@ def path_from_rectangle(rectangle: np.ndarray, ws: np.ndarray, base_size: Tuple[
     return ws
 
 
-def find_bridge_nodes(ws: np.ndarray, dist_transform: np.ndarray):
+def find_bridge_nodes(ws: np.ndarray, dist_transform: np.ndarray) -> Dict[Tuple, List]:
     max_row, max_col = ws.shape
     edges = np.where(ws == -1)
     adjacent = np.eye(ws.max()+1)
-    # np.zeros(shape=(ws.max()+1, ws.max()+1))
-    adjacent_edges: Dict[Tuple, List] = {}  # [[[] for i in range(ws.max()+1)] for j in range(ws.max()+1)]
+    adjacent_edges: Dict[Tuple, List] = {}
     for edge_row, edge_col in zip(edges[0], edges[1]):
         neighbors = set()
         if edge_row-1 >= 0:
@@ -127,10 +146,8 @@ def find_bridge_nodes(ws: np.ndarray, dist_transform: np.ndarray):
         else:
             adjacent_edges[(n1, n2)] = [(edge_row, edge_col)]
 
-        # print("Bridge node found at", (edge_row, edge_col), "with neighbors", neighbors)
-
     # print("Adjacent matrix", adjacent)
-
+    bridge_nodes: Dict[Tuple, List] = {}
     for adj_marker, edge in adjacent_edges.items():
         border = np.zeros(shape=ws.shape, dtype="uint8")
         for pixel in edge:
@@ -141,21 +158,38 @@ def find_bridge_nodes(ws: np.ndarray, dist_transform: np.ndarray):
             connected_edge = np.where(connected_edges == i)
             connected_edge = list(zip(connected_edge[0], connected_edge[1]))
             bridge_pixel = max(connected_edge, key=lambda x: dist_transform[x[0], x[1]])
-            ws = cv2.circle(ws, (bridge_pixel[1], bridge_pixel[0]), 4, (25), -1)
 
-    show_imgs(ws, name="map_benchmark_ryu_bridge_points", save=True)
+            if adj_marker in bridge_nodes:
+                bridge_nodes[adj_marker].append(bridge_pixel[::-1])
+            else:
+                bridge_nodes[adj_marker] = [bridge_pixel[::-1]]
+
+    return bridge_nodes
+
+def draw(img: np.ndarray, objects_dict: dict, color) -> np.ndarray:
+    img_new = img.copy()
+    for key, objects_list in objects_dict.items():
+        for object in objects_list:
+            if len(object) == 2:
+                cv2.circle(img_new, object, 4, color, -1)
+            if len(object) == 4:
+                cv2.rectangle(img_new, object, color, 2)
+
+    return img_new
 
 
-def show_imgs(img: np.ndarray, img_2: np.ndarray = None, name=None, save=False):
+def show_imgs(img: np.ndarray, img_2: np.ndarray = None, name: str =None, save=False):
     if img_2 is not None:
-        plt.subplot(211), plt.imshow(img)
-        plt.subplot(212), plt.imshow(img_2)
+        plt.subplot(211)
+        plt.imshow(img)
+        plt.subplot(212)
+        plt.imshow(img_2)
     else:
         # img = cv2.applyColorMap(img.astype("uint8"), cv2.COLORMAP_JET)
         plt.imshow(img)
 
     if save:
-        plt.savefig('data/' + name + '.png')
+        plt.savefig("data/" + name + '.png')
     else:
         plt.show()
 
@@ -164,7 +198,9 @@ if __name__ == '__main__':
     img = cv2.imread('data/map_benchmark_ryu.png')
 
     ws, dist_transform = marker_controlled_watershed(img)
-    ws2 = ws.copy()
-    find_bridge_nodes(ws, dist_transform)
-    largest_rectangle_per_region(ws2)
-    # show_imgs(ws)
+    bridge_nodes = find_bridge_nodes(ws, dist_transform)
+    largest_rectangles = largest_rectangle_per_region(ws)
+
+    ws2 = draw(ws, bridge_nodes, (22))
+    ws3 = draw(ws2, largest_rectangles, (21))
+    show_imgs(ws3, name="map_benchmark_ryu_result", save=False)
