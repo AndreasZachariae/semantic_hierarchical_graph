@@ -8,6 +8,7 @@ networkx = "*"
 matplotlib = "*"
 opencv-python = "*"
 largestinteriorrectangle = "*"
+shapely = "*"
 
 [dev-packages]
 autopep8 = "*"
