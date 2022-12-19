@@ -7,14 +7,23 @@ from shapely import Polygon, LineString
 from semantic_hierarchical_graph.environment import Environment
 
 
-def marker_controlled_watershed(img: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def marker_controlled_watershed(img: np.ndarray, base_size: Tuple[int, int], safety_margin: float) -> Tuple[np.ndarray, np.ndarray]:
     # convert to binary
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     ret, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
+    # Add safety margin
+    # TODO: decide for safety margin with erosion or later offset
+    if safety_margin < 1:
+        size = round(base_size[0]*2)
+        print("Add safety margin with erosion and kernel:", (size, size))
+        kernel = np.ones((size, size), np.uint8)
+        thresh = cv2.erode(thresh, kernel)
+
     # noise removal
     kernel = np.ones((3, 3), np.uint8)
     opening = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=2)
+    img_for_ws = cv2.cvtColor(opening, cv2.COLOR_GRAY2BGR).copy()
 
     # sure background area
     sure_bg = cv2.dilate(opening, kernel, iterations=3)
@@ -23,7 +32,9 @@ def marker_controlled_watershed(img: np.ndarray) -> Tuple[np.ndarray, np.ndarray
     dist_transform = cv2.distanceTransform(opening, cv2.DIST_L2, 5)
     # 0.5 * dist_transform.max()
     # TODO: find a better threshold value
-    ret, sure_fg = cv2.threshold(dist_transform, 30, 255, 0)
+    # currently: 3 * base_size[0]
+    # wiht erosion: 2 * base_size[0]
+    ret, sure_fg = cv2.threshold(dist_transform, 3*base_size[0], 255, 0)
 
     # Finding unknown region
     sure_fg = np.uint8(sure_fg)
@@ -38,15 +49,15 @@ def marker_controlled_watershed(img: np.ndarray) -> Tuple[np.ndarray, np.ndarray
     # Now, mark the region of unknown with zero
     markers[unknown == 255] = 0
 
-    ws = cv2.watershed(img, markers)
-    img[markers == -1] = [255, 0, 0]
+    ws = cv2.watershed(img_for_ws, markers)
+    img_for_ws[markers == -1] = [255, 0, 0]
 
-    # show_imgs(img, ws)
+    # show_imgs(img_for_ws, ws)
 
     return ws, dist_transform
 
 
-def largest_rectangle_per_region(ws: np.ndarray, base_size: Tuple[int, int] = (10, 30)) -> Tuple[Dict[int, List], Dict[int, Environment]]:
+def largest_rectangle_per_region(ws: np.ndarray, base_size: Tuple[int, int], safety_margin: float) -> Tuple[Dict[int, List], Dict[int, Environment]]:
     ws_tmp = ws.copy()
     largest_rectangles: Dict[int, List] = {}
     region_envs: Dict[int, Environment] = {}
@@ -63,6 +74,7 @@ def largest_rectangle_per_region(ws: np.ndarray, base_size: Tuple[int, int] = (1
             c_max_index = np.argmax(contour_areas)
             c_max = contours[c_max_index]
 
+            # TODO: find better threshold specification
             if np.max(contour_areas) < 9 * base_size[0] * base_size[1]:
                 # print("New rectangle too small", cv2.contourArea(c_max))
                 break
@@ -84,7 +96,7 @@ def largest_rectangle_per_region(ws: np.ndarray, base_size: Tuple[int, int] = (1
             else:
                 largest_rectangles[i] = [rectangle]
 
-            path = path_from_rectangle(rectangle, base_size)
+            path = path_from_rectangle(rectangle, base_size, safety_margin)
             if not path.is_empty:
                 env.add_path(path)
 
@@ -97,29 +109,31 @@ def largest_rectangle_per_region(ws: np.ndarray, base_size: Tuple[int, int] = (1
     return largest_rectangles, region_envs
 
 
-def path_from_rectangle(rectangle: np.ndarray, base_size: Tuple[int, int]) -> LineString:
+def path_from_rectangle(rectangle: np.ndarray, base_size: Tuple[int, int], safety_margin: float) -> LineString:
     x, y, w, h = rectangle
 
     if w < base_size[0] or h < base_size[0]:
         print("corridor too small")
         return LineString()
 
+    offset = round(base_size[0]*safety_margin)
+
     if w < 2 * base_size[0] or h < 2 * base_size[0]:
         if w < h:
-            point_1 = (x + w//2, y+base_size[0])
-            point_2 = (x + w//2, y+h-base_size[0])
+            point_1 = (x + w//2, y+offset)
+            point_2 = (x + w//2, y+h-offset)
         else:
-            point_1 = (x + base_size[0], y+h//2)
-            point_2 = (x + w-base_size[0], y+h//2)
+            point_1 = (x + offset, y+h//2)
+            point_2 = (x + w-offset, y+h//2)
 
         # cv2.line(ws, point_1, point_2, (25), 2)
         return LineString([point_1, point_2])
     else:
-        point_1 = (x + base_size[0], y + base_size[0])
-        point_2 = (x + w - base_size[0], y + base_size[0])
-        point_3 = (x + w - base_size[0], y + h - base_size[0])
-        point_4 = (x + base_size[0], y + h - base_size[0])
-        # rect = (x + base_size[0], y + base_size[0], w - 2 * base_size[0], h - 2 * base_size[0])
+        point_1 = (x + offset, y + offset)
+        point_2 = (x + w - offset, y + offset)
+        point_3 = (x + w - offset, y + h - offset)
+        point_4 = (x + offset, y + h - offset)
+        # rect = (x + offset, y + offset, w - 2 * offset, h - 2 * offset)
         # ws = cv2.rectangle(ws, rect, (25), 2)
         return LineString([point_1, point_2, point_3, point_4, point_1])
 
@@ -180,6 +194,8 @@ def find_bridge_nodes(ws: np.ndarray, dist_transform: np.ndarray) -> Dict[Tuple,
 
 def connect_paths(envs: Dict[int, Environment], bridge_nodes: Dict[Tuple, List]):
     for room, env in envs.items():
+        if not env.path:
+            continue
         for (n1, n2), bridge_points in bridge_nodes.items():
             if room in [n1, n2]:
                 for point in bridge_points:
@@ -226,10 +242,12 @@ def plot_all_envs(envs: Dict[int, Environment]):
 
 if __name__ == '__main__':
     img = cv2.imread('data/map_benchmark_ryu.png')
+    base_size: Tuple[int, int] = (10, 30)
+    safety_margin: float = 1 # multiplier for base_size[0]
 
-    ws, dist_transform = marker_controlled_watershed(img)
+    ws, dist_transform = marker_controlled_watershed(img, base_size, safety_margin)
     bridge_nodes = find_bridge_nodes(ws, dist_transform)
-    largest_rectangles, region_envs = largest_rectangle_per_region(ws)
+    largest_rectangles, region_envs = largest_rectangle_per_region(ws, base_size, safety_margin)
     connect_paths(region_envs, bridge_nodes)
     plot_all_envs(region_envs)
 
