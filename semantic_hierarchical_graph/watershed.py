@@ -118,7 +118,7 @@ def path_from_rectangle(rectangle: np.ndarray, base_size: Tuple[int, int], safet
 
     offset = round(base_size[0]*safety_margin)
 
-    if w < 2 * base_size[0] or h < 2 * base_size[0]:
+    if w < 3 * base_size[0] or h < 3 * base_size[0]:
         if w < h:
             point_1 = (x + w//2, y+offset)
             point_2 = (x + w//2, y+h-offset)
@@ -226,6 +226,7 @@ def show_imgs(img: np.ndarray, img_2: np.ndarray = None, name: str = None, save=
         plt.imshow(img)
 
     if save:
+        # cv2.imwrite("data/" + name + '.png', img)
         plt.savefig("data/" + name + '.png')
     else:
         plt.show()
@@ -241,8 +242,9 @@ def plot_all_envs(envs: Dict[int, Environment]):
 
 
 if __name__ == '__main__':
+    # img = cv2.imread('data/map_benchmark_hou2_clean.png')
     img = cv2.imread('data/map_benchmark_ryu.png')
-    base_size: Tuple[int, int] = (10, 30)
+    base_size: Tuple[int, int] = (10, 20)
     safety_margin: float = 1 # multiplier for base_size[0]
 
     ws, dist_transform = marker_controlled_watershed(img, base_size, safety_margin)
@@ -252,5 +254,5 @@ if __name__ == '__main__':
     plot_all_envs(region_envs)
 
     ws2 = draw(ws, bridge_nodes, (22))
-    ws3 = draw(ws2, largest_rectangles, (21))
-    show_imgs(ws3, name="map_benchmark_ryu_result", save=False)
+    # ws3 = draw(ws2, largest_rectangles, (21))
+    show_imgs(ws2, name="map_benchmark_ryu_result", save=False)
