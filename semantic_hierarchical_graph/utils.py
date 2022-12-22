@@ -10,6 +10,12 @@ def get_euclidean_distance(pos_1: Tuple, pos_2: Tuple) -> float:
     return ((pos_1[0] - pos_2[0]) ** 2 + (pos_1[1] - pos_2[1]) ** 2 + (pos_1[2] - pos_2[2]) ** 2) ** 0.5
 
 
+def round_up(n) -> int:
+    # multiplier = 10 ** decimals
+    # return math.ceil(n * multiplier) / multiplier
+    return int(-(-n // 1))
+
+
 def path_dict_to_leaf_path_list(path: dict):
     leaf_path = []
     for node, dict in path.items():
