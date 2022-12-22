@@ -35,14 +35,22 @@ class Environment():
                 return True
         return False
 
-    def add_shortest_connection(self, pos):
+    def find_shortest_connection(self, pos, exclude=[]):
         """ Find the shortest path from pos to any path that is not in collision """
-        closest_path = min(self.path, key=lambda x: x.distance(Point(pos[0], pos[1])))
+        path_tmp = list(self.path)
+        for exclude_path in exclude:
+            path_tmp.remove(exclude_path)
+            if len(path_tmp) == 0:
+                return None
+        closest_path = min(path_tmp, key=lambda x: x.distance(Point(pos[0], pos[1])))
         closest_point: Point = nearest_points(closest_path, Point(pos[0], pos[1]))[0]
-        # if self.line_in_collision(closest_point.coords._coords[0], (pos[0], pos[1])):
-        #     print("Connection in collision")
-        connection = LineString([closest_point, Point(pos[0], pos[1])])
-        self.add_path(connection)
+        if self.line_in_collision(closest_point.coords._coords[0], (pos[0], pos[1])):
+            print("Connection in collision")
+            return None
+        else:
+            connection = LineString([closest_point, Point(pos[0], pos[1])])
+            # self.add_path(connection)
+            return connection
 
     def plot(self):
         fig, ax = plt.subplots(figsize=(10, 10))
