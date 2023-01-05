@@ -1,7 +1,10 @@
 from typing import Dict, List, Tuple
+from matplotlib import pyplot as plt
+from shapely.plotting import plot_polygon, plot_line
+from shapely.ops import unary_union, polygonize_full
+
 import numpy as np
 import cv2
-from matplotlib import pyplot as plt
 import largestinteriorrectangle as lir
 from shapely import Polygon, LineString
 from semantic_hierarchical_graph.environment import Environment
@@ -68,6 +71,9 @@ def path_from_rectangle(rectangle: np.ndarray, safety_distance: int) -> LineStri
         print("corridor too small")
         return LineString()
 
+    # TODO: offset needed because inside polygon in shapely and largest interior rectangle intersect.
+    # They have the same coordinates at connecting edges.
+    # opencv retunr coordinates with widht height are not same as coordinates for shapely!!!
     offset = 0
 
     if w < 3 * safety_distance or h < 3 * safety_distance:
@@ -95,18 +101,39 @@ def connect_paths(envs: Dict[int, Environment], bridge_nodes: Dict[Tuple, List])
         if not env.path:
             continue
         print("Connecting paths in room", room)
-        # new_connections = []
-        # for path in env.path:
-        #     for point in path.coords:
-        #         connection = env.find_shortest_connection(point, exclude=[path])
-        #         if connection is not None:
-        #             new_connections.append(connection)
+        result, dangles, cuts, invalids = polygonize_full(env.path)
+        print("Result", len(result.geoms))
+        print("Dangles", len(dangles.geoms))
+        print("Cuts", len(cuts.geoms))
+        print("Invalids", len(invalids.geoms))
 
-        # print(len(env.path))
-        # print(len(new_connections))
-        # for connection in new_connections:
-        #     env.add_path(connection)
-        # print(len(env.path))
+        union_polygon: Polygon = unary_union(result)
+        env.path = [union_polygon.boundary]
+        for cut in cuts.geoms:
+            env.add_path(cut)
+
+        is_colliding = env.point_in_collision((387, 140))
+        print("Is colliding", is_colliding)
+
+        connections = env.find_all_shortest_connections()
+        print(len(env.path))
+        print(len(connections))
+        for connection in connections:
+            env.add_path(connection)
+        print(len(env.path))
+
+        fig, ax = plt.subplots(figsize=(10, 10))
+        ax.invert_yaxis()
+        ax.set_aspect("equal")
+
+        plot_polygon(union_polygon, ax=ax, add_points=False, color="green", alpha=0.8)
+        # for value in union_polygon.coords:
+        #     plot_polygon(value, ax=ax, add_points=False, color="green", alpha=0.8)
+        for value in connections:
+            print(value)
+            plot_line(value, ax=ax, add_points=False, color="green", alpha=0.8)
+
+        # plt.show()
 
         for (n1, n2), bridge_points in bridge_nodes.items():
             if room in [n1, n2]:
@@ -114,7 +141,7 @@ def connect_paths(envs: Dict[int, Environment], bridge_nodes: Dict[Tuple, List])
                     connection = env.find_shortest_connection(point)
                     if connection is not None:
                         env.add_path(connection)
-        # env.plot()
+        env.plot()
 
 
 def plot_all_envs(envs: Dict[int, Environment]):
