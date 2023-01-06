@@ -6,7 +6,7 @@ from shapely.ops import unary_union, polygonize_full
 import numpy as np
 import cv2
 import largestinteriorrectangle as lir
-from shapely import Polygon, LineString
+from shapely import Polygon, LineString, MultiPolygon
 from semantic_hierarchical_graph.environment import Environment
 import semantic_hierarchical_graph.segmentation as segmentation
 
@@ -30,7 +30,7 @@ def largest_rectangle_per_segment(ws_erosion: np.ndarray, safety_distance: int) 
 
             # TODO: find better threshold specification
             # currently 9 * 10 * 30 = 2700
-            if np.max(contour_areas) < 4 * safety_distance**2:
+            if np.max(contour_areas) < 4 * (2*safety_distance)**2:
                 # print("New rectangle too small", cv2.contourArea(c_max))
                 break
 
@@ -55,10 +55,13 @@ def largest_rectangle_per_segment(ws_erosion: np.ndarray, safety_distance: int) 
             if not path.is_empty:
                 env.add_path(path)
 
-            ws_tmp = cv2.rectangle(ws_tmp, rectangle, (1), -1)
+            x, y, w, h = rectangle
+            # Shrink rectangle by x pixel to make touching possible
+            shrinkage = 1
+            ws_tmp = cv2.rectangle(ws_tmp, (x+shrinkage, y+shrinkage), (x+w-1-shrinkage, y+h-1-shrinkage), (1), -1)
 
         # env.plot()
-        # show_imgs(segment)
+        # segmentation.show_imgs(segment)
 
     # show_imgs(ws_tmp)
     return largest_rectangles, segment_envs
@@ -71,28 +74,29 @@ def path_from_rectangle(rectangle: np.ndarray, safety_distance: int) -> LineStri
         print("corridor too small")
         return LineString()
 
-    # TODO: offset needed because inside polygon in shapely and largest interior rectangle intersect.
-    # They have the same coordinates at connecting edges.
-    # opencv retunr coordinates with widht height are not same as coordinates for shapely!!!
-    offset = 0
+    # Offset of -1 pixel needed because opencv retuns w, h instead of coordinates
+    # But shapely takes 1 pixel width edge as infinte thin line,
+    # thus rectangles with edge 1 pixel different are not touching (not able to merge).
+    # So rectangles are shrinked by 1 pixel in ws_tmp to compensate and make touching possible.
 
+    w -= 1
+    h -= 1
     if w < 3 * safety_distance or h < 3 * safety_distance:
         if w < h:
-            point_1 = (x + w//2, y+offset)
-            point_2 = (x + w//2, y+h-offset)
+            point_1 = (x + w//2, y)
+            point_2 = (x + w//2, y+h)
         else:
-            point_1 = (x + offset, y+h//2)
-            point_2 = (x + w-offset, y+h//2)
+            point_1 = (x, y+h//2)
+            point_2 = (x + w, y+h//2)
 
         # cv2.line(ws, point_1, point_2, (25), 2)
         return LineString([point_1, point_2])
     else:
-        point_1 = (x + offset, y + offset)
-        point_2 = (x + w - offset, y + offset)
-        point_3 = (x + w - offset, y + h - offset)
-        point_4 = (x + offset, y + h - offset)
-        # rect = (x + offset, y + offset, w - 2 * offset, h - 2 * offset)
-        # ws = cv2.rectangle(ws, rect, (25), 2)
+        point_1 = (x, y)
+        point_2 = (x + w, y)
+        point_3 = (x + w, y + h)
+        point_4 = (x, y + h)
+        # ws = cv2.rectangle(ws, rectangle, (25), 2)
         return LineString([point_1, point_2, point_3, point_4, point_1])
 
 
@@ -102,42 +106,38 @@ def connect_paths(envs: Dict[int, Environment], bridge_nodes: Dict[Tuple, List])
             continue
         print("Connecting paths in room", room)
         result, dangles, cuts, invalids = polygonize_full(env.path)
-        print("Result", len(result.geoms))
-        print("Dangles", len(dangles.geoms))
-        print("Cuts", len(cuts.geoms))
-        print("Invalids", len(invalids.geoms))
-
         union_polygon: Polygon = unary_union(result)
-        env.path = [union_polygon.boundary]
+        if isinstance(union_polygon, MultiPolygon):
+            env.path = [poly.boundary for poly in union_polygon.geoms]
+        elif isinstance(union_polygon, Polygon):
+            env.path = [union_polygon.boundary]
+        else:
+            raise Exception("unknown shape returned from polygon union")
         for cut in cuts.geoms:
             env.add_path(cut)
-
-        is_colliding = env.point_in_collision((387, 140))
-        print("Is colliding", is_colliding)
+        if len(dangles.geoms) > 0 or len(invalids.geoms):
+            raise Exception("unhandled dangles or invalids are not added to env.path")
 
         connections = env.find_all_shortest_connections()
-        print(len(env.path))
-        print(len(connections))
         for connection in connections:
             env.add_path(connection)
-        print(len(env.path))
 
-        fig, ax = plt.subplots(figsize=(10, 10))
-        ax.invert_yaxis()
-        ax.set_aspect("equal")
+        # fig, ax = plt.subplots(figsize=(10, 10))
+        # ax.invert_yaxis()
+        # ax.set_aspect("equal")
 
-        plot_polygon(union_polygon, ax=ax, add_points=False, color="green", alpha=0.8)
-        # for value in union_polygon.coords:
-        #     plot_polygon(value, ax=ax, add_points=False, color="green", alpha=0.8)
-        for value in connections:
-            print(value)
-            plot_line(value, ax=ax, add_points=False, color="green", alpha=0.8)
+        # for value in connections:
+        #     # print(value)
+        #     plot_line(value, ax=ax, add_points=False, color="green", alpha=0.8)
 
         # plt.show()
 
         for (n1, n2), bridge_points in bridge_nodes.items():
             if room in [n1, n2]:
                 for point in bridge_points:
+                    print(point)
+                    is_colliding = env.point_in_collision(point)
+                    print("Is colliding", is_colliding)
                     connection = env.find_shortest_connection(point)
                     if connection is not None:
                         env.add_path(connection)
