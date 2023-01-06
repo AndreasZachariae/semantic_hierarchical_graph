@@ -57,6 +57,7 @@ class Environment():
         closest_point: Point = nearest_points(closest_path, Point(pos[0], pos[1]))[0]
         if self.line_in_collision(closest_point.coords._coords[0], (pos[0], pos[1])):
             print("Connection in collision")
+            print(closest_point)
             return None
         else:
             connection = LineString([closest_point, Point(pos[0], pos[1])])
@@ -66,23 +67,23 @@ class Environment():
     def find_all_shortest_connections(self):
         new_connections = []
         for path in self.path:
-            print("Path: ", path)
+            # print("Path: ", path)
             rest_path = list(self.path)
             # for exclude_path in exclude:
             rest_path.remove(path)
             if len(rest_path) == 0:
                 return new_connections
             for other_path in rest_path:
-                print("Other path: ", other_path)
+                # print("Other path: ", other_path)
                 closest_point_path = Point(min(path.coords, key=lambda x: other_path.distance(Point(x[0], x[1]))))
-                print("Closest point path: ", closest_point_path)
+                # print("Closest point path: ", closest_point_path)
                 closest_point_other_path: Point = nearest_points(other_path, closest_point_path)[0]
-                print("Closest point other path: ", closest_point_other_path)
+                # print("Closest point other path: ", closest_point_other_path)
                 if self.line_in_collision(closest_point_path, closest_point_other_path):
                     print("Connection in collision")
                 else:
                     connection = LineString([closest_point_path, closest_point_other_path])
-                    print("Connection: ", connection)
+                    # print("Connection: ", connection)
                     new_connections.append(connection)
 
         return new_connections
