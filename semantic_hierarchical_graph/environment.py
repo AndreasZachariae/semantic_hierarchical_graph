@@ -88,6 +88,16 @@ class Environment():
 
         return new_connections
 
+    def clear_bridge_nodes(self, bridge_points: List):
+        walls = self.scene[0]
+        for point in bridge_points:
+            self.scene[0] = walls.difference(Point(point).buffer(2))
+
+    def clear_bridge_edges(self, bridge_edges: List):
+        walls = self.scene[0]
+        for edge in bridge_edges:
+            self.scene[0] = walls.difference(LineString(edge).buffer(2, cap_style="flat"))
+
     def plot(self):
         fig, ax = plt.subplots(figsize=(10, 10))
         ax.invert_yaxis()
