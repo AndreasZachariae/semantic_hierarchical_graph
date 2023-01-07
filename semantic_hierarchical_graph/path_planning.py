@@ -100,7 +100,7 @@ def path_from_rectangle(rectangle: np.ndarray, safety_distance: int) -> LineStri
         return LineString([point_1, point_2, point_3, point_4, point_1])
 
 
-def connect_paths(envs: Dict[int, Environment], bridge_nodes: Dict[Tuple, List]):
+def connect_paths(envs: Dict[int, Environment], bridge_nodes: Dict[Tuple, List], bridge_edges: Dict[Tuple, List]):
     for room, env in envs.items():
         if not env.path:
             continue
@@ -122,26 +122,17 @@ def connect_paths(envs: Dict[int, Environment], bridge_nodes: Dict[Tuple, List])
         for connection in connections:
             env.add_path(connection)
 
-        # fig, ax = plt.subplots(figsize=(10, 10))
-        # ax.invert_yaxis()
-        # ax.set_aspect("equal")
-
-        # for value in connections:
-        #     # print(value)
-        #     plot_line(value, ax=ax, add_points=False, color="green", alpha=0.8)
-
-        # plt.show()
-
         for (n1, n2), bridge_points in bridge_nodes.items():
             if room in [n1, n2]:
+                # env.clear_bridge_nodes(bridge_points)
+                env.clear_bridge_edges(bridge_edges[(n1, n2)])
                 for point in bridge_points:
-                    print(point)
-                    is_colliding = env.point_in_collision(point)
-                    print("Is colliding", is_colliding)
                     connection = env.find_shortest_connection(point)
                     if connection is not None:
                         env.add_path(connection)
-        env.plot()
+                    else:
+                        print("No connection found for bridge node", point)
+        # env.plot()
 
 
 def plot_all_envs(envs: Dict[int, Environment]):
@@ -159,9 +150,9 @@ if __name__ == '__main__':
     safety_distance = segmentation.get_safety_distance(base_size=(10, 20), safety_margin=5)
 
     ws, ws_erosion, dist_transform = segmentation.marker_controlled_watershed(img, safety_distance)
-    bridge_nodes = segmentation.find_bridge_nodes(ws, dist_transform)
+    bridge_nodes, bridge_edges = segmentation.find_bridge_nodes(ws, dist_transform)
     largest_rectangles, segment_envs = largest_rectangle_per_segment(ws_erosion, safety_distance)
-    connect_paths(segment_envs, bridge_nodes)
+    connect_paths(segment_envs, bridge_nodes, bridge_edges)
     plot_all_envs(segment_envs)
 
     ws2 = segmentation.draw(ws, bridge_nodes, (22))
