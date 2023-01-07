@@ -53,7 +53,7 @@ def marker_controlled_watershed(img: np.ndarray, safety_distance: int) -> Tuple[
     return ws, img_with_erosion, dist_transform
 
 
-def find_bridge_nodes(ws: np.ndarray, dist_transform: np.ndarray) -> Dict[Tuple, List]:
+def find_bridge_nodes(ws: np.ndarray, dist_transform: np.ndarray):  # -> Dict[Tuple, List]:
     max_row, max_col = ws.shape
     edges = np.where(ws == -1)
     adjacent = np.eye(ws.max()+1)
@@ -88,6 +88,7 @@ def find_bridge_nodes(ws: np.ndarray, dist_transform: np.ndarray) -> Dict[Tuple,
 
     # print("Adjacent matrix", adjacent)
     bridge_nodes: Dict[Tuple, List] = {}
+    bridge_edges: Dict[Tuple, List] = {}
     for adj_marker, edge in adjacent_edges.items():
         border = np.zeros(shape=ws.shape, dtype="uint8")
         for pixel in edge:
@@ -96,15 +97,18 @@ def find_bridge_nodes(ws: np.ndarray, dist_transform: np.ndarray) -> Dict[Tuple,
 
         for i in range(1, connected_edges.max() + 1):
             connected_edge = np.where(connected_edges == i)
-            connected_edge = list(zip(connected_edge[0], connected_edge[1]))
-            bridge_pixel = max(connected_edge, key=lambda x: dist_transform[x[0], x[1]])
+            connected_edge = list(zip(connected_edge[1], connected_edge[0]))
+            bridge_pixel = max(connected_edge, key=lambda x: dist_transform[x[1], x[0]])
 
             if adj_marker in bridge_nodes:
-                bridge_nodes[adj_marker].append(bridge_pixel[::-1])
-            else:
-                bridge_nodes[adj_marker] = [bridge_pixel[::-1]]
+                bridge_nodes[adj_marker].append(bridge_pixel)
+                bridge_edges[adj_marker].append(connected_edge)
 
-    return bridge_nodes
+            else:
+                bridge_nodes[adj_marker] = [bridge_pixel]
+                bridge_edges[adj_marker] = [connected_edge]
+
+    return bridge_nodes, bridge_edges
 
 
 def get_safety_distance(base_size: Tuple[int, int], safety_margin: int) -> int:
@@ -160,7 +164,7 @@ if __name__ == '__main__':
 
     safety_distance = get_safety_distance(base_size=(10, 20), safety_margin=5)
     ws, ws_erosion, dist_transform = marker_controlled_watershed(img, safety_distance)
-    bridge_nodes = find_bridge_nodes(ws, dist_transform)
+    bridge_nodes, bridge_edges = find_bridge_nodes(ws, dist_transform)
 
     ws2 = draw(ws, bridge_nodes, (22))
     show_imgs(ws2, name="map_benchmark_ryu_erosion", save=False)
