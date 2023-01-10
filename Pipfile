@@ -9,6 +9,7 @@ matplotlib = "*"
 opencv-python = "*"
 largestinteriorrectangle = "*"
 shapely = "*"
+pyyaml = "*"
 
 [dev-packages]
 autopep8 = "*"
