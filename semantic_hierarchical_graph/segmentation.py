@@ -2,10 +2,10 @@ from typing import Dict, List, Tuple
 import numpy as np
 import cv2
 from matplotlib import pyplot as plt
-from semantic_hierarchical_graph.utils import round_up
+from semantic_hierarchical_graph.parameters import Parameter
 
 
-def marker_controlled_watershed(img: np.ndarray, safety_distance: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def marker_controlled_watershed(img: np.ndarray, params: dict) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     # convert to binary
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     ret, thresh = cv2.threshold(gray, 0, 1, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
@@ -23,7 +23,7 @@ def marker_controlled_watershed(img: np.ndarray, safety_distance: int) -> Tuple[
     # TODO: find a better threshold value
     # currently: 3 * base_size[0] = 30
     # alternative: 3 * safety_distance = 30
-    ret, sure_fg = cv2.threshold(dist_transform, 30, 255, 0)
+    ret, sure_fg = cv2.threshold(dist_transform, params["distance_threshold"], 255, 0)
 
     # Finding unknown region
     sure_fg = np.uint8(sure_fg)
@@ -42,7 +42,7 @@ def marker_controlled_watershed(img: np.ndarray, safety_distance: int) -> Tuple[
     img_for_ws[markers == -1] = [255, 0, 0]
 
     # Add safety margin as erosion
-    size = 1+2*safety_distance
+    size = 1+2*params["safety_distance"]
     print("Add safety distance with erosion and kernel:", (size, size))
     kernel_sd = np.ones((size, size), np.uint8)
     img_with_erosion = cv2.erode(opening.copy(), kernel_sd).astype(np.int32)
@@ -111,24 +111,6 @@ def find_bridge_nodes(ws: np.ndarray, dist_transform: np.ndarray):  # -> Dict[Tu
     return bridge_nodes, bridge_edges
 
 
-def get_safety_distance(base_size: Tuple[int, int], safety_margin: int) -> int:
-    """
-    Parameters
-    ----------
-    base_size : Tuple[int, int]
-        (width from side to side, length in drive direction)
-    safety_margin : int
-        distance around robot as: (safety_margin + base_size[0] + safety_margin)
-
-    Returns
-    -------
-    int
-        distance from imaginary point robot
-    """
-    # TODO: extend to circle and with trailer
-    return round_up(base_size[0]/2 + safety_margin)
-
-
 def draw(img: np.ndarray, objects_dict: dict, color) -> np.ndarray:
     img_new = img.copy()
     for key, objects_list in objects_dict.items():
@@ -161,9 +143,9 @@ def show_imgs(img: np.ndarray, img_2: np.ndarray = None, name: str = None, save=
 if __name__ == '__main__':
     # img = cv2.imread('data/map_benchmark_hou2_clean.png')
     img = cv2.imread('data/map_benchmark_ryu.png')
+    params = Parameter("config/ryu_params.yaml").params
 
-    safety_distance = get_safety_distance(base_size=(10, 20), safety_margin=5)
-    ws, ws_erosion, dist_transform = marker_controlled_watershed(img, safety_distance)
+    ws, ws_erosion, dist_transform = marker_controlled_watershed(img, params)
     bridge_nodes, bridge_edges = find_bridge_nodes(ws, dist_transform)
 
     ws2 = draw(ws, bridge_nodes, (22))

@@ -8,10 +8,11 @@ import cv2
 import largestinteriorrectangle as lir
 from shapely import Polygon, LineString, MultiPolygon, GeometryCollection
 from semantic_hierarchical_graph.environment import Environment
+from semantic_hierarchical_graph.parameters import Parameter
 import semantic_hierarchical_graph.segmentation as segmentation
 
 
-def largest_rectangle_per_segment(ws_erosion: np.ndarray, safety_distance: int) -> Tuple[Dict[int, List], Dict[int, Environment]]:
+def largest_rectangle_per_segment(ws_erosion: np.ndarray, params: dict) -> Tuple[Dict[int, List], Dict[int, Environment]]:
     ws_tmp = ws_erosion.copy()
     largest_rectangles: Dict[int, List] = {}
     segment_envs: Dict[int, Environment] = {}
@@ -30,7 +31,7 @@ def largest_rectangle_per_segment(ws_erosion: np.ndarray, safety_distance: int) 
 
             # TODO: find better threshold specification
             # currently 9 * 10 * 30 = 2700
-            if np.max(contour_areas) < 4 * (2*safety_distance)**2:
+            if np.max(contour_areas) < params["min_rectangle_size"]:
                 # print("New rectangle too small", cv2.contourArea(c_max))
                 break
 
@@ -51,7 +52,7 @@ def largest_rectangle_per_segment(ws_erosion: np.ndarray, safety_distance: int) 
             else:
                 largest_rectangles[i] = [rectangle]
 
-            path = path_from_rectangle(rectangle, safety_distance)
+            path = path_from_rectangle(rectangle, params)
             if not path.is_empty:
                 env.add_path(path)
 
@@ -67,10 +68,10 @@ def largest_rectangle_per_segment(ws_erosion: np.ndarray, safety_distance: int) 
     return largest_rectangles, segment_envs
 
 
-def path_from_rectangle(rectangle: np.ndarray, safety_distance: int) -> LineString:
+def path_from_rectangle(rectangle: np.ndarray, params: dict) -> LineString:
     x, y, w, h = rectangle
 
-    if w < 2*safety_distance or h < 2*safety_distance:
+    if w < params["min_corridor_width"] or h < params["min_corridor_height"]:
         print("corridor too small")
         return LineString()
 
@@ -81,7 +82,7 @@ def path_from_rectangle(rectangle: np.ndarray, safety_distance: int) -> LineStri
 
     w -= 1
     h -= 1
-    if w < 5.5 * safety_distance or h < 5.5 * safety_distance:
+    if w < params["max_rectangle_to_line_width"] or h < params["max_rectangle_to_line_height"]:
         if w < h:
             point_1 = (x + w//2, y)
             point_2 = (x + w//2, y+h)
@@ -161,11 +162,11 @@ def draw_all_paths(img: np.ndarray, envs: Dict[int, Environment],  color) -> np.
 if __name__ == '__main__':
     # img = cv2.imread('data/map_benchmark_hou2_clean.png')
     img = cv2.imread('data/map_benchmark_ryu.png')
-    safety_distance = segmentation.get_safety_distance(base_size=(10, 20), safety_margin=5)
+    params = Parameter("config/ryu_params.yaml").params
 
-    ws, ws_erosion, dist_transform = segmentation.marker_controlled_watershed(img, safety_distance)
+    ws, ws_erosion, dist_transform = segmentation.marker_controlled_watershed(img, params)
     bridge_nodes, bridge_edges = segmentation.find_bridge_nodes(ws, dist_transform)
-    largest_rectangles, segment_envs = largest_rectangle_per_segment(ws_erosion, safety_distance)
+    largest_rectangles, segment_envs = largest_rectangle_per_segment(ws_erosion, params)
     connect_paths(segment_envs, bridge_nodes, bridge_edges)
     # plot_all_envs(segment_envs)
 
