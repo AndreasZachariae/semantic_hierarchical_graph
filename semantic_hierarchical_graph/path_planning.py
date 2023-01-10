@@ -6,7 +6,7 @@ from shapely.ops import unary_union, polygonize_full
 import numpy as np
 import cv2
 import largestinteriorrectangle as lir
-from shapely import Polygon, LineString, MultiPolygon
+from shapely import Polygon, LineString, MultiPolygon, GeometryCollection
 from semantic_hierarchical_graph.environment import Environment
 import semantic_hierarchical_graph.segmentation as segmentation
 
@@ -81,7 +81,7 @@ def path_from_rectangle(rectangle: np.ndarray, safety_distance: int) -> LineStri
 
     w -= 1
     h -= 1
-    if w < 3 * safety_distance or h < 3 * safety_distance:
+    if w < 5.5 * safety_distance or h < 5.5 * safety_distance:
         if w < h:
             point_1 = (x + w//2, y)
             point_2 = (x + w//2, y+h)
@@ -103,6 +103,8 @@ def path_from_rectangle(rectangle: np.ndarray, safety_distance: int) -> LineStri
 def connect_paths(envs: Dict[int, Environment], bridge_nodes: Dict[Tuple, List], bridge_edges: Dict[Tuple, List]):
     for room, env in envs.items():
         if not env.path:
+            # only connect bridge points
+            # advanced with visibility lines
             continue
         print("Connecting paths in room", room)
         result, dangles, cuts, invalids = polygonize_full(env.path)
@@ -111,6 +113,9 @@ def connect_paths(envs: Dict[int, Environment], bridge_nodes: Dict[Tuple, List],
             env.path = [poly.boundary for poly in union_polygon.geoms]
         elif isinstance(union_polygon, Polygon):
             env.path = [union_polygon.boundary]
+        elif isinstance(union_polygon, GeometryCollection):
+            # union polygon is empty. No polygon in original room path
+            pass
         else:
             raise Exception("unknown shape returned from polygon union")
         for cut in cuts.geoms:
@@ -144,6 +149,15 @@ def plot_all_envs(envs: Dict[int, Environment]):
     all_envs.plot()
 
 
+def draw_all_paths(img: np.ndarray, envs: Dict[int, Environment],  color) -> np.ndarray:
+    img_new = img.copy()
+    all_envs = Environment("all", np.array([0, 0]))
+    for env in envs.values():
+        [cv2.polylines(img_new, [line.coords._coords.astype("int32")], False,  color, 2) for line in env.path]
+
+    return img_new
+
+
 if __name__ == '__main__':
     # img = cv2.imread('data/map_benchmark_hou2_clean.png')
     img = cv2.imread('data/map_benchmark_ryu.png')
@@ -153,8 +167,9 @@ if __name__ == '__main__':
     bridge_nodes, bridge_edges = segmentation.find_bridge_nodes(ws, dist_transform)
     largest_rectangles, segment_envs = largest_rectangle_per_segment(ws_erosion, safety_distance)
     connect_paths(segment_envs, bridge_nodes, bridge_edges)
-    plot_all_envs(segment_envs)
+    # plot_all_envs(segment_envs)
 
     ws2 = segmentation.draw(ws, bridge_nodes, (22))
     ws3 = segmentation.draw(ws2, largest_rectangles, (21))
-    segmentation.show_imgs(ws3, name="map_benchmark_ryu_result", save=False)
+    ws4 = draw_all_paths(ws2, segment_envs, (25))
+    segmentation.show_imgs(ws4, name="map_benchmark_ryu_result", save=False)
