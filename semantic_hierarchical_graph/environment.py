@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Union
 import numpy as np
 import matplotlib.pyplot as plt
 from shapely.plotting import plot_polygon, plot_line
@@ -34,35 +34,34 @@ class Environment():
                     return True
         return False
 
-    def line_in_collision(self, start_pos, end_pos):
+    def line_in_collision(self, start_point: Point, end_point: Point):
         """
         Check whether a line from start_pos to end_pos is colliding.
         Touching (same boundary points but no same interior points) is not considered as collision.
         """
-        if isinstance(start_pos, Point):
-            start_pos = start_pos.coords._coords[0]
-        if isinstance(end_pos, Point):
-            end_pos = end_pos.coords._coords[0]
         for value in self.scene:
-            if value.intersects(LineString([(start_pos[0], start_pos[1]), (end_pos[0], end_pos[1])])):
-                if value.touches(LineString([(start_pos[0], start_pos[1]), (end_pos[0], end_pos[1])])):
+            if value.intersects(LineString([start_point, end_point])):
+                if value.touches(LineString([start_point, end_point])):
                     return False
                 else:
                     return True
         return False
 
-    def find_shortest_connection(self, pos):
-        """ Find the shortest path from pos to any path that is not in collision """
-        closest_path = min(self.path, key=lambda x: x.distance(Point(pos[0], pos[1])))
-        closest_point: Point = nearest_points(closest_path, Point(pos[0], pos[1]))[0]
-        if self.line_in_collision(closest_point.coords._coords[0], (pos[0], pos[1])):
-            print("Connection in collision")
-            print(closest_point)
+    def get_connection(self, point1: Point, point2: Point) -> Union[LineString, None]:
+        if self.line_in_collision(point1, point2):
+            # print("Connection in collision between", point1, point2)
             return None
         else:
-            connection = LineString([closest_point, Point(pos[0], pos[1])])
-            # self.add_path(connection)
+            connection = LineString([point1, point2])
             return connection
+
+    def find_shortest_connection(self, pos):
+        """ Find the shortest path from pos to any path that is not in collision """
+        if not isinstance(pos, Point):
+            point = Point(pos[0], pos[1])
+        closest_path = min(self.path, key=lambda x: x.distance(point))
+        closest_point: Point = nearest_points(closest_path, point)[0]
+        return self.get_connection(closest_point, point)
 
     def find_all_shortest_connections(self):
         new_connections = []
@@ -79,11 +78,8 @@ class Environment():
                 # print("Closest point path: ", closest_point_path)
                 closest_point_other_path: Point = nearest_points(other_path, closest_point_path)[0]
                 # print("Closest point other path: ", closest_point_other_path)
-                if self.line_in_collision(closest_point_path, closest_point_other_path):
-                    print("Connection in collision")
-                else:
-                    connection = LineString([closest_point_path, closest_point_other_path])
-                    # print("Connection: ", connection)
+                connection = self.get_connection(closest_point_path, closest_point_other_path)
+                if connection is not None:
                     new_connections.append(connection)
 
         return new_connections
