@@ -1,12 +1,9 @@
 from typing import Dict, List, Tuple
-from matplotlib import pyplot as plt
-from shapely.plotting import plot_polygon, plot_line
-from shapely.ops import unary_union, polygonize_full
-
 import numpy as np
 import cv2
+from shapely.ops import unary_union, polygonize_full
+from shapely import Polygon, LineString, MultiPolygon, GeometryCollection, Point
 import largestinteriorrectangle as lir
-from shapely import Polygon, LineString, MultiPolygon, GeometryCollection
 from semantic_hierarchical_graph.environment import Environment
 from semantic_hierarchical_graph.parameters import Parameter
 import semantic_hierarchical_graph.segmentation as segmentation
@@ -72,7 +69,7 @@ def path_from_rectangle(rectangle: np.ndarray, params: dict) -> LineString:
     x, y, w, h = rectangle
 
     if w < params["min_corridor_width"] or h < params["min_corridor_width"]:
-        print("corridor too small")
+        # print("corridor too small")
         return LineString()
 
     # Offset of -1 pixel needed because opencv retuns w, h instead of coordinates
@@ -103,30 +100,32 @@ def path_from_rectangle(rectangle: np.ndarray, params: dict) -> LineString:
 
 def connect_paths(envs: Dict[int, Environment], bridge_nodes: Dict[Tuple, List], bridge_edges: Dict[Tuple, List]):
     for room, env in envs.items():
-        if not env.path:
-            # only connect bridge points
-            # advanced with visibility lines
+        # TODO: error in room 5
+        # TODO: rooms with no scene
+        if not env.scene:
+            print("No scene and paths in room", room)
             continue
-        print("Connecting paths in room", room)
-        result, dangles, cuts, invalids = polygonize_full(env.path)
-        union_polygon: Polygon = unary_union(result)
-        if isinstance(union_polygon, MultiPolygon):
-            env.path = [poly.boundary for poly in union_polygon.geoms]
-        elif isinstance(union_polygon, Polygon):
-            env.path = [union_polygon.boundary]
-        elif isinstance(union_polygon, GeometryCollection):
-            # union polygon is empty. No polygon in original room path
-            pass
-        else:
-            raise Exception("unknown shape returned from polygon union")
-        for cut in cuts.geoms:
-            env.add_path(cut)
-        if len(dangles.geoms) > 0 or len(invalids.geoms):
-            raise Exception("unhandled dangles or invalids are not added to env.path")
+        if env.path:
+            print("Connecting paths in room", room)
+            result, dangles, cuts, invalids = polygonize_full(env.path)
+            union_polygon: Polygon = unary_union(result)
+            if isinstance(union_polygon, MultiPolygon):
+                env.path = [poly.boundary for poly in union_polygon.geoms]
+            elif isinstance(union_polygon, Polygon):
+                env.path = [union_polygon.boundary]
+            elif isinstance(union_polygon, GeometryCollection):
+                # union polygon is empty. No polygon in original room path
+                pass
+            else:
+                raise Exception("unknown shape returned from polygon union")
+            for cut in cuts.geoms:
+                env.add_path(cut)
+            if len(dangles.geoms) > 0 or len(invalids.geoms):
+                raise Exception("unhandled dangles or invalids are not added to env.path")
 
-        connections = env.find_all_shortest_connections()
-        for connection in connections:
-            env.add_path(connection)
+            connections = env.find_all_shortest_connections()
+            for connection in connections:
+                env.add_path(connection)
 
         for (n1, n2), bridge_points in bridge_nodes.items():
             if room in [n1, n2]:
@@ -137,8 +136,19 @@ def connect_paths(envs: Dict[int, Environment], bridge_nodes: Dict[Tuple, List],
                     if connection is not None:
                         env.add_path(connection)
                     else:
+                        for other_point in bridge_points:
+                            if point is other_point:
+                                continue
+                            connection = env.get_connection(
+                                Point(point[0], point[1]), Point(other_point[0], other_point[1]))
+                            if connection is None:
+                                continue
+                            else:
+                                env.add_path(connection)
+                                print("Connection between bride points added")
+
                         print("No connection found for bridge node", point)
-        # env.plot()
+        env.plot()
 
 
 def plot_all_envs(envs: Dict[int, Environment]):
