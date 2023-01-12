@@ -1,0 +1,17 @@
+# MAP
+map_name: map_benchmark_hou2_clean.png
+grid_size: 0.0 # [m/px]
+
+# ROBOT
+base_size: [7, 14] # width x lenght in drive direction
+safety_margin: 3 # additional to base_size
+
+# SEGMENTATION
+distance_threshold: 22 # 3 * safety_distance
+
+# PATH PLANNING
+# safety_distance: round_up(base_size[0]/2 + safety_margin)
+# values on image with erosion
+min_contour_area: 1000 # 4 * (2*safety_distance)**2
+min_corridor_width: 10 # 2*safety_distance
+max_rectangle_to_line_width: 35 # 5.5 * safety_distance

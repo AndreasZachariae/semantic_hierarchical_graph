@@ -1,13 +1,17 @@
+# MAP
+map_name: map_benchmark_ryu.png
+grid_size: 0.0 # [m/px]
+
+# ROBOT
+base_size: [10, 20] # width x lenght in drive direction
+safety_margin: 5 # additional to base_size
+
 # SEGMENTATION
 distance_threshold: 30 # 3 * safety_distance
 
-base_size: [10, 20]
-safety_margin: 5
-
 # PATH PLANNING
-# safety_distcance: round_up(base_size[0]/2 + safety_margin)
-min_rectangle_size: 1600 # 4 * (2*safety_distance)**2
+# safety_distance: round_up(base_size[0]/2 + safety_margin)
+# values on image with erosion
+min_contour_area: 1600 # 4 * (2*safety_distance)**2
 min_corridor_width: 20 # 2*safety_distance
-min_corridor_height: 20 # 2*safety_distance
 max_rectangle_to_line_width: 55 # 5.5 * safety_distance
-max_rectangle_to_line_height: 55 # 5.5 * safety_distance

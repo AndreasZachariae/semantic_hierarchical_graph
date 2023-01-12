@@ -31,8 +31,8 @@ def largest_rectangle_per_segment(ws_erosion: np.ndarray, params: dict) -> Tuple
 
             # TODO: find better threshold specification
             # currently 9 * 10 * 30 = 2700
-            if np.max(contour_areas) < params["min_rectangle_size"]:
-                # print("New rectangle too small", cv2.contourArea(c_max))
+            if np.max(contour_areas) < params["min_contour_area"]:
+                # print("New contour too small", cv2.contourArea(c_max))
                 break
 
             if first_loop:
@@ -71,7 +71,7 @@ def largest_rectangle_per_segment(ws_erosion: np.ndarray, params: dict) -> Tuple
 def path_from_rectangle(rectangle: np.ndarray, params: dict) -> LineString:
     x, y, w, h = rectangle
 
-    if w < params["min_corridor_width"] or h < params["min_corridor_height"]:
+    if w < params["min_corridor_width"] or h < params["min_corridor_width"]:
         print("corridor too small")
         return LineString()
 
@@ -82,7 +82,7 @@ def path_from_rectangle(rectangle: np.ndarray, params: dict) -> LineString:
 
     w -= 1
     h -= 1
-    if w < params["max_rectangle_to_line_width"] or h < params["max_rectangle_to_line_height"]:
+    if w < params["max_rectangle_to_line_width"] or h < params["max_rectangle_to_line_width"]:
         if w < h:
             point_1 = (x + w//2, y)
             point_2 = (x + w//2, y+h)
@@ -160,9 +160,10 @@ def draw_all_paths(img: np.ndarray, envs: Dict[int, Environment],  color) -> np.
 
 
 if __name__ == '__main__':
-    # img = cv2.imread('data/map_benchmark_hou2_clean.png')
-    img = cv2.imread('data/map_benchmark_ryu.png')
-    params = Parameter("config/ryu_params.yaml").params
+    img = cv2.imread('data/map_benchmark_hou2_clean.png')
+    # img = cv2.imread('data/map_benchmark_ryu.png')
+    # params = Parameter("config/ryu_params.yaml").params
+    params = Parameter("config/hou2_params.yaml").params
 
     ws, ws_erosion, dist_transform = segmentation.marker_controlled_watershed(img, params)
     bridge_nodes, bridge_edges = segmentation.find_bridge_nodes(ws, dist_transform)

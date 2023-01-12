@@ -48,6 +48,9 @@ def marker_controlled_watershed(img: np.ndarray, params: dict) -> Tuple[np.ndarr
     img_with_erosion = cv2.erode(opening.copy(), kernel_sd).astype(np.int32)
     img_with_erosion *= ws
 
+    # TODO: Alternative
+    # Add safety margin with dist_transform threshold
+
     # show_imgs(img_with_erosion, ws)
 
     return ws, img_with_erosion, dist_transform
@@ -141,9 +144,10 @@ def show_imgs(img: np.ndarray, img_2: np.ndarray = None, name: str = None, save=
 
 
 if __name__ == '__main__':
-    # img = cv2.imread('data/map_benchmark_hou2_clean.png')
-    img = cv2.imread('data/map_benchmark_ryu.png')
-    params = Parameter("config/ryu_params.yaml").params
+    img = cv2.imread('data/map_benchmark_hou2_clean.png')
+    # img = cv2.imread('data/map_benchmark_ryu.png')
+    # params = Parameter("config/ryu_params.yaml").params
+    params = Parameter("config/hou2_params.yaml").params
 
     ws, ws_erosion, dist_transform = marker_controlled_watershed(img, params)
     bridge_nodes, bridge_edges = find_bridge_nodes(ws, dist_transform)
