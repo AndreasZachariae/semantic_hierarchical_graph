@@ -66,3 +66,18 @@ python -m timeit -r 10 -s 'from semantic_hierarchical_graph.main import main; G 
 
 10000 loops, best of 10: 24.3 usec per loop
 ```
+
+## TODO
+Every bridge point has to be connected
+[ ] 1. straight line connection
+[ ] 2. visibility algorithm with lines in random directions
+[ ] 3. A*
+[ ] Check if valid path between all bridge points
+
+make 3 levels of cennectivity:
+[ ] 1. only connect in straight lines
+[ ] 3. connect all vertexes which are possible
+[ ] Implement metric to measure effects
+
+[ ] create graph from paths
+[ ] integrate room graph into sh-graph
