@@ -26,12 +26,6 @@ def largest_rectangle_per_segment(ws_erosion: np.ndarray, params: dict) -> Tuple
             c_max_index = np.argmax(contour_areas)
             c_max = contours[c_max_index]
 
-            # TODO: find better threshold specification
-            # currently 9 * 10 * 30 = 2700
-            if np.max(contour_areas) < params["min_contour_area"]:
-                # print("New contour too small", cv2.contourArea(c_max))
-                break
-
             if first_loop:
                 first_loop = False
 
@@ -41,6 +35,12 @@ def largest_rectangle_per_segment(ws_erosion: np.ndarray, params: dict) -> Tuple
                 env.add_obstacle(walls)
                 obstacle_index = np.where(hierarchy[0, :, 3] == c_max_index)[0]
                 [env.add_obstacle(Polygon(contours[index][:, 0, :])) for index in obstacle_index]
+
+            elif np.max(contour_areas) < params["min_contour_area"]:
+                # TODO: find better threshold specification
+                # currently 9 * 10 * 30 = 2700
+                # print("New contour too small", cv2.contourArea(c_max))
+                break
 
             rectangle = lir.lir(segment_bool, c_max[:, 0, :])
 
@@ -100,12 +100,34 @@ def path_from_rectangle(rectangle: np.ndarray, params: dict) -> LineString:
 
 def connect_paths(envs: Dict[int, Environment], bridge_nodes: Dict[Tuple, List], bridge_edges: Dict[Tuple, List]):
     for room, env in envs.items():
-        # TODO: error in room 5
-        # TODO: rooms with no scene
         if not env.scene:
             print("No scene and paths in room", room)
             continue
-        if env.path:
+
+        # Get all bridge points of this room to others
+        bridge_points = [point for adj_rooms, points in bridge_nodes.items() if room in adj_rooms for point in points]
+        adj_rooms = [adj_rooms for adj_rooms, points in bridge_nodes.items() if room in adj_rooms]
+        # Remove all bridge edges from walls
+        [env.clear_bridge_edges(bridge_edges[adj]) for adj in adj_rooms]
+
+        if not env.path:
+            # TODO: in eigene funktion auslagern
+            print("No path, connect only bridge points in room", room)
+            for point in bridge_points:
+                for other_point in bridge_points:
+                    if point is other_point:
+                        continue
+                    connection = env.get_connection(
+                        Point(point[0], point[1]), Point(other_point[0], other_point[1]))
+                    if connection is None:
+                        continue
+                    else:
+                        env.add_path(connection)
+                        print("Connection between bridge points added")
+            if not env.path:
+                print("No path in room", room)
+                continue
+        else:
             print("Connecting paths in room", room)
             result, dangles, cuts, invalids = polygonize_full(env.path)
             union_polygon: Polygon = unary_union(result)
@@ -123,32 +145,17 @@ def connect_paths(envs: Dict[int, Environment], bridge_nodes: Dict[Tuple, List],
             if len(dangles.geoms) > 0 or len(invalids.geoms):
                 raise Exception("unhandled dangles or invalids are not added to env.path")
 
-            connections = env.find_all_shortest_connections()
-            for connection in connections:
-                env.add_path(connection)
+            # connections = env.find_all_shortest_connections()
+            # for connection in connections:
+            #     env.add_path(connection)
 
-        for (n1, n2), bridge_points in bridge_nodes.items():
-            if room in [n1, n2]:
-                # env.clear_bridge_nodes(bridge_points)
-                env.clear_bridge_edges(bridge_edges[(n1, n2)])
-                for point in bridge_points:
-                    connection = env.find_shortest_connection(point)
-                    if connection is not None:
-                        env.add_path(connection)
-                    else:
-                        for other_point in bridge_points:
-                            if point is other_point:
-                                continue
-                            connection = env.get_connection(
-                                Point(point[0], point[1]), Point(other_point[0], other_point[1]))
-                            if connection is None:
-                                continue
-                            else:
-                                env.add_path(connection)
-                                print("Connection between bride points added")
-
-                        print("No connection found for bridge node", point)
-        env.plot()
+            for point in bridge_points:
+                connection = env.find_shortest_connection(point)
+                if connection is not None:
+                    env.add_path(connection)
+                else:
+                    print("No connection found for bridge node", point)
+        # env.plot()
 
 
 def plot_all_envs(envs: Dict[int, Environment]):
@@ -179,7 +186,7 @@ if __name__ == '__main__':
     bridge_nodes, bridge_edges = segmentation.find_bridge_nodes(ws, dist_transform)
     largest_rectangles, segment_envs = largest_rectangle_per_segment(ws_erosion, params)
     connect_paths(segment_envs, bridge_nodes, bridge_edges)
-    # plot_all_envs(segment_envs)
+    plot_all_envs(segment_envs)
 
     ws2 = segmentation.draw(ws, bridge_nodes, (22))
     ws3 = segmentation.draw(ws2, largest_rectangles, (21))
