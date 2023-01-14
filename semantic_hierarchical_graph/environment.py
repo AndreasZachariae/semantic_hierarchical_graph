@@ -64,6 +64,7 @@ class Environment():
         return self.get_connection(closest_point, point)
 
     def find_all_shortest_connections(self):
+        """ Find all shortest connections between all shapes in path that are not in collision """
         new_connections = []
         for path in self.path:
             # print("Path: ", path)
