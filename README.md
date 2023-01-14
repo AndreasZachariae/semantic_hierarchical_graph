@@ -69,15 +69,16 @@ python -m timeit -r 10 -s 'from semantic_hierarchical_graph.main import main; G 
 
 ## TODO
 Every bridge point has to be connected
-[ ] 1. straight line connection
-[ ] 2. visibility algorithm with lines in random directions
-[ ] 3. A*
-[ ] Check if valid path between all bridge points
+- [ ] 1. straight line connection
+- [ ] 2. visibility algorithm with lines in random directions
+- [ ] 3. A*
+- [ ] Check if valid path between all bridge points
 
-make 3 levels of cennectivity:
-[ ] 1. only connect in straight lines
-[ ] 3. connect all vertexes which are possible
-[ ] Implement metric to measure effects
+Make 3 levels of cennectivity:
+- [ ] 1. only connect in straight lines
+- [ ] 3. connect all vertexes which are possible
+- [ ] Implement metric to measure effects
 
-[ ] create graph from paths
-[ ] integrate room graph into sh-graph
+Integrate with SH-Graph
+- [ ] create graph from paths
+- [ ] integrate room graph into sh-graph
