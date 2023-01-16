@@ -1,3 +1,4 @@
+import itertools
 from typing import Dict, List, Tuple
 import numpy as np
 import cv2
@@ -113,17 +114,13 @@ def connect_paths(envs: Dict[int, Environment], bridge_nodes: Dict[Tuple, List],
         if not env.path:
             # TODO: in eigene funktion auslagern
             print("No path, connect only bridge points in room", room)
-            for point in bridge_points:
-                for other_point in bridge_points:
-                    if point is other_point:
-                        continue
-                    connection = env.get_connection(
-                        Point(point[0], point[1]), Point(other_point[0], other_point[1]))
-                    if connection is None:
-                        continue
-                    else:
-                        env.add_path(connection)
-                        print("Connection between bridge points added")
+            for p1, p2 in itertools.combinations(bridge_points, 2):
+                connection = env.get_valid_connection(Point(p1[0], p1[1]), Point(p2[0], p2[1]))
+                if connection is None:
+                    continue
+                else:
+                    env.add_path(connection)
+                    print("Connection between bridge points added")
             if not env.path:
                 print("No path in room", room)
                 continue
@@ -140,14 +137,15 @@ def connect_paths(envs: Dict[int, Environment], bridge_nodes: Dict[Tuple, List],
                 pass
             else:
                 raise Exception("unknown shape returned from polygon union")
-            for cut in cuts.geoms:
-                env.add_path(cut)
             if len(dangles.geoms) > 0 or len(invalids.geoms):
                 raise Exception("unhandled dangles or invalids are not added to env.path")
+            for cut in cuts.geoms:
+                env.add_path(cut)
 
-            # connections = env.find_all_shortest_connections()
-            # for connection in connections:
-            #     env.add_path(connection)
+            connections = env.find_all_shortest_connections(mode="without_polygon", polygon=union_polygon)
+            # connections = env.find_all_vertex_connections(mode="without_polygon", polygon=union_polygon)
+            for connection in connections:
+                env.add_path(connection)
 
             for point in bridge_points:
                 connection = env.find_shortest_connection(point)
@@ -155,6 +153,7 @@ def connect_paths(envs: Dict[int, Environment], bridge_nodes: Dict[Tuple, List],
                     env.add_path(connection)
                 else:
                     print("No connection found for bridge node", point)
+        # print(len(env.path), "paths in room", room)
         # env.plot()
 
 
