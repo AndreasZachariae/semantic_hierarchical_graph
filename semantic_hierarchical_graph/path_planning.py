@@ -16,7 +16,7 @@ def largest_rectangle_per_segment(ws_erosion: np.ndarray, params: dict) -> Tuple
     segment_envs: Dict[int, Environment] = {}
     for i in range(2, ws_tmp.max() + 1):
         first_loop = True
-        env = Environment(i, np.array([0, 0, ws_tmp.shape[0], ws_tmp.shape[1]]))
+        env = Environment()
         segment_envs[i] = env
         while True:
             segment_bool = np.where(ws_tmp == i, True, False)
@@ -158,7 +158,7 @@ def connect_paths(envs: Dict[int, Environment], bridge_nodes: Dict[Tuple, List],
 
 
 def plot_all_envs(envs: Dict[int, Environment]):
-    all_envs = Environment("all", np.array([0, 0]))
+    all_envs = Environment()
     for env in envs.values():
         [all_envs.add_obstacle(obstacle) for obstacle in env.scene]
         [all_envs.add_path(path) for path in env.path]
@@ -168,7 +168,7 @@ def plot_all_envs(envs: Dict[int, Environment]):
 
 def draw_all_paths(img: np.ndarray, envs: Dict[int, Environment],  color) -> np.ndarray:
     img_new = img.copy()
-    all_envs = Environment("all", np.array([0, 0]))
+    all_envs = Environment()
     for env in envs.values():
         [cv2.polylines(img_new, [line.coords._coords.astype("int32")], False,  color, 2) for line in env.path]
 
@@ -176,10 +176,10 @@ def draw_all_paths(img: np.ndarray, envs: Dict[int, Environment],  color) -> np.
 
 
 if __name__ == '__main__':
-    img = cv2.imread('data/map_benchmark_hou2_clean.png')
-    # img = cv2.imread('data/map_benchmark_ryu.png')
-    # params = Parameter("config/ryu_params.yaml").params
-    params = Parameter("config/hou2_params.yaml").params
+    # img = cv2.imread('data/map_benchmark_hou2_clean.png')
+    img = cv2.imread('data/map_benchmark_ryu.png')
+    params = Parameter("config/ryu_params.yaml").params
+    # params = Parameter("config/hou2_params.yaml").params
 
     ws, ws_erosion, dist_transform = segmentation.marker_controlled_watershed(img, params)
     bridge_nodes, bridge_edges = segmentation.find_bridge_nodes(ws, dist_transform)

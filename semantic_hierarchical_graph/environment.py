@@ -9,9 +9,7 @@ from semantic_hierarchical_graph.vector import Vector
 
 
 class Environment():
-    def __init__(self, name: Any, limits: np.ndarray):
-        self.name = name
-        self.limits = limits
+    def __init__(self):
         self.scene: List[Polygon] = []
         self.path: List[LineString] = []
 
