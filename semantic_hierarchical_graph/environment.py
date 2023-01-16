@@ -1,9 +1,11 @@
+import itertools
 from typing import Any, List, Union
 import numpy as np
 import matplotlib.pyplot as plt
 from shapely.plotting import plot_polygon, plot_line
-from shapely.geometry import Point, Polygon, LineString
+from shapely.geometry import Point, Polygon, LineString, MultiPolygon
 from shapely.ops import nearest_points
+from semantic_hierarchical_graph.vector import Vector
 
 
 class Environment():
@@ -19,40 +21,46 @@ class Environment():
     def add_path(self, path):
         self.path.append(path)
 
-    def point_in_collision(self, pos):
+    def in_collision_with_shape(self, shape1, shape2) -> bool:
         """
-        Return whether a point is
-        in collision -> True
-        Free -> False
+        Check whether a shape is colliding with another shape.
         Touching (same boundary points but no same interior points) is not considered as collision.
         """
-        for value in self.scene:
-            if value.intersects(Point(pos[0], pos[1])):
-                if value.touches(Point(pos[0], pos[1])):
-                    return False
-                else:
-                    return True
+        if shape1.intersects(shape2):
+            if shape1.touches(shape2):
+                return False
+            else:
+                return True
         return False
 
-    def line_in_collision(self, start_point: Point, end_point: Point):
+    def in_collision(self, shape) -> bool:
         """
-        Check whether a line from start_pos to end_pos is colliding.
-        Touching (same boundary points but no same interior points) is not considered as collision.
+        Return whether a shape is in collision with any shape in the scene.
         """
         for value in self.scene:
-            if value.intersects(LineString([start_point, end_point])):
-                if value.touches(LineString([start_point, end_point])):
-                    return False
-                else:
-                    return True
+            if self.in_collision_with_shape(value, shape):
+                return True
         return False
 
-    def get_connection(self, point1: Point, point2: Point) -> Union[LineString, None]:
-        if self.line_in_collision(point1, point2):
+    def is_orthogonal_to_grid(self, line: LineString) -> bool:
+        """ Check whether a line is orthogonal to the grid """
+        x_grid = Vector(1, 0)
+        y_grid = Vector(0, 1)
+        line_vector = Vector(line.coords[1][0] - line.coords[0][0], line.coords[1][1] - line.coords[0][1])
+        return x_grid.dot(line_vector) == 0 or y_grid.dot(line_vector) == 0
+
+    def get_valid_connection(self, point1: Point, point2: Point, mode: str = "", polygon=None) -> Union[LineString, None]:
+        connection = LineString([point1, point2])
+        if self.in_collision(connection):
             # print("Connection in collision between", point1, point2)
             return None
         else:
-            connection = LineString([point1, point2])
+            if mode == "orthogonal" and not self.is_orthogonal_to_grid(connection):
+                return None
+            if mode == "without_polygon":
+                if isinstance(polygon, MultiPolygon) or isinstance(polygon, Polygon):
+                    if self.in_collision_with_shape(polygon, connection):
+                        return None
             return connection
 
     def find_shortest_connection(self, pos):
@@ -61,27 +69,33 @@ class Environment():
             point = Point(pos[0], pos[1])
         closest_path = min(self.path, key=lambda x: x.distance(point))
         closest_point: Point = nearest_points(closest_path, point)[0]
-        return self.get_connection(closest_point, point)
+        return self.get_valid_connection(closest_point, point)
 
-    def find_all_shortest_connections(self):
+    def find_all_shortest_connections(self, mode: str, polygon=None):
         """ Find all shortest connections between all shapes in path that are not in collision """
         new_connections = []
-        for path in self.path:
-            # print("Path: ", path)
-            rest_path = list(self.path)
-            # for exclude_path in exclude:
-            rest_path.remove(path)
-            if len(rest_path) == 0:
-                return new_connections
-            for other_path in rest_path:
-                # print("Other path: ", other_path)
-                closest_point_path = Point(min(path.coords, key=lambda x: other_path.distance(Point(x[0], x[1]))))
-                # print("Closest point path: ", closest_point_path)
-                closest_point_other_path: Point = nearest_points(other_path, closest_point_path)[0]
-                # print("Closest point other path: ", closest_point_other_path)
-                connection = self.get_connection(closest_point_path, closest_point_other_path)
-                if connection is not None:
-                    new_connections.append(connection)
+        for path, other_path in itertools.permutations(self.path, 2):
+            closest_point_path = Point(min(path.coords, key=lambda x: other_path.distance(Point(x[0], x[1]))))
+            closest_point_other_path: Point = nearest_points(other_path, closest_point_path)[0]
+            connection = self.get_valid_connection(closest_point_path, closest_point_other_path, mode, polygon)
+            if connection is not None:
+                new_connections.append(connection)
+
+        return new_connections
+
+    def find_all_vertex_connections(self, mode: str, polygon=None):
+        """ Find all connections between all vertices in path that are not in collision """
+        new_connections = []
+        for path, other_path in itertools.combinations(self.path, 2):
+            for point in path.coords:
+                # closest_point_other_path: Point = nearest_points(other_path, Point(point))[0]
+                # connection = self.get_connection(Point(point), closest_point_other_path, mode, polygon)
+                # if connection is not None:
+                #     new_connections.append(connection)
+                for other_point in other_path.coords:
+                    connection = self.get_valid_connection(Point(point), Point(other_point), mode, polygon)
+                    if connection is not None:
+                        new_connections.append(connection)
 
         return new_connections
 
@@ -93,7 +107,7 @@ class Environment():
     def clear_bridge_edges(self, bridge_edges: List):
         walls = self.scene[0]
         for edge in bridge_edges:
-            self.scene[0] = walls.difference(LineString(edge).buffer(2, cap_style="flat"))
+            self.scene[0] = walls.difference(LineString(edge).buffer(3, cap_style="flat"))
 
     def plot(self):
         fig, ax = plt.subplots(figsize=(10, 10))
