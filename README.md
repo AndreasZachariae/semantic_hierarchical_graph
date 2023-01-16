@@ -68,15 +68,21 @@ python -m timeit -r 10 -s 'from semantic_hierarchical_graph.main import main; G 
 ```
 
 ## TODO
+Improvements
+- [ ] use dist_transform instead of ws_erosion
+- [ ] remove brisge points which are in collision with ws_erosion
+- [ ] clear bridge edges in the beginning with dist_transform or ws_erosion
+- [ ] cut out rooms after bridge edges cleared
+
 Every bridge point has to be connected
-- [ ] 1. straight line connection
+- [x] 1. straight line connection
 - [ ] 2. visibility algorithm with lines in random directions
 - [ ] 3. A*
 - [ ] Check if valid path between all bridge points
 
-Make 3 levels of cennectivity:
-- [ ] 1. only connect in straight lines
-- [ ] 3. connect all vertexes which are possible
+Make 3 levels of connectivity:
+- [x] 1. only connect in straight lines
+- [x] 3. connect all vertexes which are possible
 - [ ] Implement metric to measure effects
 
 Integrate with SH-Graph
