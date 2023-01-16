@@ -24,6 +24,16 @@ class SHNode(Generic[T]):
         self.child_graph.add_node(SHNode(unique_name=name, parent_node=self, pos=pos, is_leaf=is_leaf),
                                   name=name, **data)
 
+    def add_child_node(self, node: T, **data):
+        # Child of type SHNode with unique name on that level
+        self.child_graph.add_node(node, name=node.unique_name, **data)
+        if node.is_leaf:
+            leaf_graph = self._get_leaf_graph()
+            leaf_graph.add_node(node, name=node.unique_name, **data)
+
+    def _get_leaf_graph(self):
+        return self.parent_node._get_leaf_graph()
+
     def _add_connection(self, child_name_1: str, child_name_2: str, distance: Optional[float] = None, **data):
         child_1 = self._get_child(child_name_1)
         child_2 = self._get_child(child_name_2)

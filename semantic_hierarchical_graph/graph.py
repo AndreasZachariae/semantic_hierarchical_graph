@@ -54,6 +54,9 @@ class SHGraph(SHNode):
     def add_child_recursive(self):
         pass
 
+    def _get_leaf_graph(self):
+        return self.leaf_graph
+
     def add_connection_recursive(self, hierarchy_1: List[str], hierarchy_2: List[str], distance: Optional[float] = None, **data):
         if len(hierarchy_1) != len(hierarchy_2):
             raise ValueError("Hierarchies must have same length")
