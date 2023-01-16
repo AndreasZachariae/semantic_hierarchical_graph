@@ -46,7 +46,7 @@ class Room(SHNode):
 if __name__ == "__main__":
     G = SHGraph(root_name="LTC Campus", root_pos=(0, 0, 0))
 
-    ryu_floor = Floor("ryu", G, (0, 0, 1), 'data/map_benchmark_ryu.png', "config/ryu_params.yaml")
+    ryu_floor = Floor("ryu", G, (0, 0, 1), 'data/ryu.png', "config/ryu_params.yaml")
 
     G.add_child_node(ryu_floor)
     print(G.get_childs("name"))
