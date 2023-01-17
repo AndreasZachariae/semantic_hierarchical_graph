@@ -19,13 +19,9 @@ class Floor(SHNode):
         self.params: Dict[str, Any] = Parameter(params_path).params
         self.create_rooms()
 
-    def segment_map(self):
+    def create_rooms(self):
         self.watershed, ws_erosion, dist_transform = segmentation.marker_controlled_watershed(self.map, self.params)
         bridge_nodes, bridge_edges = segmentation.find_bridge_nodes(self.watershed, dist_transform)
-        return ws_erosion, dist_transform, bridge_nodes, bridge_edges
-
-    def create_rooms(self):
-        ws_erosion, dist_transform, bridge_nodes, bridge_edges = self.segment_map()
         ws_tmp = ws_erosion.copy()
         for i in range(2, ws_tmp.max() + 1):
             room_bridge_nodes = {adj_rooms: points for adj_rooms, points in bridge_nodes.items() if i in adj_rooms}
