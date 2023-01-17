@@ -17,7 +17,7 @@ class Floor(SHNode):
         self.map = cv2.imread(map_path)
         self.watershed: np.ndarray = np.array([])
         self.params: Dict[str, Any] = Parameter(params_path).params
-        self.rooms: Dict[int, Room] = self.create_rooms()
+        self.create_rooms()
 
     def segment_map(self):
         self.watershed, ws_erosion, dist_transform = segmentation.marker_controlled_watershed(self.map, self.params)
@@ -27,17 +27,14 @@ class Floor(SHNode):
     def create_rooms(self):
         ws_erosion, dist_transform, bridge_nodes, bridge_edges = self.segment_map()
         ws_tmp = ws_erosion.copy()
-        rooms: Dict[int, Room] = {}
-        # TODO: add rooms to graph instead of dict
         for i in range(2, ws_tmp.max() + 1):
             room_bridge_nodes = {adj_rooms: points for adj_rooms, points in bridge_nodes.items() if i in adj_rooms}
             room_bridge_edges = {adj_rooms: points for adj_rooms, points in bridge_edges.items() if i in adj_rooms}
-            rooms[i] = Room(i, self, ws_tmp, self.params, room_bridge_nodes, room_bridge_edges)
-        return rooms
+            self.add_child_node(Room(i, self, ws_tmp, self.params, room_bridge_nodes, room_bridge_edges))
 
     def plot_all_envs(self):
         all_envs = Environment(-1)
-        for room in self.rooms.values():
+        for room in self.get_childs():
             [all_envs.add_obstacle(obstacle) for obstacle in room.env.scene]
             [all_envs.add_path(path) for path in room.env.path]
         all_envs.plot()
@@ -45,18 +42,18 @@ class Floor(SHNode):
     def draw_all_paths(self, img: np.ndarray,  color) -> np.ndarray:
         img_new = img.copy()
         all_envs = Environment(-1)
-        for room in self.rooms.values():
+        for room in self.get_childs():
             [cv2.polylines(img_new, [line.coords._coords.astype("int32")], False,  color, 2) for line in room.env.path]
 
         return img_new
 
     def get_bridge_nodes(self):
         all_bridge_nodes: Dict[Tuple, List] = {}
-        [all_bridge_nodes.update(room.bridge_nodes) for room in self.rooms.values()]
+        [all_bridge_nodes.update(room.bridge_nodes) for room in self.get_childs()]
         return all_bridge_nodes
 
     def get_largest_rectangles(self):
-        all_largest_rectangles: Dict[int, List] = {room.id: room.largest_rectangles for room in self.rooms.values()}
+        all_largest_rectangles: Dict[int, List] = {room.id: room.largest_rectangles for room in self.get_childs()}
         return all_largest_rectangles
 
 
@@ -80,8 +77,9 @@ if __name__ == "__main__":
 
     G.add_child_node(floor)
     print(G.get_childs("name"))
-    vis.draw_child_graph(G, [])
-    # vis.draw_graph_3d(G.leaf_graph)
+    print(floor.get_childs("name"))
+    # vis.draw_child_graph(G, ["ryu"])
+    vis.draw_graph_3d(floor.child_graph)
 
     floor.plot_all_envs()
     ws2 = segmentation.draw(floor.watershed, floor.get_bridge_nodes(), (22))
