@@ -9,7 +9,8 @@ from semantic_hierarchical_graph.vector import Vector
 
 
 class Environment():
-    def __init__(self):
+    def __init__(self, room_id: int):
+        self.room_id: int = room_id
         self.scene: List[Polygon] = []
         self.path: List[LineString] = []
 

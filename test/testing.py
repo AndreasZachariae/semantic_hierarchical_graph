@@ -14,7 +14,7 @@ if __name__ == '__main__':
         print(tuple)
 
     # Test orthogonal line
-    env = Environment()
+    env = Environment(0)
     line = LineString([(5, 7), (10, 10)])
     print(env.is_orthogonal_to_grid(line))
 
