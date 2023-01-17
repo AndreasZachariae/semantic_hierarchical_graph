@@ -1,5 +1,5 @@
 import itertools
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 import numpy as np
 import cv2
 from shapely.ops import unary_union, polygonize_full
@@ -10,63 +10,69 @@ from semantic_hierarchical_graph.parameters import Parameter
 import semantic_hierarchical_graph.segmentation as segmentation
 
 
-def largest_rectangle_per_segment(ws_erosion: np.ndarray, params: dict) -> Tuple[Dict[int, List], Dict[int, Environment]]:
+def _create_rooms(ws_erosion: np.ndarray, params: Dict[str, Any]) -> Tuple[Dict[int, Environment], Dict[int, List]]:
     ws_tmp = ws_erosion.copy()
-    largest_rectangles: Dict[int, List] = {}
     segment_envs: Dict[int, Environment] = {}
+    largest_rectangles: Dict[int, List] = {}
     for i in range(2, ws_tmp.max() + 1):
-        first_loop = True
-        env = Environment()
+        env: Environment = Environment()
         segment_envs[i] = env
-        while True:
-            segment_bool = np.where(ws_tmp == i, True, False)
-            segment = segment_bool.astype("uint8") * 255
-            # TODO: Changed from cv2.RETR_TREE to EXTERNAL because it is faster and hierarchy doesn't matter
-            contours, hierarchy = cv2.findContours(segment, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-            contour_areas = list(map(cv2.contourArea, contours))
-            c_max_index = np.argmax(contour_areas)
-            c_max = contours[c_max_index]
-
-            if first_loop:
-                first_loop = False
-
-                x, y, w, h = cv2.boundingRect(c_max)
-                # interior polygon (= free room) has to be inverted with [::-1] to be clear space in shapely
-                walls = Polygon([(x-1, y-1), (x-1, y+h), (x+w, y+h), (x+w, y-1)], [c_max[:, 0, :][::-1]])
-                env.add_obstacle(walls)
-                obstacle_index = np.where(hierarchy[0, :, 3] == c_max_index)[0]
-                [env.add_obstacle(Polygon(contours[index][:, 0, :])) for index in obstacle_index]
-
-            elif np.max(contour_areas) < params["min_contour_area"]:
-                # TODO: find better threshold specification
-                # currently 9 * 10 * 30 = 2700
-                # print("New contour too small", cv2.contourArea(c_max))
-                break
-
-            rectangle = lir.lir(segment_bool, c_max[:, 0, :])
-
-            if i in largest_rectangles:
-                largest_rectangles[i].append(rectangle)
-            else:
-                largest_rectangles[i] = [rectangle]
-
-            path = path_from_rectangle(rectangle, params)
-            if not path.is_empty:
-                env.add_path(path)
-
-            x, y, w, h = rectangle
-            # Shrink rectangle by x pixel to make touching possible
-            shrinkage = 1
-            ws_tmp = cv2.rectangle(ws_tmp, (x+shrinkage, y+shrinkage), (x+w-1-shrinkage, y+h-1-shrinkage), (1), -1)
-
-        # env.plot()
-        # segmentation.show_imgs(segment)
-
-    # show_imgs(ws_tmp)
-    return largest_rectangles, segment_envs
+        largest_rectangles[i], _ = calc_largest_rectangles(ws_tmp, i, env, params)
+    return segment_envs, largest_rectangles
 
 
-def path_from_rectangle(rectangle: np.ndarray, params: dict) -> LineString:
+def calc_largest_rectangles(ws_erosion: np.ndarray, room_id: int, env: Environment, params: Dict[str, Any]) -> Tuple[List, Tuple[float, float, float]]:
+    largest_rectangles: List = []
+    centroid: Tuple[float, float, float] = (0, 0, 0)
+    first_loop = True
+    while True:
+        segment = np.where(ws_erosion == room_id, 255, 0).astype("uint8")
+        # TODO: Changed from cv2.RETR_TREE to EXTERNAL because it is faster and hierarchy doesn't matter
+        contours, hierarchy = cv2.findContours(segment, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        contour_areas = list(map(cv2.contourArea, contours))
+        c_max_index = np.argmax(contour_areas)
+        c_max = contours[c_max_index]
+
+        if first_loop:
+            first_loop = False
+            M = cv2.moments(segment)
+            cX = int(M["m10"] / M["m00"])
+            cY = int(M["m01"] / M["m00"])
+            centroid = (cX, cY, 0)
+
+            x, y, w, h = cv2.boundingRect(c_max)
+            # interior polygon (= free room) has to be inverted with [::-1] to be clear space in shapely
+            walls = Polygon([(x-1, y-1), (x-1, y+h), (x+w, y+h), (x+w, y-1)], [c_max[:, 0, :][::-1]])
+            env.add_obstacle(walls)
+            obstacle_index = np.where(hierarchy[0, :, 3] == c_max_index)[0]
+            [env.add_obstacle(Polygon(contours[index][:, 0, :])) for index in obstacle_index]
+
+        elif np.max(contour_areas) < params["min_contour_area"]:
+            # TODO: find better threshold specification
+            # currently 9 * 10 * 30 = 2700
+            # print("New contour too small", cv2.contourArea(c_max))
+            break
+
+        rectangle = lir.lir(segment.astype("bool"), c_max[:, 0, :])
+
+        largest_rectangles.append(rectangle)
+
+        path = _path_from_rectangle(rectangle, params)
+        if not path.is_empty:
+            env.add_path(path)
+
+        x, y, w, h = rectangle
+        # Shrink rectangle by x pixel to make touching possible
+        shrinkage = 1
+        ws_erosion = cv2.rectangle(ws_erosion, (x+shrinkage, y+shrinkage),
+                                   (x+w-1-shrinkage, y+h-1-shrinkage), (1), -1)
+
+    # env.plot()
+    # segmentation.show_imgs(segment, ws_erosion)
+    return largest_rectangles, centroid
+
+
+def _path_from_rectangle(rectangle: np.ndarray, params: dict) -> LineString:
     x, y, w, h = rectangle
 
     if w < params["min_corridor_width"] or h < params["min_corridor_width"]:
@@ -176,18 +182,19 @@ def draw_all_paths(img: np.ndarray, envs: Dict[int, Environment],  color) -> np.
 
 
 if __name__ == '__main__':
-    # img = cv2.imread('data/hou2_clean.png')
-    img = cv2.imread('data/ryu.png')
+
+    # img = cv2.imread('data/benchmark_maps/hou2_clean.png')
+    img = cv2.imread('data/benchmark_maps/ryu.png')
     params = Parameter("config/ryu_params.yaml").params
     # params = Parameter("config/hou2_params.yaml").params
 
     ws, ws_erosion, dist_transform = segmentation.marker_controlled_watershed(img, params)
     bridge_nodes, bridge_edges = segmentation.find_bridge_nodes(ws, dist_transform)
-    largest_rectangles, segment_envs = largest_rectangle_per_segment(ws_erosion, params)
+    segment_envs, largest_rectangles = _create_rooms(ws_erosion, params)
     connect_paths(segment_envs, bridge_nodes, bridge_edges)
     plot_all_envs(segment_envs)
 
     ws2 = segmentation.draw(ws, bridge_nodes, (22))
-    ws3 = segmentation.draw(ws2, largest_rectangles, (21))
+    # ws3 = segmentation.draw(ws2, largest_rectangles, (21))
     ws4 = draw_all_paths(ws2, segment_envs, (25))
     segmentation.show_imgs(ws4, name="map_benchmark_ryu_result", save=False)
