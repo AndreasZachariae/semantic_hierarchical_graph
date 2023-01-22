@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from shapely.plotting import plot_polygon, plot_line
 from shapely.geometry import Point, Polygon, LineString, MultiPolygon
-from shapely.ops import nearest_points
+from shapely.ops import nearest_points, transform
 from semantic_hierarchical_graph.vector import Vector
 
 
@@ -15,9 +15,16 @@ class Environment():
         self.path: List[LineString] = []
 
     def add_obstacle(self, obstacle):
-        self.scene.append(obstacle)
+        if obstacle not in self.scene:
+            self.scene.append(obstacle)
 
     def add_path(self, path):
+        if path.length == 0:
+            return
+        if path in self.path:
+            return
+        if self.reverse_geom(path) in self.path:
+            return
         self.path.append(path)
 
     def in_collision_with_shape(self, shape1, shape2) -> bool:
@@ -49,6 +56,8 @@ class Environment():
         return x_grid.dot(line_vector) == 0 or y_grid.dot(line_vector) == 0
 
     def get_valid_connection(self, point1: Point, point2: Point, mode: str = "", polygon=None) -> Union[LineString, None]:
+        if point1 == point2:
+            return None
         connection = LineString([point1, point2])
         if self.in_collision(connection):
             # print("Connection in collision between", point1, point2)
@@ -98,6 +107,43 @@ class Environment():
 
         return new_connections
 
+    def reverse_geom(self, geom):
+        def _reverse(x, y, z=None):
+            if z:
+                return x[::-1], y[::-1], z[::-1]
+            return x[::-1], y[::-1]
+
+        return transform(_reverse, geom)
+
+    def clean_path(self):
+        """ Remove all duplicate or covered paths """
+        # print(len(self.path))
+        self.path = list(set(self.path))
+        removed_lines = []
+        for line in self.path:
+            if line in removed_lines:
+                # print("not in path", line)
+                continue
+            # if line.length == 0:
+            #     # print("line length is 0", line)
+            #     self.path.remove(line)
+            #     continue
+            for line2 in self.path:
+                if line is line2:
+                    # print("is same", line2)
+                    continue
+                # if line == self.reverse_geom(line2):
+                #     # print("is reverse", line2)
+                #     self.path.remove(line2)
+                #     removed_lines.append(line2)
+                #     continue
+                if line.covers(line2):
+                    # print("is covered", line2)
+                    # self.path.remove(line2)
+                    removed_lines.append(line2)
+        self.path = list(set(self.path) - set(removed_lines))
+        # print(len(self.path))
+
     def clear_bridge_nodes(self, bridge_points: List):
         walls = self.scene[0]
         for point in bridge_points:
@@ -116,6 +162,6 @@ class Environment():
             plot_polygon(value, ax=ax, add_points=False, color="red", alpha=0.8)
 
         for value in self.path:
-            plot_line(value, ax=ax, add_points=False, color="blue", alpha=0.8)
+            plot_line(value, ax=ax, add_points=False, color="blue", alpha=0.5)
 
         plt.show()
