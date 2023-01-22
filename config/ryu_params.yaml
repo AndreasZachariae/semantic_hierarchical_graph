@@ -1,5 +1,5 @@
 # MAP
-map_name: map_benchmark_ryu.png
+map_name: benchmark_maps/ryu.png
 grid_size: 0.0 # [m/px]
 
 # ROBOT
