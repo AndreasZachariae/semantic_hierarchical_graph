@@ -1,7 +1,8 @@
+import itertools
 from typing import Any, Dict, List, Tuple
-
 import cv2
 import numpy as np
+from shapely.ops import split
 from semantic_hierarchical_graph.environment import Environment
 from semantic_hierarchical_graph.graph import SHGraph
 from semantic_hierarchical_graph.node import SHNode
@@ -33,6 +34,7 @@ class Floor(SHNode):
         for room in self.get_childs():
             [all_envs.add_obstacle(obstacle) for obstacle in room.env.scene]
             [all_envs.add_path(path) for path in room.env.path]
+        print("All paths:", len(all_envs.path))
         all_envs.plot()
 
     def draw_all_paths(self, img: np.ndarray,  color) -> np.ndarray:
@@ -64,6 +66,22 @@ class Room(SHNode):
         super().__init__(f"room_{id}", parent_node, centroid, False, False)
 
         path_planning.connect_paths(self.env, bridge_nodes, bridge_edges)
+        self.create_roadmap(self.env)
+
+    def create_roadmap(self, env: Environment):
+        env.clean_path()
+
+        for line1, line2 in itertools.combinations(env.path, 2):
+            if line1.intersects(line2):
+                point = line1.intersection(line2)
+                if not point.geom_type == "Point":
+                    raise ValueError("Intersection is not a POINT but a", point.geom_type)
+                results = split(line1, point)
+                for cut in results.geoms:
+                    print(cut)
+
+        # print(len(env.path))
+        env.plot()
 
 
 if __name__ == "__main__":
