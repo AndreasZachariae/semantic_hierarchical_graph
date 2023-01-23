@@ -1,10 +1,9 @@
 import itertools
 from typing import Any, List, Union
-import numpy as np
 import matplotlib.pyplot as plt
 from shapely.plotting import plot_polygon, plot_line
 from shapely.geometry import Point, Polygon, LineString, MultiPolygon
-from shapely.ops import nearest_points, transform
+from shapely.ops import nearest_points, transform, split
 from semantic_hierarchical_graph.vector import Vector
 
 
@@ -23,11 +22,11 @@ class Environment():
             return
         if path in self.path:
             return
-        if self.reverse_geom(path) in self.path:
+        if self._reverse_geom(path) in self.path:
             return
         self.path.append(path)
 
-    def in_collision_with_shape(self, shape1, shape2) -> bool:
+    def _in_collision_with_shape(self, shape1, shape2) -> bool:
         """
         Check whether a shape is colliding with another shape.
         Touching (same boundary points but no same interior points) is not considered as collision.
@@ -39,16 +38,16 @@ class Environment():
                 return True
         return False
 
-    def in_collision(self, shape) -> bool:
+    def _in_collision(self, shape) -> bool:
         """
         Return whether a shape is in collision with any shape in the scene.
         """
         for value in self.scene:
-            if self.in_collision_with_shape(value, shape):
+            if self._in_collision_with_shape(value, shape):
                 return True
         return False
 
-    def is_orthogonal_to_grid(self, line: LineString) -> bool:
+    def _is_orthogonal_to_grid(self, line: LineString) -> bool:
         """ Check whether a line is orthogonal to the grid """
         x_grid = Vector(1, 0)
         y_grid = Vector(0, 1)
@@ -59,15 +58,15 @@ class Environment():
         if point1 == point2:
             return None
         connection = LineString([point1, point2])
-        if self.in_collision(connection):
+        if self._in_collision(connection):
             # print("Connection in collision between", point1, point2)
             return None
         else:
-            if mode == "orthogonal" and not self.is_orthogonal_to_grid(connection):
+            if mode == "orthogonal" and not self._is_orthogonal_to_grid(connection):
                 return None
             if mode == "without_polygon":
                 if isinstance(polygon, MultiPolygon) or isinstance(polygon, Polygon):
-                    if self.in_collision_with_shape(polygon, connection):
+                    if self._in_collision_with_shape(polygon, connection):
                         return None
             return connection
 
@@ -107,7 +106,7 @@ class Environment():
 
         return new_connections
 
-    def reverse_geom(self, geom):
+    def _reverse_geom(self, geom):
         def _reverse(x, y, z=None):
             if z:
                 return x[::-1], y[::-1], z[::-1]
@@ -115,34 +114,74 @@ class Environment():
 
         return transform(_reverse, geom)
 
-    def clean_path(self):
-        """ Remove all duplicate or covered paths """
-        # print(len(self.path))
+    def remove_duplicate_paths(self):
+        """ Remove all duplicate or covered paths"""
         self.path = list(set(self.path))
-        removed_lines = []
+        remove_lines = []
         for line in self.path:
-            if line in removed_lines:
+            if line in remove_lines:
                 # print("not in path", line)
                 continue
             # if line.length == 0:
             #     # print("line length is 0", line)
-            #     self.path.remove(line)
+            #     remove_lines.append(line2)
             #     continue
             for line2 in self.path:
                 if line is line2:
                     # print("is same", line2)
                     continue
-                # if line == self.reverse_geom(line2):
+                # if line == self._reverse_geom(line2):
                 #     # print("is reverse", line2)
-                #     self.path.remove(line2)
-                #     removed_lines.append(line2)
+                #     remove_lines.append(line2)
                 #     continue
                 if line.covers(line2):
                     # print("is covered", line2)
-                    # self.path.remove(line2)
-                    removed_lines.append(line2)
-        self.path = list(set(self.path) - set(removed_lines))
-        # print(len(self.path))
+                    remove_lines.append(line2)
+        self.path = list(set(self.path) - set(remove_lines))
+
+    def split_multipoint_lines(self):
+        """ Split multipoint lines in two point segments"""
+        new_lines = []
+        remove_lines = []
+        for line in self.path:
+            if len(line.coords) > 2:
+                remove_lines.append(line)
+                for i in range(len(line.coords) - 1):
+                    new_lines.append(LineString([line.coords[i], line.coords[i + 1]]))
+        self.path = list((set(self.path) - set(remove_lines)) | set(new_lines))
+
+    def split_path_at_intersections(self):
+        """ Split all paths at intersections"""
+        already_cut = dict()
+        for line1, line2 in itertools.combinations(self.path, 2):
+            if line1.intersects(line2):
+                point = line1.intersection(line2)
+                if not point.geom_type == "Point":
+                    raise ValueError("Intersection is not a POINT but a", point.geom_type)
+                # print("Intersection:", point)
+
+                self._split_path(line1, point, already_cut)
+                self._split_path(line2, point, already_cut)
+
+        add_lines = {cut for cuts in already_cut.values() for cut in cuts}
+
+        self.path = list((set(self.path) - set(already_cut.keys())) | add_lines)
+
+    def _split_path(self, line, point, already_cut):
+        if point.coords[0] in (line.coords[0], line.coords[-1]):
+            return
+        if line in already_cut:
+            # print("Already cut")
+            for cut in already_cut[line]:
+                # Account for dec precision error
+                if cut.distance(point) < 1e-8:
+                    cut_results = split(cut, point)
+                    already_cut[line].remove(cut)
+                    already_cut[line].extend(cut_results.geoms)
+                    break
+        else:
+            results = split(line, point)
+            already_cut[line] = list(results.geoms)
 
     def clear_bridge_nodes(self, bridge_points: List):
         walls = self.scene[0]

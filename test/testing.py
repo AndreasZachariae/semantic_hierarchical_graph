@@ -16,7 +16,7 @@ if __name__ == '__main__':
     # Test orthogonal line
     env = Environment(0)
     line = LineString([(5, 7), (10, 10)])
-    print(env.is_orthogonal_to_grid(line))
+    print(env._is_orthogonal_to_grid(line))
 
     # Test bounding boy creation from opencv vs shapely
     rectangle = np.array([[0, 0, 0, 0, 0, 0],
