@@ -18,6 +18,7 @@ class SHNode(Generic[T]):
         self.parent_node: SHNode = parent_node
         self.child_graph: nx.Graph = nx.Graph()
 
+    # TODO: Refactor add_child to give both options of add_child_name and add_child_node
     def _add_child(self, name: str, pos: Tuple[float, float, float], is_leaf: bool = False, **data):
         # Child of type SHNode with unique name on that level
 
@@ -34,14 +35,16 @@ class SHNode(Generic[T]):
     def _get_leaf_graph(self):
         return self.parent_node._get_leaf_graph()
 
-    def _add_connection(self, child_name_1: str, child_name_2: str, distance: Optional[float] = None, **data):
-        child_1 = self._get_child(child_name_1)
-        child_2 = self._get_child(child_name_2)
+    def add_connection_node(self, child_1: T, child_2: T, distance: Optional[float] = None, **data):
         color = "gray"
         if distance is None:
             distance = util.get_euclidean_distance(child_1.pos_abs, child_2.pos_abs)
             color = "black"
         self.child_graph.add_edge(child_1, child_2, distance=distance, color=color, **data)
+
+    # TODO: Refactor add_connection to give both options of add_connection_name and add_connection_node
+    def _add_connection(self, child_name_1: str, child_name_2: str, distance: Optional[float] = None, **data):
+        self.add_connection_node(self._get_child(child_name_1), self._get_child(child_name_2), distance, **data)
 
     def _add_connection_recursive(self, child_1_name, child_2_name, hierarchy_1: List[str], hierarchy_2: List[str], hierarchy_mask: List[bool],
                                   hierarchy_level: int, distance: Optional[float] = None, debug=False, **data):
