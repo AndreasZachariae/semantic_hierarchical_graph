@@ -1,8 +1,6 @@
-import itertools
 from typing import Any, Dict, List, Tuple
 import cv2
 import numpy as np
-from shapely.ops import split
 from semantic_hierarchical_graph.environment import Environment
 from semantic_hierarchical_graph.graph import SHGraph
 from semantic_hierarchical_graph.node import SHNode
@@ -69,19 +67,31 @@ class Room(SHNode):
         self.create_roadmap(self.env)
 
     def create_roadmap(self, env: Environment):
-        env.clean_path()
-
-        for line1, line2 in itertools.combinations(env.path, 2):
-            if line1.intersects(line2):
-                point = line1.intersection(line2)
-                if not point.geom_type == "Point":
-                    raise ValueError("Intersection is not a POINT but a", point.geom_type)
-                results = split(line1, point)
-                for cut in results.geoms:
-                    print(cut)
-
+        env.remove_duplicate_paths()
+        env.split_multipoint_lines()
+        env.split_path_at_intersections()
         # print(len(env.path))
-        env.plot()
+        # env.plot()
+
+        for path in env.path:
+            if len(path.coords) != 2:
+                raise ValueError("Path has not 2 points as expected")
+            connection = []
+            for point in path.coords:
+                p = round(point[0]), round(point[1])
+                if str(p) in self.get_childs("name"):
+                    loc = self._get_child(str(p))
+                else:
+                    loc = Location(str(p), self, p + (0,))
+                    self.add_child_node(loc)
+                connection.append(loc)
+            # TODO: add to leaf graph for visualization
+            self.add_connection_node(connection[0], connection[1])
+
+
+class Location(SHNode):
+    def __init__(self, unique_name: str, parent_node, pos: Tuple[float, float, float]):
+        super().__init__(unique_name, parent_node, pos, False, True)
 
 
 if __name__ == "__main__":
@@ -92,8 +102,13 @@ if __name__ == "__main__":
     G.add_child_node(floor)
     print(G.get_childs("name"))
     print(floor.get_childs("name"))
-    # vis.draw_child_graph(G, ["ryu"])
+    room_2 = floor._get_child("room_2")
+    print(room_2.get_childs("name"))
+    print(len(room_2.get_childs()))
     vis.draw_graph_3d(floor.child_graph)
+    vis.draw_graph_3d(room_2.child_graph)
+    vis.draw_graph_3d(G.leaf_graph)
+    # vis.draw_child_graph(G, ["ryu"])
 
     floor.plot_all_envs()
     ws2 = segmentation.draw(floor.watershed, floor.get_bridge_nodes(), (22))
