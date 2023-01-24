@@ -8,7 +8,7 @@ import semantic_hierarchical_graph.utils as util
 
 
 def draw_child_graph(root_node: SHGraph, child_hierarchy: List[str], path_dict: Optional[Dict] = None, view_axis: int = 2):
-    child = root_node.get_child(child_hierarchy)
+    child = root_node.get_child_by_hierarchy(child_hierarchy)
 
     pos_index = [0, 1, 2]
     pos_index.remove(view_axis)
@@ -66,13 +66,14 @@ def draw_graph_3d(graph: nx.Graph, path=None):
     fig.tight_layout()
     plt.show()
 
+
 def plot_times():
     fig = plt.figure()
-    ax = fig.add_axes([0,0,1,1])
+    ax = fig.add_axes([0, 0, 1, 1])
     type = ['recursive', 'leaf graph']
     times = [85.7, 24.3]
     ax.set_ylabel('Time in μs')
     ax.set_title('Time comparison leaf graph vs. H-Graph')
-    ax.bar(type,times)
+    ax.bar(type, times)
     fig.tight_layout()
     plt.show()
