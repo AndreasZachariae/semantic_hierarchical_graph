@@ -16,7 +16,7 @@ class Floor(SHNode):
         self.map = cv2.imread(map_path)
         self.watershed: np.ndarray = np.array([])
         self.params: Dict[str, Any] = Parameter(params_path).params
-        self.create_rooms()
+        # self.create_rooms()
 
     def create_rooms(self):
         self.watershed, ws_erosion, dist_transform = segmentation.marker_controlled_watershed(self.map, self.params)
@@ -25,7 +25,9 @@ class Floor(SHNode):
         for i in range(2, ws_tmp.max() + 1):
             room_bridge_nodes = {adj_rooms: points for adj_rooms, points in bridge_nodes.items() if i in adj_rooms}
             room_bridge_edges = {adj_rooms: points for adj_rooms, points in bridge_edges.items() if i in adj_rooms}
-            self.add_child_node(Room(i, self, ws_tmp, self.params, room_bridge_nodes, room_bridge_edges))
+            room = Room(i, self, ws_tmp, self.params, room_bridge_nodes, room_bridge_edges)
+            self.add_child_by_node(room)
+            room.create_roadmap()
 
     def plot_all_envs(self):
         all_envs = Environment(-1)
@@ -64,16 +66,16 @@ class Room(SHNode):
         super().__init__(f"room_{id}", parent_node, centroid, False, False)
 
         path_planning.connect_paths(self.env, bridge_nodes, bridge_edges)
-        self.create_roadmap(self.env)
+        # self.create_roadmap()
 
-    def create_roadmap(self, env: Environment):
-        env.remove_duplicate_paths()
-        env.split_multipoint_lines()
-        env.split_path_at_intersections()
-        # print(len(env.path))
-        # env.plot()
+    def create_roadmap(self):
+        self.env.remove_duplicate_paths()
+        self.env.split_multipoint_lines()
+        self.env.split_path_at_intersections()
+        # print(len(self.env.path))
+        # self.env.plot()
 
-        for path in env.path:
+        for path in self.env.path:
             if len(path.coords) != 2:
                 raise ValueError("Path has not 2 points as expected")
             connection = []
@@ -83,10 +85,11 @@ class Room(SHNode):
                     loc = self._get_child(str(p))
                 else:
                     loc = Location(str(p), self, p + (0,))
-                    self.add_child_node(loc)
+                    self.add_child_by_node(loc)
                 connection.append(loc)
-            # TODO: add to leaf graph for visualization
-            self.add_connection_node(connection[0], connection[1])
+                # TODO connect rooms with bridge nodes
+                # if point in self.bridge_nodes:
+            self.add_connection_by_nodes(connection[0], connection[1])
 
 
 class Location(SHNode):
@@ -95,12 +98,12 @@ class Location(SHNode):
 
 
 if __name__ == "__main__":
-    G = SHGraph(root_name="LTC Campus", root_pos=(0, 0, 0))
-
+    G = SHGraph(root_name="Benchmark", root_pos=(0, 0, 0))
     floor = Floor("ryu", G, (0, 0, 1), 'data/benchmark_maps/ryu.png', "config/ryu_params.yaml")
-
-    G.add_child_node(floor)
+    G.add_child_by_node(floor)
     print(G.get_childs("name"))
+
+    floor.create_rooms()
     print(floor.get_childs("name"))
     room_2 = floor._get_child("room_2")
     print(room_2.get_childs("name"))
