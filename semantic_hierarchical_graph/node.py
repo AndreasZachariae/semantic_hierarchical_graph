@@ -1,5 +1,6 @@
 import networkx as nx
 from typing import Dict, List, Tuple, TypeVar, Generic, Optional
+# from typing_extensions import Self
 import numpy as np
 
 import semantic_hierarchical_graph.utils as util
@@ -9,42 +10,47 @@ T = TypeVar('T', bound='SHNode')
 
 
 class SHNode(Generic[T]):
-    def __init__(self, unique_name: str, parent_node, pos: Tuple[float, float, float], is_root: bool = False, is_leaf: bool = False):
+    def __init__(self, unique_name: str, parent_node, pos: Tuple[float, float, float], is_root: bool = False, is_leaf: bool = False, type: str = "node"):
         self.unique_name: str = unique_name
+        self.type: str = type
         self.is_root: bool = is_root
         self.is_leaf: bool = is_leaf
         self.pos: Tuple[float, float, float] = pos
         self.pos_abs: Tuple[float, float, float] = tuple(np.add(pos, parent_node.pos_abs)) if not is_root else pos
         self.parent_node: SHNode = parent_node
+        self.hierarchy: List[str] = parent_node.hierarchy + [unique_name] if not is_root else []
         self.child_graph: nx.Graph = nx.Graph()
 
-    # TODO: Refactor add_child to give both options of add_child_name and add_child_node
-    def _add_child(self, name: str, pos: Tuple[float, float, float], is_leaf: bool = False, **data):
-        # Child of type SHNode with unique name on that level
+    def add_child_by_name(self, name: str, pos: Tuple[float, float, float], is_leaf: bool = False, type: str = "node") -> T:
+        # Create and add child of type SHNode with unique name on that level
+        node: T = SHNode(unique_name=name, parent_node=self, pos=pos, is_leaf=is_leaf, type=type)  # type: ignore
+        self.add_child_by_node(node)
+        return node
 
-        self.child_graph.add_node(SHNode(unique_name=name, parent_node=self, pos=pos, is_leaf=is_leaf),
-                                  name=name, **data)
+    def add_child_by_node(self, node: T):
+        # Add child of type SHNode with unique name on that level
+        self.child_graph.add_node(node, name=node.unique_name)
 
-    def add_child_node(self, node: T, **data):
-        # Child of type SHNode with unique name on that level
-        self.child_graph.add_node(node, name=node.unique_name, **data)
-        if node.is_leaf:
-            leaf_graph = self._get_leaf_graph()
-            leaf_graph.add_node(node, name=node.unique_name, **data)
+        # Add leaf node to leaf_graph for visualization
+        if node.is_leaf and node.type != "hierarchy_bridge":
+            leaf_graph = self._get_root_node().leaf_graph
+            leaf_graph.add_node(node, name=node.unique_name)
 
-    def _get_leaf_graph(self):
-        return self.parent_node._get_leaf_graph()
+    def _get_root_node(self):
+        return self.parent_node._get_root_node()
 
-    def add_connection_node(self, child_1: T, child_2: T, distance: Optional[float] = None, **data):
+    def add_connection_by_nodes(self, child_1: T, child_2: T, distance: Optional[float] = None, **data):
+        root_node = self._get_root_node()
+        root_node.add_connection_recursive(child_1.hierarchy, child_2.hierarchy, distance, **data)
+
+    def _add_connection_by_names(self, child_name_1: str, child_name_2: str, distance: Optional[float] = None, **data):
+        child_1 = self._get_child(child_name_1)
+        child_2 = self._get_child(child_name_2)
         color = "gray"
         if distance is None:
             distance = util.get_euclidean_distance(child_1.pos_abs, child_2.pos_abs)
             color = "black"
         self.child_graph.add_edge(child_1, child_2, distance=distance, color=color, **data)
-
-    # TODO: Refactor add_connection to give both options of add_connection_name and add_connection_node
-    def _add_connection(self, child_name_1: str, child_name_2: str, distance: Optional[float] = None, **data):
-        self.add_connection_node(self._get_child(child_name_1), self._get_child(child_name_2), distance, **data)
 
     def _add_connection_recursive(self, child_1_name, child_2_name, hierarchy_1: List[str], hierarchy_2: List[str], hierarchy_mask: List[bool],
                                   hierarchy_level: int, distance: Optional[float] = None, debug=False, **data):
@@ -60,13 +66,13 @@ class SHNode(Generic[T]):
         if self._get_child(child_2_name, supress_error=True) is None:
             if debug:
                 print("Add new bridge node:", child_2_name, "in graph:", hierarchy_1[:hierarchy_level])
-            self._add_child(child_2_name, pos=(-2, -2, -2), is_leaf=child_1.is_leaf, type="hierarchy_bridge")
+            self.add_child_by_name(child_2_name, pos=(-2, -2, -2), is_leaf=child_1.is_leaf, type="hierarchy_bridge")
 
         if debug:
             print("----------------------------")
             print("New connection between:", child_1_name, child_2_name, "in graph:", hierarchy_1[:hierarchy_level])
             print("Graph nodes:", self.get_childs("name"))
-        self._add_connection(child_1_name, child_2_name, distance, **data)
+        self._add_connection_by_names(child_1_name, child_2_name, distance, **data)
 
         # if child_1 is a leaf, no need to go deeper
         if child_1.is_leaf:
