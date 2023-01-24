@@ -36,26 +36,19 @@ hierarchy_levels = {
 
 class SHGraph(SHNode):
     def __init__(self,  root_name: str, root_pos: Tuple[float, float, float]):
-        self.root_graph: nx.Graph = nx.Graph()
         self.leaf_graph: nx.Graph = nx.Graph()
-        self.root_graph.add_node(self, name=root_name)
         super().__init__(unique_name=root_name,
-                         parent_node=self.root_graph[self], pos=root_pos, is_root=True)
+                         parent_node=self, pos=root_pos, is_root=True)
 
-    def add_child(self, hierarchy: List[str], name: str, pos: Tuple[float, float, float], is_leaf: bool = False, **data):
-        self.get_child(hierarchy)._add_child(name, pos, is_leaf, **data,)
-
-        # Add leaf node to leaf_graph for visualization
-        if is_leaf:
-            hierarchy.append(name)
-            self.leaf_graph.add_node(self.get_child(hierarchy),
-                                     name=name, **data)
+    def add_child_by_hierarchy(self, hierarchy: List[str], name: str, pos: Tuple[float, float, float], is_leaf: bool = False):
+        """ Add a child node with name to the parent node defined by the hierarchy list"""
+        self.get_child_by_hierarchy(hierarchy).add_child_by_name(name, pos, is_leaf=is_leaf)
 
     def add_child_recursive(self):
         pass
 
-    def _get_leaf_graph(self):
-        return self.leaf_graph
+    def _get_root_node(self):
+        return self
 
     def add_connection_recursive(self, hierarchy_1: List[str], hierarchy_2: List[str], distance: Optional[float] = None, **data):
         if len(hierarchy_1) != len(hierarchy_2):
@@ -66,14 +59,14 @@ class SHGraph(SHNode):
                                        hierarchy_level=0, distance=distance, **data)
 
         # Add leaf node connections to leaf_graph for visualization
-        node_1 = self.get_child(hierarchy_1)
+        node_1 = self.get_child_by_hierarchy(hierarchy_1)
         if node_1.is_leaf:
-            node_2 = self.get_child(hierarchy_2)
+            node_2 = self.get_child_by_hierarchy(hierarchy_2)
             if distance is None:
                 distance = util.get_euclidean_distance(node_1.pos, node_2.pos)
             self.leaf_graph.add_edge(node_1, node_2, distance=distance, color="black", **data)
 
-    def get_child(self, hierarchy: List[str]) -> SHNode:
+    def get_child_by_hierarchy(self, hierarchy: List[str]) -> SHNode:
         child = self
         for name in hierarchy:
             child = child._get_child(name)
@@ -95,12 +88,12 @@ class SHGraph(SHNode):
         return path_dict
 
     # @util.timing
-    def plan(self, start_hierarchy: List[str], goal_hierarchy: List[str]) -> List[SHNode]:
+    def plan_in_leaf_graph(self, start_hierarchy: List[str], goal_hierarchy: List[str]) -> List[SHNode]:
         if len(start_hierarchy) != len(goal_hierarchy):
             raise ValueError("Hierarchies must have same length")
 
-        start_node = self.get_child(start_hierarchy)
-        goal_node = self.get_child(goal_hierarchy)
+        start_node = self.get_child_by_hierarchy(start_hierarchy)
+        goal_node = self.get_child_by_hierarchy(goal_hierarchy)
 
         path_list = nx.shortest_path(self.leaf_graph,
                                      source=start_node,
