@@ -1,5 +1,5 @@
 import itertools
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Set, Tuple
 import numpy as np
 import cv2
 from shapely.ops import unary_union, polygonize_full
@@ -112,13 +112,15 @@ def _create_paths(envs: Dict[int, Environment], bridge_nodes: Dict[Tuple, List],
         connect_paths(env, room_bridge_nodes, room_bridge_edges)
 
 
-def connect_paths(env: Environment, bridge_nodes: Dict[Tuple, List], bridge_edges: Dict[Tuple, List]):
-    if not env.scene:
-        print("No scene and paths in room", env.room_id)
-        return
-
+def connect_paths(env: Environment, bridge_nodes: Dict[Tuple, List], bridge_edges: Dict[Tuple, List]) -> Set:
     # Get all bridge points of this room to others
     bridge_points = [point for points in bridge_nodes.values() for point in points]
+    bridge_points_not_connected = set()
+    if not env.scene:
+        print("No scene and paths in room", env.room_id)
+        bridge_points_not_connected.update(bridge_points)
+        return bridge_points_not_connected
+
     # Remove all bridge edges from walls
     [env.clear_bridge_edges(edge_points) for edge_points in bridge_edges.values()]
 
@@ -128,13 +130,16 @@ def connect_paths(env: Environment, bridge_nodes: Dict[Tuple, List], bridge_edge
         for p1, p2 in itertools.combinations(bridge_points, 2):
             connection = env.get_valid_connection(Point(p1[0], p1[1]), Point(p2[0], p2[1]))
             if connection is None:
+                bridge_points_not_connected.add(p1)
+                bridge_points_not_connected.add(p2)
                 continue
             else:
                 env.add_path(connection)
                 print("Connection between bridge points added")
         if not env.path:
             print("No path in room", env.room_id)
-            return
+            bridge_points_not_connected.update(bridge_points)
+            return bridge_points_not_connected
     else:
         print("Connecting paths in room", env.room_id)
         result, dangles, cuts, invalids = polygonize_full(env.path)
@@ -164,8 +169,10 @@ def connect_paths(env: Environment, bridge_nodes: Dict[Tuple, List], bridge_edge
                 env.add_path(connection)
             else:
                 print("No connection found for bridge node", point)
+                bridge_points_not_connected.add(point)
     # print(len(env.path), "paths in room", env.room_id)
     # env.plot()
+    return bridge_points_not_connected
 
 
 def _plot_all_envs(envs: Dict[int, Environment]):
