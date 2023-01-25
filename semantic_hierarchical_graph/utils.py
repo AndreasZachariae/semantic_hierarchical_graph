@@ -19,7 +19,7 @@ def round_up(n) -> int:
 def path_dict_to_leaf_path_list(path: dict):
     leaf_path = []
     for node, dict in path.items():
-        if node.is_leaf and not "h_bridge" in node.unique_name:
+        if node.is_leaf and not "bridge" in node.unique_name:
             leaf_path.append(node)
         else:
             leaf_path.extend(path_dict_to_leaf_path_list(dict))

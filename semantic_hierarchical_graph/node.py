@@ -40,17 +40,23 @@ class SHNode(Generic[T]):
         return self.parent_node._get_root_node()
 
     def add_connection_by_nodes(self, child_1: T, child_2: T, distance: Optional[float] = None, **data):
-        root_node = self._get_root_node()
-        root_node.add_connection_recursive(child_1.hierarchy, child_2.hierarchy, distance, **data)
-
-    def _add_connection_by_names(self, child_name_1: str, child_name_2: str, distance: Optional[float] = None, **data):
-        child_1 = self._get_child(child_name_1)
-        child_2 = self._get_child(child_name_2)
         color = "gray"
         if distance is None:
             distance = util.get_euclidean_distance(child_1.pos_abs, child_2.pos_abs)
             color = "black"
         self.child_graph.add_edge(child_1, child_2, distance=distance, color=color, **data)
+
+        # Add leaf node connections to leaf_graph for visualization
+        leaf_graph = self._get_root_node().leaf_graph
+        if leaf_graph.has_node(child_1) and leaf_graph.has_node(child_2):
+            leaf_graph.add_edge(child_1, child_2, distance=distance, color=color, **data)
+
+    def add_connection_recursive_by_nodes(self, child_1: T, child_2: T, distance: Optional[float] = None, **data):
+        root_node = self._get_root_node()
+        root_node.add_connection_recursive(child_1.hierarchy, child_2.hierarchy, distance, **data)
+
+    def _add_connection_by_names(self, child_name_1: str, child_name_2: str, distance: Optional[float] = None, **data):
+        self.add_connection_by_nodes(self._get_child(child_name_1), self._get_child(child_name_2), distance, **data)
 
     def _add_connection_recursive(self, child_1_name, child_2_name, hierarchy_1: List[str], hierarchy_2: List[str], hierarchy_mask: List[bool],
                                   hierarchy_level: int, distance: Optional[float] = None, debug=False, **data):
@@ -98,7 +104,7 @@ class SHNode(Generic[T]):
                 bridge_name += node_name + "_"
         if hierarchy_level < len(hierarchy):
             bridge_name += hierarchy[hierarchy_level] + "_"
-        bridge_name += "h_bridge"
+        bridge_name += "bridge"
         return bridge_name
 
     def _compare_hierarchy(self, hierarchy_1: List[str], hierarchy_2: List[str]) -> List[bool]:
@@ -161,7 +167,7 @@ class SHNode(Generic[T]):
                 continue
 
             # if node is bridge, go to next in path
-            if "_h_bridge" in node.unique_name:
+            if "_bridge" in node.unique_name:
                 if debug:
                     print("Bridge reached:", node.unique_name)
                 path_dict[node] = {}
@@ -169,19 +175,19 @@ class SHNode(Generic[T]):
 
             # if current node is not the start node, start from bridge
             if node.unique_name != start_name:
-                if "_h_bridge" in child_path[i-1].unique_name:
-                    child_start_name = child_path[i-1].unique_name[:-9] + "_" + str(bridge_start) + "_h_bridge"
+                if "_bridge" in child_path[i-1].unique_name:
+                    child_start_name = child_path[i-1].unique_name[:-7] + "_" + str(bridge_start) + "_bridge"
                 else:
-                    child_start_name = child_path[i-1].unique_name + "_h_bridge"
+                    child_start_name = child_path[i-1].unique_name + "_bridge"
             else:
                 child_start_name = start_hierarchy[hierarchy_level+1]
 
             # if current node is not the goal node, go to next bridge
             if node.unique_name != goal_name:
-                if "_h_bridge" in child_path[i+1].unique_name:
-                    child_goal_name = child_path[i+1].unique_name[:-9] + "_" + str(bridge_goal) + "_h_bridge"
+                if "_bridge" in child_path[i+1].unique_name:
+                    child_goal_name = child_path[i+1].unique_name[:-7] + "_" + str(bridge_goal) + "_bridge"
                 else:
-                    child_goal_name = child_path[i+1].unique_name + "_h_bridge"
+                    child_goal_name = child_path[i+1].unique_name + "_bridge"
             else:
                 child_goal_name = goal_hierarchy[hierarchy_level+1]
 
@@ -203,10 +209,10 @@ class SHNode(Generic[T]):
             start_name = path[0].unique_name
             goal_name = path[-1].unique_name
             if not path[0].is_leaf:
-                if "_h_bridge" in goal_name:
-                    bridge_goal = same_hierarchy_paths[self._get_child(goal_name[:-9])][1].unique_name
-                if "_h_bridge" in start_name:
-                    bridge_start = same_hierarchy_paths[self._get_child(start_name[:-9])][-2].unique_name
+                if "_bridge" in goal_name:
+                    bridge_goal = same_hierarchy_paths[self._get_child(goal_name[:-7])][1].unique_name
+                if "_bridge" in start_name:
+                    bridge_start = same_hierarchy_paths[self._get_child(start_name[:-7])][-2].unique_name
 
             path_dict[node] = node._plan_recursive(start_name, goal_name, start_hierarchy, goal_hierarchy, path,
                                                    hierarchy_level + 1, bridge_start, bridge_goal)
