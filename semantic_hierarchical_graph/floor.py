@@ -1,6 +1,7 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Set, Tuple
 import cv2
 import numpy as np
+import semantic_hierarchical_graph.utils as util
 from semantic_hierarchical_graph.environment import Environment
 from semantic_hierarchical_graph.graph import SHGraph
 from semantic_hierarchical_graph.node import SHNode
@@ -16,18 +17,33 @@ class Floor(SHNode):
         self.map = cv2.imread(map_path)
         self.watershed: np.ndarray = np.array([])
         self.params: Dict[str, Any] = Parameter(params_path).params
+        self.all_bridge_nodes: Dict[Tuple, List] = {}
+        self.bridge_points_not_connected: Set = set()
         # self.create_rooms()
 
     def create_rooms(self):
         self.watershed, ws_erosion, dist_transform = segmentation.marker_controlled_watershed(self.map, self.params)
-        bridge_nodes, bridge_edges = segmentation.find_bridge_nodes(self.watershed, dist_transform)
+        self.all_bridge_nodes, bridge_edges = segmentation.find_bridge_nodes(self.watershed, dist_transform)
         ws_tmp = ws_erosion.copy()
         for i in range(2, ws_tmp.max() + 1):
-            room_bridge_nodes = {adj_rooms: points for adj_rooms, points in bridge_nodes.items() if i in adj_rooms}
-            room_bridge_edges = {adj_rooms: points for adj_rooms, points in bridge_edges.items() if i in adj_rooms}
+            room_bridge_nodes = {adj_rooms: points for adj_rooms, points in self.all_bridge_nodes.items()
+                                 if i in adj_rooms}
+            room_bridge_edges = {adj_rooms: points for adj_rooms, points in bridge_edges.items()
+                                 if i in adj_rooms}
             room = Room(i, self, ws_tmp, self.params, room_bridge_nodes, room_bridge_edges)
+            self.bridge_points_not_connected.update(room.bridge_points_not_connected)
             self.add_child_by_node(room)
             room.create_roadmap()
+
+    def create_bridges(self):
+        for adj_rooms, bridge_points in self.all_bridge_nodes.items():
+            for point in bridge_points:
+                if point in self.bridge_points_not_connected:
+                    continue
+                h1 = self.hierarchy + [f"room_{adj_rooms[0]}", str(point)]
+                h2 = self.hierarchy + [f"room_{adj_rooms[1]}", str(point)]
+                self._get_child(f"room_{adj_rooms[0]}")._get_child(str(point))
+                self._get_root_node().add_connection_recursive(h1, h2, distance=0.0)
 
     def plot_all_envs(self):
         all_envs = Environment(-1)
@@ -45,11 +61,6 @@ class Floor(SHNode):
 
         return img_new
 
-    def get_bridge_nodes(self):
-        all_bridge_nodes: Dict[Tuple, List] = {}
-        [all_bridge_nodes.update(room.bridge_nodes) for room in self.get_childs()]
-        return all_bridge_nodes
-
     def get_largest_rectangles(self):
         all_largest_rectangles: Dict[int, List] = {room.id: room.largest_rectangles for room in self.get_childs()}
         return all_largest_rectangles
@@ -65,7 +76,7 @@ class Room(SHNode):
             ws_erosion, self.env, self.params)
         super().__init__(f"room_{id}", parent_node, centroid, False, False)
 
-        path_planning.connect_paths(self.env, bridge_nodes, bridge_edges)
+        self.bridge_points_not_connected: Set = path_planning.connect_paths(self.env, bridge_nodes, bridge_edges)
         # self.create_roadmap()
 
     def create_roadmap(self):
@@ -73,7 +84,6 @@ class Room(SHNode):
         self.env.split_multipoint_lines()
         self.env.split_path_at_intersections()
         # print(len(self.env.path))
-        # self.env.plot()
 
         for path in self.env.path:
             if len(path.coords) != 2:
@@ -84,12 +94,11 @@ class Room(SHNode):
                 if str(p) in self.get_childs("name"):
                     loc = self._get_child(str(p))
                 else:
-                    loc = Location(str(p), self, p + (0,))
+                    loc = Location(str(p), self, point + (0.0,))
                     self.add_child_by_node(loc)
                 connection.append(loc)
-                # TODO connect rooms with bridge nodes
-                # if point in self.bridge_nodes:
             self.add_connection_by_nodes(connection[0], connection[1])
+        # self.env.plot()
 
 
 class Location(SHNode):
@@ -104,17 +113,25 @@ if __name__ == "__main__":
     print(G.get_childs("name"))
 
     floor.create_rooms()
+    floor.create_bridges()
+
     print(floor.get_childs("name"))
     room_2 = floor._get_child("room_2")
     print(room_2.get_childs("name"))
     print(len(room_2.get_childs()))
-    vis.draw_graph_3d(floor.child_graph)
-    vis.draw_graph_3d(room_2.child_graph)
-    vis.draw_graph_3d(G.leaf_graph)
-    # vis.draw_child_graph(G, ["ryu"])
+
+    path_dict = G.plan_recursive(["ryu", "room_2", "(283, 191)"], ["ryu", "room_12", "(1526, 480)"])
+    # util.save_dict_to_json(path_dict, "data/ryu_path.json")
+    leaf_path_list = util.path_dict_to_leaf_path_list(path_dict)
+
+    vis.draw_child_graph(G, ["ryu"], path_dict)
+    vis.draw_child_graph(G, ["ryu", "room_2"], path_dict)
+    # vis.draw_graph_3d(floor.child_graph)
+    # vis.draw_graph_3d(room_2.child_graph)
+    vis.draw_graph_3d(G.leaf_graph, leaf_path_list)
 
     floor.plot_all_envs()
-    ws2 = segmentation.draw(floor.watershed, floor.get_bridge_nodes(), (22))
+    ws2 = segmentation.draw(floor.watershed, floor.all_bridge_nodes, (22))
     # ws3 = segmentation.draw(ws2, floor.get_largest_rectangles(), (21))
     ws4 = floor.draw_all_paths(ws2, (25))
     segmentation.show_imgs(ws4, name="map_benchmark_ryu_result", save=False)
