@@ -7,6 +7,7 @@ from semantic_hierarchical_graph.graph import SHGraph
 import semantic_hierarchical_graph.utils as util
 
 
+# TODO: Update function to draw every graph not just from root node
 def draw_child_graph(root_node: SHGraph, child_hierarchy: List[str], path_dict: Optional[Dict] = None, view_axis: int = 2):
     child = root_node.get_child_by_hierarchy(child_hierarchy)
 
@@ -35,6 +36,7 @@ def draw_child_graph(root_node: SHGraph, child_hierarchy: List[str], path_dict: 
     plt.show()
 
 
+# TODO: Update function to draw every path directly from dict
 def draw_graph_3d(graph: nx.Graph, path=None):
     node_xyz = np.array([node.pos_abs for node in graph.nodes()])  # type: ignore
     edge_xyz = np.array([(u.pos_abs, v.pos_abs) for u, v in graph.edges])
