@@ -10,9 +10,11 @@ import semantic_hierarchical_graph.visualization as vis
 import semantic_hierarchical_graph.segmentation as segmentation
 import semantic_hierarchical_graph.path_planning as path_planning
 
+Position = Tuple[float, float, float]
+
 
 class Floor(SHNode):
-    def __init__(self, unique_name: str, parent_node, pos: Tuple[float, float, float], map_path: str, params_path: str):
+    def __init__(self, unique_name: str, parent_node, pos: Position, map_path: str, params_path: str):
         super().__init__(unique_name, parent_node, pos, False, False)
         self.map = cv2.imread(map_path)
         self.watershed: np.ndarray = np.array([])
@@ -102,7 +104,7 @@ class Room(SHNode):
 
 
 class Location(SHNode):
-    def __init__(self, unique_name: str, parent_node, pos: Tuple[float, float, float]):
+    def __init__(self, unique_name: str, parent_node, pos: Position):
         super().__init__(unique_name, parent_node, pos, False, True)
 
 

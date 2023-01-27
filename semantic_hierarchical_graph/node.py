@@ -7,21 +7,22 @@ import semantic_hierarchical_graph.utils as util
 
 
 T = TypeVar('T', bound='SHNode')
+Position = Tuple[float, float, float]
 
 
 class SHNode(Generic[T]):
-    def __init__(self, unique_name: str, parent_node, pos: Tuple[float, float, float], is_root: bool = False, is_leaf: bool = False, type: str = "node"):
+    def __init__(self, unique_name: str, parent_node, pos: Position, is_root: bool = False, is_leaf: bool = False, type: str = "node"):
         self.unique_name: str = unique_name
         self.type: str = type
         self.is_root: bool = is_root
         self.is_leaf: bool = is_leaf
-        self.pos: Tuple[float, float, float] = pos
-        self.pos_abs: Tuple[float, float, float] = tuple(np.add(pos, parent_node.pos_abs)) if not is_root else pos
+        self.pos: Position = pos
+        self.pos_abs: Position = tuple(np.add(pos, parent_node.pos_abs)) if not is_root else pos
         self.parent_node: SHNode = parent_node
         self.hierarchy: List[str] = parent_node.hierarchy + [unique_name] if not is_root else []
         self.child_graph: nx.Graph = nx.Graph()
 
-    def add_child_by_name(self, name: str, pos: Tuple[float, float, float], is_leaf: bool = False, type: str = "node") -> T:
+    def add_child_by_name(self, name: str, pos: Position, is_leaf: bool = False, type: str = "node") -> T:
         # Create and add child of type SHNode with unique name on that level
         node: T = SHNode(unique_name=name, parent_node=self, pos=pos, is_leaf=is_leaf, type=type)  # type: ignore
         self.add_child_by_node(node)

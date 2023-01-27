@@ -33,16 +33,18 @@ hierarchy_levels = {
 # 2. Hierachical graphs
 # 3. Dictionary like structure G["building F"]["floor 1"]["room 1"]
 
+Position = Tuple[float, float, float]
+
 
 class SHGraph(SHNode):
-    def __init__(self,  root_name: str, root_pos: Tuple[float, float, float]):
+    def __init__(self,  root_name: str, root_pos: Position):
         self.leaf_graph: nx.Graph = nx.Graph()
         super().__init__(unique_name=root_name,
                          parent_node=self, pos=root_pos, is_root=True)
 
-    def add_child_by_hierarchy(self, hierarchy: List[str], name: str, pos: Tuple[float, float, float], is_leaf: bool = False):
+    def add_child_by_hierarchy(self, hierarchy: List[str], name: str, pos: Position, is_leaf: bool = False) -> SHNode:
         """ Add a child node with name to the parent node defined by the hierarchy list"""
-        self.get_child_by_hierarchy(hierarchy).add_child_by_name(name, pos, is_leaf=is_leaf)
+        return self.get_child_by_hierarchy(hierarchy).add_child_by_name(name, pos, is_leaf=is_leaf)
 
     def add_child_recursive(self):
         pass

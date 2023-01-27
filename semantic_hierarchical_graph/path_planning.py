@@ -9,6 +9,8 @@ from semantic_hierarchical_graph.environment import Environment
 from semantic_hierarchical_graph.parameters import Parameter
 import semantic_hierarchical_graph.segmentation as segmentation
 
+Position = Tuple[float, float, float]
+
 
 def _create_rooms(ws_erosion: np.ndarray, params: Dict[str, Any]) -> Tuple[Dict[int, Environment], Dict[int, List]]:
     ws_tmp = ws_erosion.copy()
@@ -21,9 +23,9 @@ def _create_rooms(ws_erosion: np.ndarray, params: Dict[str, Any]) -> Tuple[Dict[
     return segment_envs, largest_rectangles
 
 
-def calc_largest_rectangles(ws_erosion: np.ndarray, env: Environment, params: Dict[str, Any]) -> Tuple[List, Tuple[float, float, float]]:
+def calc_largest_rectangles(ws_erosion: np.ndarray, env: Environment, params: Dict[str, Any]) -> Tuple[List, Position]:
     largest_rectangles: List = []
-    centroid: Tuple[float, float, float] = (0, 0, 0)
+    centroid: Position = (0, 0, 0)
     first_loop = True
     while True:
         segment = np.where(ws_erosion == env.room_id, 255, 0).astype("uint8")
