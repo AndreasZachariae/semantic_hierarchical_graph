@@ -86,5 +86,5 @@ Make 3 levels of connectivity:
 - [ ] Implement metric to measure effects
 
 Integrate with SH-Graph
-- [ ] create graph from paths
-- [ ] integrate room graph into sh-graph
+- [x] create graph from paths
+- [x] integrate room graph into sh-graph
