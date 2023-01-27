@@ -122,15 +122,15 @@ if __name__ == "__main__":
     print(room_2.get_childs("name"))
     print(len(room_2.get_childs()))
 
-    path_dict = G.plan_recursive(["ryu", "room_2", "(283, 191)"], ["ryu", "room_12", "(1526, 480)"])
+    path_dict = G.plan_recursive(["ryu", "room_2", "(387, 60)"], ["ryu", "room_12", "(1526, 480)"])
     # util.save_dict_to_json(path_dict, "data/ryu_path.json")
-    leaf_path_list = util.path_dict_to_leaf_path_list(path_dict)
 
-    vis.draw_child_graph(G, ["ryu"], path_dict)
-    vis.draw_child_graph(G, ["ryu", "room_2"], path_dict)
-    # vis.draw_graph_3d(floor.child_graph)
-    # vis.draw_graph_3d(room_2.child_graph)
-    vis.draw_graph_3d(G.leaf_graph, leaf_path_list)
+    # vis.draw_child_graph(floor, path_dict)
+    # vis.draw_child_graph(room_2, path_dict)
+    vis.draw_child_graph(G, path_dict, is_leaf=True)
+    vis.draw_child_graph_3d(floor, path_dict)
+    vis.draw_child_graph_3d(room_2, path_dict)
+    # vis.draw_child_graph_3d(G, path_dict, is_leaf=True)
 
     floor.plot_all_envs()
     ws2 = segmentation.draw(floor.watershed, floor.all_bridge_nodes, (22))
