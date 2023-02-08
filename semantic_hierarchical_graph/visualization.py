@@ -55,8 +55,9 @@ def draw_child_graph_3d(parent_node: SHNode, path: Optional[Dict] = None, is_lea
 
     if path is not None:
         path_list = util.path_to_list(path, parent_node.hierarchy, is_leaf=is_leaf)
-        path_xyz = np.array([node.pos_abs for node in path_list])
-        ax.plot(*path_xyz.T, color="tab:red")
+        if len(path_list) > 0:
+            path_xyz = np.array([node.pos_abs for node in path_list])
+            ax.plot(*path_xyz.T, color="tab:red")
 
     ax.grid(False)
     # Suppress tick labels

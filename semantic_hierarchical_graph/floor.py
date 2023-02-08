@@ -120,6 +120,7 @@ if __name__ == "__main__":
 
     print(floor.get_childs("name"))
     room_2 = floor._get_child("room_2")
+    room_11 = floor._get_child("room_11")
     print(room_2.get_childs("name"))
     print(len(room_2.get_childs()))
 
@@ -131,6 +132,7 @@ if __name__ == "__main__":
     vis.draw_child_graph(G, path_dict, is_leaf=True)
     vis.draw_child_graph_3d(floor, path_dict)
     vis.draw_child_graph_3d(room_2, path_dict)
+    vis.draw_child_graph_3d(room_11, path_dict)
     # vis.draw_child_graph_3d(G, path_dict, is_leaf=True)
 
     floor.plot_all_envs()
@@ -140,5 +142,5 @@ if __name__ == "__main__":
     segmentation.show_imgs(ws4, name="map_benchmark_ryu_result", save=False)
 
     metrics = Metrics(room_2)
-    metrics.print_metrics()
+    # metrics.print_metrics()
     metrics.save_metrics("data/ryu_metrics.json")

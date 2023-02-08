@@ -73,7 +73,8 @@ class SHNode(Generic[T]):
         if self._get_child(child_2_name, supress_error=True) is None:
             if debug:
                 print("Add new bridge node:", child_2_name, "in graph:", hierarchy_1[:hierarchy_level])
-            self.add_child_by_name(child_2_name, pos=(-2, -2, -2), is_leaf=child_1.is_leaf, type="hierarchy_bridge")
+            self.add_child_by_name(child_2_name, pos=(child_1.pos[0], child_1.pos[1], child_1.pos[2]+1),
+                                   is_leaf=child_1.is_leaf, type="hierarchy_bridge")
 
         if debug:
             print("----------------------------")
