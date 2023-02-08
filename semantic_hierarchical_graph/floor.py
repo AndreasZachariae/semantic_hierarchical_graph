@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 import cv2
 import numpy as np
 import semantic_hierarchical_graph.utils as util
@@ -33,7 +33,8 @@ class Floor(SHNode):
                                  if i in adj_rooms}
             room_bridge_edges = {adj_rooms: points for adj_rooms, points in bridge_edges.items()
                                  if i in adj_rooms}
-            room = Room(i, self, ws_tmp, self.params, room_bridge_nodes, room_bridge_edges)
+            room_mask = np.where(self.watershed == i, 255, 0).astype("uint8")
+            room = Room(i, self, ws_tmp, room_mask, self.params, room_bridge_nodes, room_bridge_edges)
             self.bridge_points_not_connected.update(room.bridge_points_not_connected)
             self.add_child_by_node(room)
             room.create_roadmap()
@@ -56,11 +57,16 @@ class Floor(SHNode):
         print("All paths:", len(all_envs.path))
         all_envs.plot()
 
-    def draw_all_paths(self, img: np.ndarray,  color) -> np.ndarray:
+    def draw_all_paths(self, img: np.ndarray,  color, path: Optional[Dict] = None, path_color=None) -> np.ndarray:
         img_new = img.copy()
-        all_envs = Environment(-1)
         for room in self.get_childs():
             [cv2.polylines(img_new, [line.coords._coords.astype("int32")], False,  color, 2) for line in room.env.path]
+        if path is not None:
+            path_list = util._path_dict_to_leaf_path_list(path)
+            for i in range(len(path_list) - 1):
+                pt1 = np.round(path_list[i].pos[0:2]).astype("int32")
+                pt2 = np.round(path_list[i + 1].pos[0:2]).astype("int32")
+                cv2.line(img_new, pt1, pt2, path_color, 2)
 
         return img_new
 
@@ -70,8 +76,9 @@ class Floor(SHNode):
 
 
 class Room(SHNode):
-    def __init__(self, id: int, parent_node, ws_erosion: np.ndarray, params: Dict[str, Any], bridge_nodes: Dict[Tuple, List], bridge_edges: Dict[Tuple, List]):
+    def __init__(self, id: int, parent_node, ws_erosion: np.ndarray, mask: np.ndarray, params: Dict[str, Any], bridge_nodes: Dict[Tuple, List], bridge_edges: Dict[Tuple, List]):
         self.id = id
+        self.mask = mask
         self.params: Dict[str, Any] = params
         self.env: Environment = Environment(id)
         self.bridge_nodes: Dict[Tuple, List] = bridge_nodes
@@ -118,29 +125,28 @@ if __name__ == "__main__":
     floor.create_rooms()
     floor.create_bridges()
 
-    print(floor.get_childs("name"))
+    # print(floor.get_childs("name"))
     room_2 = floor._get_child("room_2")
     room_11 = floor._get_child("room_11")
-    print(room_2.get_childs("name"))
-    print(len(room_2.get_childs()))
+    # print(room_2.get_childs("name"))
 
     path_dict = G.plan_recursive(["ryu", "room_2", "(387, 60)"], ["ryu", "room_12", "(1526, 480)"])
     # util.save_dict_to_json(path_dict, "data/ryu_path.json")
 
     # vis.draw_child_graph(floor, path_dict)
     # vis.draw_child_graph(room_2, path_dict)
-    vis.draw_child_graph(G, path_dict, is_leaf=True)
-    vis.draw_child_graph_3d(floor, path_dict)
+    # vis.draw_child_graph(G, path_dict, is_leaf=True)
+    # vis.draw_child_graph_3d(floor, path_dict)
     vis.draw_child_graph_3d(room_2, path_dict)
-    vis.draw_child_graph_3d(room_11, path_dict)
+    # vis.draw_child_graph_3d(room_11, path_dict)
     # vis.draw_child_graph_3d(G, path_dict, is_leaf=True)
 
-    floor.plot_all_envs()
+    # floor.plot_all_envs()
     ws2 = segmentation.draw(floor.watershed, floor.all_bridge_nodes, (22))
     # ws3 = segmentation.draw(ws2, floor.get_largest_rectangles(), (21))
-    ws4 = floor.draw_all_paths(ws2, (25))
+    ws4 = floor.draw_all_paths(ws2, (0), path_dict, (25))
     segmentation.show_imgs(ws4, name="map_benchmark_ryu_result", save=False)
 
-    metrics = Metrics(room_2)
+    metrics = Metrics(room_11)
     # metrics.print_metrics()
     metrics.save_metrics("data/ryu_metrics.json")
