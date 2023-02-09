@@ -74,6 +74,7 @@ def find_bridge_nodes(ws: np.ndarray, dist_transform: np.ndarray):  # -> Dict[Tu
 
         neighbors.discard(1)
         neighbors.discard(-1)
+        neighbors.discard(0)
 
         if len(neighbors) != 2:
             continue
@@ -150,7 +151,7 @@ if __name__ == '__main__':
     params = Parameter("config/hou2_params.yaml").params
 
     ws, ws_erosion, dist_transform = marker_controlled_watershed(img, params)
-    bridge_nodes, bridge_edges = find_bridge_nodes(ws, dist_transform)
+    bridge_nodes, bridge_edges = find_bridge_nodes(ws_erosion, dist_transform)
 
     ws2 = draw(ws, bridge_nodes, (22))
     show_imgs(ws2, name="map_benchmark_ryu_erosion", save=False)

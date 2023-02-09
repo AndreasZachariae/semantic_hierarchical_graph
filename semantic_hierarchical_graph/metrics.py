@@ -28,7 +28,6 @@ class Metrics():
         segmentation.show_imgs(room.mask)
 
         # -2. Find out why second bridge point between same rooms is not connected
-        # -1. Filter bridge points which are not reachable (on the obstacle on ws_erosion)
         # 0. remove not connected bridge nodes from list or try to plan and adjust success rate
         # 1. plan path between bridge nodes
         # 2. repeat for all combinations

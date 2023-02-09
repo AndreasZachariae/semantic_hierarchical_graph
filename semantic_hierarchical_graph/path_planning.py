@@ -203,7 +203,7 @@ if __name__ == '__main__':
     # params = Parameter("config/hou2_params.yaml").params
 
     ws, ws_erosion, dist_transform = segmentation.marker_controlled_watershed(img, params)
-    bridge_nodes, bridge_edges = segmentation.find_bridge_nodes(ws, dist_transform)
+    bridge_nodes, bridge_edges = segmentation.find_bridge_nodes(ws_erosion, dist_transform)
     segment_envs, largest_rectangles = _create_rooms(ws_erosion, params)
     _create_paths(segment_envs, bridge_nodes, bridge_edges)
     _plot_all_envs(segment_envs)

@@ -191,6 +191,9 @@ class Environment():
     def clear_bridge_edges(self, bridge_edges: List):
         walls = self.scene[0]
         for edge in bridge_edges:
+            if len(edge) == 1:
+                edge.append(edge[0])
+                print("single edge point in room ", self.room_id, edge)
             self.scene[0] = walls.difference(LineString(edge).buffer(3, cap_style="flat"))
 
     def plot(self):

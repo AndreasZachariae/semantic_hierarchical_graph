@@ -22,7 +22,6 @@ class Floor(SHNode):
         self.params: Dict[str, Any] = Parameter(params_path).params
         self.all_bridge_nodes: Dict[Tuple, List] = {}
         self.bridge_points_not_connected: Set = set()
-        # self.create_rooms()
 
     def create_rooms(self):
         self.watershed, ws_erosion, dist_transform = segmentation.marker_controlled_watershed(self.map, self.params)
@@ -31,7 +30,7 @@ class Floor(SHNode):
         for i in range(2, ws_tmp.max() + 1):
             room_bridge_nodes = {adj_rooms: points for adj_rooms, points in self.all_bridge_nodes.items()
                                  if i in adj_rooms}
-            room_bridge_edges = {adj_rooms: points for adj_rooms, points in bridge_edges.items()
+            room_bridge_edges = {adj_rooms: edges for adj_rooms, edges in bridge_edges.items()
                                  if i in adj_rooms}
             room_mask = np.where(self.watershed == i, 255, 0).astype("uint8")
             room = Room(i, self, ws_tmp, room_mask, self.params, room_bridge_nodes, room_bridge_edges)
@@ -87,7 +86,6 @@ class Room(SHNode):
         super().__init__(f"room_{id}", parent_node, centroid, False, False)
 
         self.bridge_points_not_connected: Set = path_planning.connect_paths(self.env, bridge_nodes, bridge_edges)
-        # self.create_roadmap()
 
     def create_roadmap(self):
         self.env.remove_duplicate_paths()
@@ -141,7 +139,7 @@ if __name__ == "__main__":
     # vis.draw_child_graph_3d(room_11, path_dict)
     # vis.draw_child_graph_3d(G, path_dict, is_leaf=True)
 
-    # floor.plot_all_envs()
+    floor.plot_all_envs()
     ws2 = segmentation.draw(floor.watershed, floor.all_bridge_nodes, (22))
     # ws3 = segmentation.draw(ws2, floor.get_largest_rectangles(), (21))
     ws4 = floor.draw_all_paths(ws2, (0), path_dict, (25))
