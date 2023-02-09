@@ -27,7 +27,6 @@ class Metrics():
         print(room.bridge_points_not_connected)
         segmentation.show_imgs(room.mask)
 
-        # -2. Find out why second bridge point between same rooms is not connected
         # 0. remove not connected bridge nodes from list or try to plan and adjust success rate
         # 1. plan path between bridge nodes
         # 2. repeat for all combinations

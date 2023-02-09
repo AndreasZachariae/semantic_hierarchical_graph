@@ -107,14 +107,14 @@ def _path_from_rectangle(rectangle: np.ndarray, params: dict) -> LineString:
         return LineString([point_1, point_2, point_3, point_4, point_1])
 
 
-def _create_paths(envs: Dict[int, Environment], bridge_nodes: Dict[Tuple, List], bridge_edges: Dict[Tuple, List]):
+def _create_paths(envs: Dict[int, Environment], bridge_nodes: Dict[Tuple, List], bridge_edges: Dict[Tuple, List], params: dict):
     for room, env in envs.items():
         room_bridge_nodes = {adj_rooms: points for adj_rooms, points in bridge_nodes.items() if room in adj_rooms}
         room_bridge_edges = {adj_rooms: points for adj_rooms, points in bridge_edges.items() if room in adj_rooms}
-        connect_paths(env, room_bridge_nodes, room_bridge_edges)
+        connect_paths(env, room_bridge_nodes, room_bridge_edges, params)
 
 
-def connect_paths(env: Environment, bridge_nodes: Dict[Tuple, List], bridge_edges: Dict[Tuple, List]) -> Set:
+def connect_paths(env: Environment, bridge_nodes: Dict[Tuple, List], bridge_edges: Dict[Tuple, List], params: dict) -> Set:
     # Get all bridge points of this room to others
     bridge_points = [point for points in bridge_nodes.values() for point in points]
     bridge_points_not_connected = set()
@@ -126,8 +126,8 @@ def connect_paths(env: Environment, bridge_nodes: Dict[Tuple, List], bridge_edge
     # Remove all bridge edges from walls
     [env.clear_bridge_edges(edge_points) for edge_points in bridge_edges.values()]
 
+    # Connect bridge points between each other
     if not env.path:
-        # TODO: in eigene funktion auslagern
         print("No path, connect only bridge points in room", env.room_id)
         for p1, p2 in itertools.combinations(bridge_points, 2):
             connection = env.get_valid_connection(Point(p1[0], p1[1]), Point(p2[0], p2[1]))
@@ -142,6 +142,8 @@ def connect_paths(env: Environment, bridge_nodes: Dict[Tuple, List], bridge_edge
             print("No path in room", env.room_id)
             bridge_points_not_connected.update(bridge_points)
             return bridge_points_not_connected
+
+    # Merge rectangles and connect bridge points to path
     else:
         print("Connecting paths in room", env.room_id)
         result, dangles, cuts, invalids = polygonize_full(env.path)
@@ -166,7 +168,7 @@ def connect_paths(env: Environment, bridge_nodes: Dict[Tuple, List], bridge_edge
             env.add_path(connection)
 
         for point in bridge_points:
-            connection = env.find_shortest_connection(point)
+            connection = env.find_shortest_connection(point, params["max_attempts_to_connect_bridge_point_straight"])
             if connection is not None:
                 env.add_path(connection)
             else:
@@ -205,7 +207,7 @@ if __name__ == '__main__':
     ws, ws_erosion, dist_transform = segmentation.marker_controlled_watershed(img, params)
     bridge_nodes, bridge_edges = segmentation.find_bridge_nodes(ws_erosion, dist_transform)
     segment_envs, largest_rectangles = _create_rooms(ws_erosion, params)
-    _create_paths(segment_envs, bridge_nodes, bridge_edges)
+    _create_paths(segment_envs, bridge_nodes, bridge_edges, params)
     _plot_all_envs(segment_envs)
 
     ws2 = segmentation.draw(ws, bridge_nodes, (22))

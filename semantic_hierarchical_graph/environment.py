@@ -70,13 +70,19 @@ class Environment():
                         return None
             return connection
 
-    def find_shortest_connection(self, pos):
+    def find_shortest_connection(self, pos, max_attempts=1):
         """ Find the shortest path from pos to any path that is not in collision """
         if not isinstance(pos, Point):
             point = Point(pos[0], pos[1])
-        closest_path = min(self.path, key=lambda x: x.distance(point))
-        closest_point: Point = nearest_points(closest_path, point)[0]
-        return self.get_valid_connection(closest_point, point)
+        tmp_path = self.path.copy()
+        for attempts in range(max_attempts):
+            closest_path = min(tmp_path, key=lambda x: x.distance(point))
+            closest_point: Point = nearest_points(closest_path, point)[0]
+            connection = self.get_valid_connection(closest_point, point)
+            if connection is not None:
+                return connection
+            tmp_path.remove(closest_path)
+        return None
 
     def find_all_shortest_connections(self, mode: str, polygon=None):
         """ Find all shortest connections between all shapes in path that are not in collision """
@@ -183,18 +189,15 @@ class Environment():
             results = split(line, point)
             already_cut[line] = list(results.geoms)
 
-    def clear_bridge_nodes(self, bridge_points: List):
-        walls = self.scene[0]
-        for point in bridge_points:
-            self.scene[0] = walls.difference(Point(point).buffer(2))
-
     def clear_bridge_edges(self, bridge_edges: List):
         walls = self.scene[0]
         for edge in bridge_edges:
             if len(edge) == 1:
-                edge.append(edge[0])
                 print("single edge point in room ", self.room_id, edge)
-            self.scene[0] = walls.difference(LineString(edge).buffer(3, cap_style="flat"))
+                walls = walls.difference(Point(edge[0]).buffer(4))
+            else:
+                walls = walls.difference(LineString(edge).buffer(4, cap_style="flat"))
+        self.scene[0] = walls
 
     def plot(self):
         fig, ax = plt.subplots(figsize=(10, 10))

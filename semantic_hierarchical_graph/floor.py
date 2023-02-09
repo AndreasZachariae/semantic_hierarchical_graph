@@ -25,7 +25,7 @@ class Floor(SHNode):
 
     def create_rooms(self):
         self.watershed, ws_erosion, dist_transform = segmentation.marker_controlled_watershed(self.map, self.params)
-        self.all_bridge_nodes, bridge_edges = segmentation.find_bridge_nodes(self.watershed, dist_transform)
+        self.all_bridge_nodes, bridge_edges = segmentation.find_bridge_nodes(ws_erosion, dist_transform)
         ws_tmp = ws_erosion.copy()
         for i in range(2, ws_tmp.max() + 1):
             room_bridge_nodes = {adj_rooms: points for adj_rooms, points in self.all_bridge_nodes.items()
@@ -85,7 +85,8 @@ class Room(SHNode):
             ws_erosion, self.env, self.params)
         super().__init__(f"room_{id}", parent_node, centroid, False, False)
 
-        self.bridge_points_not_connected: Set = path_planning.connect_paths(self.env, bridge_nodes, bridge_edges)
+        self.bridge_points_not_connected: Set = path_planning.connect_paths(
+            self.env, bridge_nodes, bridge_edges, self.params)
 
     def create_roadmap(self):
         self.env.remove_duplicate_paths()

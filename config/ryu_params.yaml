@@ -15,3 +15,4 @@ distance_threshold: 30 # 3 * safety_distance
 min_contour_area: 1600 # 4 * (2*safety_distance)**2
 min_corridor_width: 20 # 2*safety_distance
 max_rectangle_to_line_width: 55 # 5.5 * safety_distance
+max_attempts_to_connect_bridge_point_straight: 3
