@@ -1,3 +1,4 @@
+import itertools
 import json
 from typing import Dict, Any
 import semantic_hierarchical_graph.segmentation as segmentation
@@ -25,8 +26,14 @@ class Metrics():
 
         print(room.bridge_nodes)
         print(room.bridge_points_not_connected)
-        segmentation.show_imgs(room.mask)
+        # segmentation.show_imgs(room.mask)
+        bridge_points = [point for points in room.bridge_nodes.values() for point in points]
 
+        for point_1, point_2 in itertools.combinations(bridge_points, 2):
+            print(point_1, point_2)
+
+        # TODO: rooms with more than one bridge node between each other create the same bridge_node
+        #       The name has to be unique per bridge to avoid unwanted connection on same room
         # 0. remove not connected bridge nodes from list or try to plan and adjust success rate
         # 1. plan path between bridge nodes
         # 2. repeat for all combinations
@@ -79,3 +86,35 @@ class Metrics():
     def save_metrics(self, path: str) -> None:
         with open(path, "w") as f:
             json.dump(self.metrics, f, indent=4)
+
+
+if __name__ == "__main__":
+    from semantic_hierarchical_graph.graph import SHGraph
+    from semantic_hierarchical_graph.floor import Floor
+    from semantic_hierarchical_graph import visualization as vis
+    import semantic_hierarchical_graph.utils as util
+
+    G = SHGraph(root_name="Benchmark", root_pos=(0, 0, 0))
+    floor = Floor("ryu", G, (0, 0, 1), 'data/benchmark_maps/ryu.png', "config/ryu_params.yaml")
+    G.add_child_by_node(floor)
+    print(G.get_childs("name"))
+
+    floor.create_rooms()
+    floor.create_bridges()
+
+    room_2 = floor._get_child("room_2")
+    room_11 = floor._get_child("room_11")
+
+    metrics = Metrics(room_11)
+    # metrics.print_metrics()
+    metrics.save_metrics("data/ryu_metrics.json")
+
+    path = room_11._plan("(555, 211)", "(81, 358)")
+    path_list = util._map_names_to_nodes(path)
+
+    print(path_list)
+    vis.draw_child_graph(room_11, path_list)
+
+    # ws2 = segmentation.draw(floor.watershed, floor.all_bridge_nodes, (22))
+    # ws4 = floor.draw_all_paths(ws2, (0), path_dict, (25))
+    # segmentation.show_imgs(ws4, name="map_benchmark_ryu_result", save=False)
