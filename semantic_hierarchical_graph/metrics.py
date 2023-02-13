@@ -29,11 +29,10 @@ class Metrics():
         # segmentation.show_imgs(room.mask)
         bridge_points = [point for points in room.bridge_nodes.values() for point in points]
 
-        for point_1, point_2 in itertools.combinations(bridge_points, 2):
-            print(point_1, point_2)
+        # for point_1, point_2 in itertools.combinations(bridge_points, 2):
+        #     print(point_1, point_2)
 
-        # TODO: rooms with more than one bridge node between each other create the same bridge_node
-        #       The name has to be unique per bridge to avoid unwanted connection on same room
+        # TODO: Deal with multiple possible solutions
         # 0. remove not connected bridge nodes from list or try to plan and adjust success rate
         # 1. plan path between bridge nodes
         # 2. repeat for all combinations
@@ -113,7 +112,7 @@ if __name__ == "__main__":
     path_list = util._map_names_to_nodes(path)
 
     print(path_list)
-    vis.draw_child_graph(room_11, path_list)
+    vis.draw_child_graph_3d(room_11, path)
 
     # ws2 = segmentation.draw(floor.watershed, floor.all_bridge_nodes, (22))
     # ws4 = floor.draw_all_paths(ws2, (0), path_dict, (25))

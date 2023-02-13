@@ -134,10 +134,9 @@ if __name__ == "__main__":
 
     # vis.draw_child_graph(floor, path_dict)
     # vis.draw_child_graph(room_2, path_dict)
-    # vis.draw_child_graph(G, path_dict, is_leaf=True)
-    # vis.draw_child_graph_3d(floor, path_dict)
+    vis.draw_child_graph(G, path_dict, is_leaf=True)
+    vis.draw_child_graph_3d(floor, path_dict)
     vis.draw_child_graph_3d(room_11, path_dict)
-    # vis.draw_child_graph_3d(room_11, path_dict)
     # vis.draw_child_graph_3d(G, path_dict, is_leaf=True)
 
     floor.plot_all_envs()
