@@ -69,10 +69,11 @@ python -m timeit -r 10 -s 'from semantic_hierarchical_graph.main import main; G 
 
 ## TODO
 Improvements
-- [ ] use dist_transform instead of ws_erosion
+- [ ] (optional) use dist_transform instead of ws_erosion
 - [ ] remove brisge points which are in collision with ws_erosion
-- [ ] clear bridge edges in the beginning with dist_transform or ws_erosion
-- [ ] cut out rooms after bridge edges cleared
+- [x] clear bridge edges in the beginning with dist_transform or ws_erosion
+- [ ] Adjust planning in graph for multiple possible paths. Plan all paths and compare lenghts for shortest
+- [ ] Make sure correct distances are in the graph edges
 
 Every bridge point has to be connected
 - [x] 1. straight line connection
