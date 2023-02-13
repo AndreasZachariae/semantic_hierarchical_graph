@@ -16,7 +16,7 @@ def main():
     # build_F = G.add_child_by_name(name="Building F", pos=(-5, 0, 0))
     # floor_0 = build_F.add_child_by_name(name="Floor 0", pos=(0, 0, 0))
     # floor_0.add_child_by_name(name="Staircase", pos=(0, -1, 0))
-    # G.add_connection("Building F", "Building A", name="path_1", type="path")
+    # G.add_connection("Building F", "Building A", name="path_1")
 
     build_a = G.add_child_by_hierarchy(hierarchy=[], name="Building A", pos=(0, 0, 0))
     G.add_child_by_hierarchy(hierarchy=[], name="Building B", pos=(5, 0, 0))
@@ -61,49 +61,49 @@ def main():
     # [print(node.pos, node.pos_abs) for node in G._get_child("Building F").get_childs()]
 
     G.add_connection_recursive(["Building F", "Floor 0", "Staircase"],
-                               ["Building F", "Floor 0", "Lab"], name="floor_door", type="door")
+                               ["Building F", "Floor 0", "Lab"], name="floor_door")
     G.add_connection_recursive(["Building F", "Floor 0", "Lab"],
-                               ["Building F", "Floor 0", "Workshop"], name="door", type="door")
+                               ["Building F", "Floor 0", "Workshop"], name="door")
     G.add_connection_recursive(["Building F", "Floor 0", "Lab"],
-                               ["Building F", "Floor 0", "RoboEduLab"], name="door", type="door")
+                               ["Building F", "Floor 0", "RoboEduLab"], name="door")
     G.add_connection_recursive(["Building F", "Floor 0", "Staircase"],
-                               ["Building F", "Floor 1", "Staircase"], distance=4.0, name="stair_F", type="stair")
+                               ["Building F", "Floor 1", "Staircase"], distance=4.0, name="stair_F")
     G.add_connection_recursive(["Building F", "Floor 1", "Staircase"],
-                               ["Building F", "Floor 1", "Corridor"], name="floor_door", type="door")
+                               ["Building F", "Floor 1", "Corridor"], name="floor_door")
     G.add_connection_recursive(["Building F", "Floor 1", "Corridor"],
-                               ["Building F", "Floor 1", "IRAS"], name="open", type="open")
+                               ["Building F", "Floor 1", "IRAS"], name="open")
     G.add_connection_recursive(["Building F", "Floor 1", "Corridor"],
-                               ["Building F", "Floor 1", "xLab"], name="open", type="open")
+                               ["Building F", "Floor 1", "xLab"], name="open")
     G.add_connection_recursive(["Building F", "Floor 1", "Corridor"],
-                               ["Building F", "Floor 1", "Meeting Room"], name="door", type="door")
+                               ["Building F", "Floor 1", "Meeting Room"], name="door")
     G.add_connection_recursive(["Building F", "Floor 1", "Corridor"],
-                               ["Building F", "Floor 1", "Kitchen"], name="open", type="open")
+                               ["Building F", "Floor 1", "Kitchen"], name="open")
     G.add_connection_recursive(["Building F", "Floor 1", "Staircase"],
-                               ["Building F", "Floor 2", "Staircase"], distance=4.0, name="stair_F", type="stair")
+                               ["Building F", "Floor 2", "Staircase"], distance=4.0, name="stair_F")
     G.add_connection_recursive(["Building F", "Floor 2", "Staircase"],
-                               ["Building F", "Floor 2", "Corridor"], name="floor_door", type="door")
+                               ["Building F", "Floor 2", "Corridor"], name="floor_door")
     G.add_connection_recursive(["Building F", "Floor 2", "Corridor"],
-                               ["Building F", "Floor 2", "Seminar Room 1"], name="door", type="door")
+                               ["Building F", "Floor 2", "Seminar Room 1"], name="door")
     G.add_connection_recursive(["Building F", "Floor 2", "Corridor"],
-                               ["Building F", "Floor 2", "Seminar Room 2"], name="door", type="door")
+                               ["Building F", "Floor 2", "Seminar Room 2"], name="door")
     G.add_connection_recursive(["Building F", "Floor 2", "Corridor"],
-                               ["Building F", "Floor 2", "Seminar Room 3"], name="door", type="door")
+                               ["Building F", "Floor 2", "Seminar Room 3"], name="door")
     G.add_connection_recursive(["Building F", "Floor 2", "Corridor"],
-                               ["Building F", "Floor 2", "Office"], name="door", type="door")
+                               ["Building F", "Floor 2", "Office"], name="door")
     G.add_connection_recursive(["Building F", "Floor 2", "Corridor"],
-                               ["Building F", "Floor 2", "Kitchen"], name="open", type="open")
+                               ["Building F", "Floor 2", "Kitchen"], name="open")
     G.add_connection_recursive(["Building F", "Floor 2", "Staircase"],
-                               ["Building F", "Floor 3", "Staircase"], distance=4.0, name="stair_F", type="stair")
+                               ["Building F", "Floor 3", "Staircase"], distance=4.0, name="stair_F")
     G.add_connection_recursive(["Building F", "Floor 3", "Staircase"],
-                               ["Building F", "Floor 3", "Office"], name="floor_door", type="door")
+                               ["Building F", "Floor 3", "Office"], name="floor_door")
     G.add_connection_recursive(["Building F", "Floor 1", "Kitchen"],
-                               ["Building A", "Floor 1", "Cantina"], distance=10.0, name="terrace_door", type="door")
+                               ["Building A", "Floor 1", "Cantina"], distance=10.0, name="terrace_door")
     G.add_connection_recursive(["Building A", "Floor 1", "Staircase"],
-                               ["Building A", "Floor 1", "Cantina"], name="floor_door", type="door")
+                               ["Building A", "Floor 1", "Cantina"], name="floor_door")
     G.add_connection_recursive(["Building A", "Floor 1", "Staircase"],
-                               ["Building A", "Floor 0", "Staircase"], distance=4.0, name="stair_A", type="stair")
+                               ["Building A", "Floor 0", "Staircase"], distance=4.0, name="stair_A")
     G.add_connection_recursive(["Building A", "Floor 0", "Staircase"],
-                               ["Building A", "Floor 0", "Entrance"], name="floor_door", type="door")
+                               ["Building A", "Floor 0", "Entrance"], name="floor_door")
 
     path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 1", "Cantina"])
     # path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building F", "Floor 3", "Office"])
@@ -111,7 +111,7 @@ def main():
 
     # leaf_path_list = G.plan_in_leaf_graph(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 0", "Entrance"])
 
-    # util.save_dict_to_json(path_dict, "data/path.json")
+    util.save_dict_to_json(path_dict, "data/path.json")
 
     print(util.path_to_list(path_dict, [], with_names=True, is_leaf=True))
 
