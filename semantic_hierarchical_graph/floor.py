@@ -19,13 +19,15 @@ class Floor(SHNode):
         super().__init__(unique_name, parent_node, pos, False, False)
         self.map = cv2.imread(map_path)
         self.watershed: np.ndarray = np.array([])
+        self.dist_transform: np.ndarray = np.array([])
         self.params: Dict[str, Any] = Parameter(params_path).params
         self.all_bridge_nodes: Dict[Tuple, List] = {}
         self.bridge_points_not_connected: Set = set()
 
     def create_rooms(self):
-        self.watershed, ws_erosion, dist_transform = segmentation.marker_controlled_watershed(self.map, self.params)
-        self.all_bridge_nodes, bridge_edges = segmentation.find_bridge_nodes(ws_erosion, dist_transform)
+        self.watershed, ws_erosion, self.dist_transform = segmentation.marker_controlled_watershed(
+            self.map, self.params)
+        self.all_bridge_nodes, bridge_edges = segmentation.find_bridge_nodes(ws_erosion, self.dist_transform)
         ws_tmp = ws_erosion.copy()
         for i in range(2, ws_tmp.max() + 1):
             room_bridge_nodes = {adj_rooms: points for adj_rooms, points in self.all_bridge_nodes.items()
