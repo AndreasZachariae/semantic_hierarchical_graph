@@ -2,12 +2,13 @@ import itertools
 import json
 from time import time
 from typing import Dict, Any, List, Tuple
+from collections import deque
 
 import numpy as np
+import cv2
 from networkx.classes.function import path_weight
 import semantic_hierarchical_graph.segmentation as segmentation
-
-import cv2
+from semantic_hierarchical_graph.vector import Vector
 
 
 class Metrics():
@@ -47,6 +48,9 @@ class Metrics():
         bridge_points = [point for points in room.bridge_nodes.values() for point in points]
         path_metrics["num_bridge_points"] = len(bridge_points)
 
+        # TODO: Generate more random points in the room to test
+        # TODO: Implement function to plan from arbitrary point to arbitrary point. Needs shortest connection to existing roadmap
+
         for point_1, point_2 in itertools.combinations(bridge_points, 2):
             ts = time()
             path = room._plan(str(point_1), str(point_2))
@@ -57,7 +61,7 @@ class Metrics():
                 continue
             path_metrics["success_rate"].append(1)
             path_metrics["path_length"].append(self._calc_path_length(room.child_graph, path))
-            turns, angles, smoothness = self._calc_smoothness(room.env)
+            turns, angles, smoothness = self._calc_smoothness(path)
             path_metrics["num_turns"].append(turns)
             path_metrics["cumulative_turning_angle"].append(angles)
             path_metrics["smoothness"].append(smoothness)
@@ -78,6 +82,8 @@ class Metrics():
                 if metric_name == "success_rate":
                     new_metrics[metric_name] = np.mean(path_metrics[metric_name])
                     continue
+                if len(path_metrics[metric_name]) == 0:
+                    continue
                 new_metrics["avg_"+metric_name] = [np.mean(path_metrics[metric_name]),
                                                    np.std(path_metrics[metric_name]).item(),
                                                    np.min(path_metrics[metric_name]).item(),
@@ -93,7 +99,7 @@ class Metrics():
         #     dist += util.get_euclidean_distance(path[i].pos, path[i + 1].pos)
         return length
 
-    def _calc_smoothness(self, env) -> Tuple[int, float, float]:
+    def _calc_smoothness(self, path) -> Tuple[int, float, float]:
         turns, angles, smoothness = 0, 0, 0
         # As defined in this paper https://www.mdpi.com/1424-8220/20/23/6822
         # Sum up all path segemnts and take the min angle between the segment and the following segment.
@@ -107,13 +113,35 @@ class Metrics():
         # Alternative paper https://arxiv.org/pdf/2203.03092.pdf
         # Smoothness of trajectory (degrees). The average angle change between consecutive segments of paths shows how drastic and sudden the agent’s movement changes could be
 
-        # Alternative paper
+        # Alternative paper https://doi.org/10.1007/s11432-016-9115-2
         # The path smoothness can be calculated by using the following formula:
         # S(P) = XDi=1αi =XDi=1 arccos((Pi − Pi−1) · (Pi+1 − Pi)|Pi − Pi−1| × |Pi+1 − Pi| × 180)
         # where αi refers to the value of the i-th deflection angle of the generated path (measured in radians in the
         # range from 0 to π). (Pi − Pi−1) · (Pi+1 − Pi) indicates the inner product between vectors of Pi − Pi−1
         # and Pi+1 − Pi while |Pi − Pi−1| denotes the vector norm.
-        return turns, angles, smoothness
+
+        # Alterntive von Philipp
+        # 1. Anzahl an nulldurchgängen, das heißt eine langer bogen mit mehreren winkeländerungen in die selbe richtung zählt als 1
+        # 2. Gewichtete Anzahl der turns mit stärke des Winkels 180° = 1, 0° = 0 und damit die jeden gewichteten turn aufsummieren
+
+        vectors = deque(maxlen=2)
+        v0 = Vector.from_two_points(path[0].pos[:2], path[1].pos[:2])
+        vectors.append(v0)
+        length = v0.norm()
+
+        for i in range(1, len(path)-1):
+            vectors.append(Vector.from_two_points(path[i].pos[:2], path[i + 1].pos[:2]))
+            angle = np.degrees(vectors[0].angle(vectors[1]))
+            length += vectors[1].norm()
+            if angle > 0:
+                turns += 1
+                angles += angle
+
+        # smoothness = angles / turns
+        normalized_smoothness = angles / length
+        # print("Smoothness", smoothness, normalized_smoothness)
+
+        return turns, angles, normalized_smoothness
 
     def _calc_obstacle_clearance(self, room, path) -> Tuple[float, float]:
         dist_transform = room.parent_node.dist_transform
@@ -178,6 +206,7 @@ if __name__ == "__main__":
 
     room_2 = floor._get_child("room_2")
     room_11 = floor._get_child("room_11")
+    room_14 = floor._get_child("room_14")
 
     metrics = Metrics(room_11)
     # metrics.print_metrics()
