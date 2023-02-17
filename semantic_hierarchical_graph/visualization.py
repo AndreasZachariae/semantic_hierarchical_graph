@@ -1,13 +1,11 @@
 from typing import Dict, List, Optional
 import networkx as nx
 import matplotlib.pyplot as plt
-# from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 from semantic_hierarchical_graph.node import SHNode
 import semantic_hierarchical_graph.utils as util
 
 
-# TODO: Update function to draw every graph not just from root node
 def draw_child_graph(parent_node: SHNode, path: Optional[Dict] = None, is_leaf: bool = False, view_axis: str = "z"):
     graph: nx.Graph = parent_node.leaf_graph if is_leaf else parent_node.child_graph  # type: ignore
 

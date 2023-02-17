@@ -70,16 +70,22 @@ python -m timeit -r 10 -s 'from semantic_hierarchical_graph.main import main; G 
 ## TODO
 Improvements
 - [ ] (optional) use dist_transform instead of ws_erosion
-- [ ] remove brisge points which are in collision with ws_erosion
+- [x] remove brisge points which are in collision with ws_erosion
 - [x] clear bridge edges in the beginning with dist_transform or ws_erosion
+- [ ] Detect if the whole room is a corridor (With corridor width thresholds) and don't collapse rectangles in other rooms
 - [ ] Adjust planning in graph for multiple possible paths. Plan all paths and compare lenghts for shortest
 - [ ] Make sure correct distances are in the graph edges
 
 Every bridge point has to be connected
 - [x] 1. straight line connection
 - [ ] 2. visibility algorithm with lines in random directions
+- [ ] 2.1. Find orthogonal lines between bridge point and closest path and find third point on this line which connects both
+- [ ] 2.2. Change the angle of the line in x degree steps and change distance of thrid point in x steps
 - [ ] 3. A*
 - [ ] Check if valid path between all bridge points
+
+Smoothing
+- [ ] Find shortcuts in the graph but not through largest rectangle
 
 Make 3 levels of connectivity:
 - [x] 1. only connect in straight lines
