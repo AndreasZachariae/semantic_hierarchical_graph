@@ -78,11 +78,11 @@ class Environment():
         for attempts in range(max_attempts):
             closest_path = min(tmp_path, key=lambda x: x.distance(point))
             closest_point: Point = nearest_points(closest_path, point)[0]
-            connection = self.get_valid_connection(closest_point, point)
+            connection = self.get_valid_connection(point, closest_point)
             if connection is not None:
-                return connection
+                return connection, closest_path
             tmp_path.remove(closest_path)
-        return None
+        return None, None
 
     def find_all_shortest_connections(self, mode: str, polygon=None):
         """ Find all shortest connections between all shapes in path that are not in collision """
