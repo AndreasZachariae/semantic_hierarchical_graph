@@ -1,5 +1,5 @@
 import itertools
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 import numpy as np
 import cv2
 from shapely.ops import unary_union, polygonize_full
@@ -168,15 +168,28 @@ def connect_paths(env: Environment, bridge_nodes: Dict[Tuple, List], bridge_edge
             env.add_path(connection)
 
         for point in bridge_points:
-            connection = env.find_shortest_connection(point, params["max_attempts_to_connect_bridge_point_straight"])
-            if connection is not None:
-                env.add_path(connection)
+            connections, _ = connect_point_to_path(point, env, params)
+            if len(connections) > 0:
+                for connection in connections:
+                    env.add_path(connection)
             else:
-                print("No connection found for bridge node", point)
                 bridge_points_not_connected.add(point)
     # print(len(env.path), "paths in room", env.room_id)
     # env.plot()
     return bridge_points_not_connected
+
+def connect_point_to_path(point: Tuple[float, float], env: Environment, params: dict) -> Tuple[List[LineString], Any]:
+    """ List of connections is always in direction from point to path.
+        Every connection is a two point line without collision.
+    """
+    connection, closest_path = env.find_shortest_connection(point, params["max_attempts_to_connect_bridge_point_straight"])
+    if connection is None:
+        # TODO: find connection with auxillary points 
+        # TODO: find connection with A* algorithm
+        print("No connection found point", point)
+        return [], None
+
+    return [connection], closest_path
 
 
 def _plot_all_envs(envs: Dict[int, Environment]):
