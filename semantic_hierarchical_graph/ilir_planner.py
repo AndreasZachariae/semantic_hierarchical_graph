@@ -49,16 +49,14 @@ class ILIRPlanner():
             raise Exception(f"No connection from point {node_pos} to roadmap found")
 
         nodes = deque(maxlen=2)
-        prev_node = self.room.add_child_by_name(node_name,
-                                                Position.from_iter(connections[0].coords[0]),
-                                                True, type=type)
+        nodes.append(self.room.add_child_by_name(node_name,
+                                                 Position.from_iter(connections[0].coords[0]),
+                                                 True, type=type))
         for connection in connections:
-            for point in connection.coords:
-                pos = Position.from_iter(connection.coords[0])
-                cur_node = self.room.add_child_by_name(pos.to_name(), pos, True, type="aux_node")
-                self.room.add_connection_by_nodes(prev_node, cur_node,
-                                                  prev_node.pos.distance(cur_node.pos))
-                prev_node = cur_node
+            pos = Position.from_iter(connection.coords[1])
+            nodes.append(self.room.add_child_by_name(pos.to_name(), pos, True, type="aux_node"))
+            self.room.add_connection_by_nodes(nodes[0], nodes[1],
+                                              nodes[0].pos.distance(nodes[1].pos))
 
         if len(closest_path.coords) != 2:
             raise ValueError("Path has not 2 points as expected")
@@ -68,10 +66,9 @@ class ILIRPlanner():
         path_1_node = self.room._get_child(path_1_pos.to_name())
         path_2_node = self.room._get_child(path_2_pos.to_name())
         self.room.child_graph.remove_edge(path_1_node, path_2_node)
-        self.room.add_connection_by_nodes(path_1_node, prev_node, path_1_pos.distance(prev_node.pos))
-        self.room.add_connection_by_nodes(prev_node, path_2_node, path_2_pos.distance(prev_node.pos))
+        self.room.add_connection_by_nodes(path_1_node, nodes[1], path_1_pos.distance(nodes[1].pos))
+        self.room.add_connection_by_nodes(nodes[1], path_2_node, path_2_pos.distance(nodes[1].pos))
 
-        print(self.room.get_childs("name"))
         # vis.draw_child_graph_3d(self.room)
 
 
@@ -88,7 +85,6 @@ if __name__ == "__main__":
     room_11 = floor._get_child("room_11")
     room_14 = floor._get_child("room_14")
     planner = ILIRPlanner(room_11)
-    # TODO: test for goal point not on graph
     # segmentation.show_imgs(room_11.mask)
     path = planner.plan((480, 250), (75, 260))
     # path = planner.plan((555, 211), (81, 358))
