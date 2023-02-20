@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 from semantic_hierarchical_graph.node import SHNode
 import semantic_hierarchical_graph.utils as util
 from semantic_hierarchical_graph.types import Position
+from semantic_hierarchical_graph.exceptions import SHGHierarchyError
 
 
 node_attributes = {
@@ -53,7 +54,7 @@ class SHGraph(SHNode):
 
     def add_connection_recursive(self, hierarchy_1: List[str], hierarchy_2: List[str], distance: Optional[float] = None, **data):
         if len(hierarchy_1) != len(hierarchy_2):
-            raise ValueError("Hierarchies must have same length")
+            raise SHGHierarchyError("Hierarchies must have same length")
 
         hierarchy_mask = self._compare_hierarchy(hierarchy_1, hierarchy_2)
         self._add_connection_recursive(hierarchy_1[0], hierarchy_2[0], hierarchy_1, hierarchy_2, hierarchy_mask,
@@ -79,7 +80,7 @@ class SHGraph(SHNode):
     # @util.timing
     def plan_recursive(self, start_hierarchy: List[str], goal_hierarchy: List[str]) -> Dict:
         if len(start_hierarchy) != len(goal_hierarchy):
-            raise ValueError("Hierarchies must have same length")
+            raise SHGHierarchyError("Hierarchies must have same length")
 
         child_path: List[SHNode] = self._plan(start_hierarchy[0], goal_hierarchy[0])
         path_dict = {}
@@ -91,7 +92,7 @@ class SHGraph(SHNode):
     # @util.timing
     def plan_in_leaf_graph(self, start_hierarchy: List[str], goal_hierarchy: List[str]) -> List[SHNode]:
         if len(start_hierarchy) != len(goal_hierarchy):
-            raise ValueError("Hierarchies must have same length")
+            raise SHGHierarchyError("Hierarchies must have same length")
 
         start_node = self.get_child_by_hierarchy(start_hierarchy)
         goal_node = self.get_child_by_hierarchy(goal_hierarchy)

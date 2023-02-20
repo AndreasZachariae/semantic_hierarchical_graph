@@ -1,4 +1,5 @@
 from typing import Tuple, Union, List
+from semantic_hierarchical_graph.exceptions import SHGIndexError
 
 
 class Position():
@@ -45,4 +46,4 @@ class Position():
         elif key == 2:
             return self.z
         else:
-            raise IndexError('Position index out of range')
+            raise SHGIndexError('Position index out of range')

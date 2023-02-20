@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional, Set, Tuple
 import cv2
 import numpy as np
+from semantic_hierarchical_graph.exceptions import SHGGeometryError
 import semantic_hierarchical_graph.utils as util
 from semantic_hierarchical_graph.environment import Environment
 from semantic_hierarchical_graph.graph import SHGraph
@@ -96,7 +97,7 @@ class Room(SHNode):
 
         for path in self.env.path:
             if len(path.coords) != 2:
-                raise ValueError("Path has not 2 points as expected")
+                raise SHGGeometryError("Path has not 2 points as expected")
             connection = []
             for point in path.coords:
                 pos = Position.from_iter(point)

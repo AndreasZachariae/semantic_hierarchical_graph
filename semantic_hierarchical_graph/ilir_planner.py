@@ -2,6 +2,7 @@ from collections import deque
 from typing import List, Tuple, Union
 
 from shapely import Point
+from semantic_hierarchical_graph.exceptions import SHGGeometryError, SHGPlannerError
 from semantic_hierarchical_graph.graph import SHGraph
 from semantic_hierarchical_graph.floor import Room, Floor
 from semantic_hierarchical_graph import path_planning, segmentation, visualization as vis
@@ -17,18 +18,23 @@ class ILIRPlanner():
         self.tmp_graph = room.child_graph
 
     def plan(self, start: Union[Tuple, List, Position], goal: Union[Tuple, List, Position]):
-        start_name, start_pos = self._convert_position_to_grid_node(start)
-        goal_name, goal_pos = self._convert_position_to_grid_node(goal)
-        if start_name not in self.room.get_childs("name"):
-            self._add_path_to_roadmap(start_name, start_pos, type="start")
-        if goal_name not in self.room.get_childs("name"):
-            self._add_path_to_roadmap(goal_name, goal_pos, type="goal")
+        try:
+            start_name, start_pos = self._convert_position_to_grid_node(start)
+            goal_name, goal_pos = self._convert_position_to_grid_node(goal)
+            if start_name not in self.room.get_childs("name"):
+                self._add_path_to_roadmap(start_name, start_pos, type="start")
+            if goal_name not in self.room.get_childs("name"):
+                self._add_path_to_roadmap(goal_name, goal_pos, type="goal")
 
-        path = self.room._plan(start_name, goal_name)
-
-        # Reset graph
-        self.room.child_graph = self.original_graph
-        self.room._get_root_node().leaf_graph = self.original_leaf_graph
+            path = self.room._plan(start_name, goal_name)
+        except SHGPlannerError as e:
+            print("Error while planning with ILIRPlanner: ")
+            print(e)
+            path = None
+        finally:
+            # Reset graph
+            self.room.child_graph = self.original_graph
+            self.room._get_root_node().leaf_graph = self.original_leaf_graph
 
         return path
 
@@ -40,12 +46,13 @@ class ILIRPlanner():
 
     def _add_path_to_roadmap(self, node_name, node_pos, type):
         if self.room.env._in_collision(Point(node_pos.xy)):
-            raise Exception(f"Point {node_pos} is not in the drivable area (boundary + safety margin) of the room")
+            raise SHGPlannerError(
+                f"Point {node_pos} is not in the drivable area (boundary + safety margin) of the room")
 
         connections, closest_path = path_planning.connect_point_to_path(node_pos.xy, self.room.env, self.room.params)
 
         if len(connections) == 0:
-            raise Exception(f"No connection from point {node_pos} to roadmap found")
+            raise SHGPlannerError(f"No connection from point {node_pos} to roadmap found")
 
         nodes = deque(maxlen=2)
         nodes.append(self.room.add_child_by_name(node_name,
@@ -58,12 +65,13 @@ class ILIRPlanner():
                                               nodes[0].pos.distance(nodes[1].pos))
 
         if len(closest_path.coords) != 2:
-            raise ValueError("Path has not 2 points as expected")
+            raise SHGGeometryError("Path has not 2 points as expected")
 
         path_1_pos = Position.from_iter(closest_path.coords[0])
         path_2_pos = Position.from_iter(closest_path.coords[1])
         path_1_node = self.room._get_child(path_1_pos.to_name())
         path_2_node = self.room._get_child(path_2_pos.to_name())
+        # print(self.room.child_graph.edges)
         self.room.child_graph.remove_edge(path_1_node, path_2_node)
         self.room.add_connection_by_nodes(path_1_node, nodes[1], path_1_pos.distance(nodes[1].pos))
         self.room.add_connection_by_nodes(nodes[1], path_2_node, path_2_pos.distance(nodes[1].pos))

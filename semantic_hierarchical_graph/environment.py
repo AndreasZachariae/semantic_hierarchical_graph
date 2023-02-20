@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from shapely.plotting import plot_polygon, plot_line
 from shapely.geometry import Point, Polygon, LineString, MultiPolygon
 from shapely.ops import nearest_points, transform, split
+from semantic_hierarchical_graph.exceptions import SHGGeometryError
 from semantic_hierarchical_graph.vector import Vector
 
 
@@ -163,7 +164,7 @@ class Environment():
             if line1.intersects(line2):
                 point = line1.intersection(line2)
                 if not point.geom_type == "Point":
-                    raise ValueError("Intersection is not a POINT but a", point.geom_type)
+                    raise SHGGeometryError("Intersection is not a POINT but a", point.geom_type)
                 # print("Intersection:", point)
 
                 self._split_path(line1, point, already_cut)

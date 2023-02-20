@@ -6,6 +6,7 @@ from shapely.ops import unary_union, polygonize_full
 from shapely import Polygon, LineString, MultiPolygon, GeometryCollection, Point
 import largestinteriorrectangle as lir
 from semantic_hierarchical_graph.environment import Environment
+from semantic_hierarchical_graph.exceptions import SHGGeometryError
 from semantic_hierarchical_graph.parameters import Parameter
 import semantic_hierarchical_graph.segmentation as segmentation
 from semantic_hierarchical_graph.types import Position
@@ -155,9 +156,9 @@ def connect_paths(env: Environment, bridge_nodes: Dict[Tuple, List], bridge_edge
             # union polygon is empty. No polygon in original room path
             pass
         else:
-            raise Exception("unknown shape returned from polygon union")
+            raise SHGGeometryError("unknown shape returned from polygon union")
         if len(dangles.geoms) > 0 or len(invalids.geoms):
-            raise Exception("unhandled dangles or invalids are not added to env.path")
+            raise SHGGeometryError("unhandled dangles or invalids are not added to env.path")
         for cut in cuts.geoms:
             env.add_path(cut)
 

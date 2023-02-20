@@ -2,6 +2,7 @@ import networkx as nx
 from typing import Dict, List, Tuple, TypeVar, Generic, Optional
 # from typing_extensions import Self
 import numpy as np
+from semantic_hierarchical_graph.exceptions import SHGHierarchyError, SHGValueError
 
 import semantic_hierarchical_graph.utils as util
 from semantic_hierarchical_graph.types import Position
@@ -133,7 +134,7 @@ class SHNode(Generic[T]):
             if node.unique_name == name:
                 return node
         if not supress_error:
-            raise ValueError("Child with name {} not found".format(name))
+            raise SHGValueError("Child with name {} not found".format(name))
         else:
             return None  # type: ignore
 
@@ -218,5 +219,5 @@ class SHNode(Generic[T]):
         if len(bridge_found) == 1:
             return bridge_found[0]
         elif len(bridge_found) > 1:
-            raise ValueError("Multiple bridges found")
-        raise ValueError("No next child as bridge to other branch can be found")
+            raise SHGHierarchyError("Multiple bridges found")
+        raise SHGHierarchyError("No next child as bridge to other branch can be found")
