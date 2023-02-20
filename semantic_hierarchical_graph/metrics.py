@@ -7,14 +7,17 @@ from collections import deque
 import numpy as np
 import cv2
 from networkx.classes.function import path_weight
+from shapely import Point
+import semantic_hierarchical_graph.path_planning as path_planning
 import semantic_hierarchical_graph.segmentation as segmentation
 from semantic_hierarchical_graph.vector import Vector
 from semantic_hierarchical_graph.types import Position
 from semantic_hierarchical_graph.ilir_planner import ILIRPlanner
+from semantic_hierarchical_graph.floor import Room
 
 
 class Metrics():
-    def __init__(self, room) -> None:
+    def __init__(self, room: Room) -> None:
         self.metrics: Dict[str, Any] = {}
         self.metrics.update(room.params)
         self.metrics["room_name"] = room.unique_name
@@ -35,7 +38,7 @@ class Metrics():
         # TODO: Deal with multiple possible solutions
         #       Check for correct distances on bridge connections
 
-    def _calc_single_path_metrics(self, room) -> Tuple[Dict, np.ndarray]:
+    def _calc_single_path_metrics(self, room: Room) -> Tuple[Dict, np.ndarray]:
         room_mask: np.ndarray = room.mask.copy()
         path_metrics: Dict[str, Any] = {}
         path_metrics["success_rate"] = []
@@ -53,13 +56,19 @@ class Metrics():
         # TODO: Generate more random points in the room to test
         # TODO: Implement function to plan from arbitrary point to arbitrary point. Needs shortest connection to existing roadmap
 
+        random_points = self._get_random_valid_points(room, 10)
+        path_metrics["num_random_points"] = len(random_points)
+        # random_points = [(274, 243), (546, 303), (399, 278), (326, 294), (58, 325),
+        #                  (406, 262), (521, 252), (221, 310), (66, 341), (496, 249)]
+        bridge_points.extend(random_points)
+
+        planner = ILIRPlanner(room)
         for point_1, point_2 in itertools.combinations(bridge_points, 2):
-            planner = ILIRPlanner(room)
             ts = time()
-            path = planner.plan(point_1, point_2)
+            path, vis_graph = planner.plan(point_1, point_2)
             te = time()
             path_metrics["planning_time"].append(te - ts)
-            if len(path) == 0:
+            if path is None:
                 path_metrics["success_rate"].append(0)
                 continue
             path_metrics["success_rate"].append(1)
@@ -73,7 +82,7 @@ class Metrics():
             path_metrics["obstacle_clearance_min"] = min(clearance_min, path_metrics["obstacle_clearance_min"])
 
             self._draw_path(room_mask, path, (0))
-            # vis.draw_child_graph(room, path)
+            # vis.draw_child_graph(room, path, vis_graph)
 
         return self._average_metrics(path_metrics), room_mask
 
@@ -95,12 +104,26 @@ class Metrics():
 
         return path_metrics
 
+    def _get_random_valid_points(self, room: Room, num_points: int) -> List[Tuple]:
+        points = []
+        box = cv2.boundingRect(room.mask)
+        while len(points) < num_points:
+            x = np.random.randint(box[0], box[0] + box[2])
+            y = np.random.randint(box[1], box[1] + box[3])
+            if not room.env._in_collision(Point(x, y)):
+                # TODO: Check if point can be connected is very expensive here. It will be done again in ILIRPlanner
+                connections, _ = path_planning.connect_point_to_path((x, y), room.env, room.params)
+                if len(connections) > 0:
+                    points.append((x, y))
+
+        return points
+
     def _calc_path_length(self, graph, path) -> float:
-        length = path_weight(graph, path, weight="distance")
-        # dist = 0
-        # for i in range(len(path) - 1):
-        #     dist += path[i].pos.distance(path[i + 1].pos)
-        return length
+        # length = path_weight(graph, path, weight="distance")
+        dist = 0
+        for i in range(len(path) - 1):
+            dist += path[i].pos.distance(path[i + 1].pos)
+        return dist
 
     def _calc_smoothness(self, path) -> Tuple[int, float, float]:
         turns, angles, smoothness = 0, 0, 0
@@ -146,8 +169,8 @@ class Metrics():
 
         return turns, angles, normalized_smoothness
 
-    def _calc_obstacle_clearance(self, room, path) -> Tuple[float, float]:
-        dist_transform = room.parent_node.dist_transform
+    def _calc_obstacle_clearance(self, room: Room, path) -> Tuple[float, float]:
+        dist_transform = room.parent_node.dist_transform  # type: ignore
         path_mask: np.ndarray = np.zeros(dist_transform.shape, dtype=np.uint8)
         self._draw_path(path_mask, path, 1)
         path_mask = np.where(path_mask == 1, True, False)
@@ -211,7 +234,7 @@ if __name__ == "__main__":
     room_11 = floor._get_child("room_11")
     room_14 = floor._get_child("room_14")
 
-    metrics = Metrics(room_11)
+    metrics = Metrics(room_2)
     # metrics.print_metrics()
     metrics.save_metrics("data/ryu_metrics.json")
 
