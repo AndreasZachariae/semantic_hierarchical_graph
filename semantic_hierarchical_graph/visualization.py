@@ -1,13 +1,18 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
 from semantic_hierarchical_graph.node import SHNode
 import semantic_hierarchical_graph.utils as util
 
+# TODO: node type to color enum
 
-def draw_child_graph(parent_node: SHNode, path: Optional[Dict] = None, is_leaf: bool = False, view_axis: str = "z"):
-    graph: nx.Graph = parent_node.leaf_graph if is_leaf else parent_node.child_graph  # type: ignore
+
+def draw_child_graph(parent_node: SHNode, path: Union[Dict, List, None] = None, vis_graph: Optional[nx.Graph] = None, is_leaf: bool = False, view_axis: str = "z"):
+    if vis_graph is None:
+        graph: nx.Graph = parent_node.leaf_graph if is_leaf else parent_node.child_graph  # type: ignore
+    else:
+        graph = vis_graph
 
     view = {"x": 0, "y": 1, "z": 2}
     view.pop(view_axis)
@@ -35,8 +40,11 @@ def draw_child_graph(parent_node: SHNode, path: Optional[Dict] = None, is_leaf: 
     plt.show()
 
 
-def draw_child_graph_3d(parent_node: SHNode, path: Optional[Dict] = None, is_leaf: bool = False):
-    graph: nx.Graph = parent_node.leaf_graph if is_leaf else parent_node.child_graph  # type: ignore
+def draw_child_graph_3d(parent_node: SHNode, path: Union[Dict, List, None] = None, vis_graph: Optional[nx.Graph] = None, is_leaf: bool = False):
+    if vis_graph is None:
+        graph: nx.Graph = parent_node.leaf_graph if is_leaf else parent_node.child_graph  # type: ignore
+    else:
+        graph = vis_graph
     node_xyz = np.array([node.pos_abs.xyz for node in graph.nodes()])  # type: ignore
     edge_xyz = np.array([(u.pos_abs.xyz, v.pos_abs.xyz) for u, v in graph.edges])
 
