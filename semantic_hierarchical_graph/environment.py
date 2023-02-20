@@ -201,7 +201,7 @@ class Environment():
 
     def plot(self):
         fig, ax = plt.subplots(figsize=(10, 10))
-        ax.invert_yaxis()
+        ax.invert_yaxis()  # type: ignore
         ax.set_aspect("equal")
         for value in self.scene:
             plot_polygon(value, ax=ax, add_points=False, color="red", alpha=0.8)
