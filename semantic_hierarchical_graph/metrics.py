@@ -10,6 +10,7 @@ from networkx.classes.function import path_weight
 import semantic_hierarchical_graph.segmentation as segmentation
 from semantic_hierarchical_graph.vector import Vector
 from semantic_hierarchical_graph.types import Position
+from semantic_hierarchical_graph.ilir_planner import ILIRPlanner
 
 
 class Metrics():
@@ -53,8 +54,9 @@ class Metrics():
         # TODO: Implement function to plan from arbitrary point to arbitrary point. Needs shortest connection to existing roadmap
 
         for point_1, point_2 in itertools.combinations(bridge_points, 2):
+            planner = ILIRPlanner(room)
             ts = time()
-            path = room._plan(str(point_1), str(point_2))
+            path = planner.plan(point_1, point_2)
             te = time()
             path_metrics["planning_time"].append(te - ts)
             if len(path) == 0:

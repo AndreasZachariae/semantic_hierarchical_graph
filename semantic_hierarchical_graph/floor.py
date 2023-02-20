@@ -2,7 +2,6 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import cv2
 import numpy as np
 import semantic_hierarchical_graph.utils as util
-from semantic_hierarchical_graph.metrics import Metrics
 from semantic_hierarchical_graph.environment import Environment
 from semantic_hierarchical_graph.graph import SHGraph
 from semantic_hierarchical_graph.node import SHNode
@@ -146,7 +145,3 @@ if __name__ == "__main__":
     # ws3 = segmentation.draw(ws2, floor.get_largest_rectangles(), (21))
     ws4 = floor.draw_all_paths(ws2, (0), path_dict, (25))
     segmentation.show_imgs(ws4, name="map_benchmark_ryu_result", save=False)
-
-    metrics = Metrics(room_11)
-    # metrics.print_metrics()
-    metrics.save_metrics("data/ryu_metrics.json")

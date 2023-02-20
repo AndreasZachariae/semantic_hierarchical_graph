@@ -5,7 +5,6 @@ from shapely import Point
 from semantic_hierarchical_graph.graph import SHGraph
 from semantic_hierarchical_graph.floor import Room, Floor
 from semantic_hierarchical_graph import path_planning, segmentation, visualization as vis
-from semantic_hierarchical_graph.node import SHNode
 import semantic_hierarchical_graph.utils as util
 from semantic_hierarchical_graph.types import Position
 
