@@ -10,8 +10,7 @@ from semantic_hierarchical_graph.parameters import Parameter
 import semantic_hierarchical_graph.visualization as vis
 import semantic_hierarchical_graph.segmentation as segmentation
 import semantic_hierarchical_graph.path_planning as path_planning
-
-Position = Tuple[float, float, float]
+from semantic_hierarchical_graph.types import Position
 
 
 class Floor(SHNode):
@@ -65,8 +64,8 @@ class Floor(SHNode):
         if path is not None:
             path_list = util._path_dict_to_leaf_path_list(path)
             for i in range(len(path_list) - 1):
-                pt1 = np.round(path_list[i].pos[0:2]).astype("int32")
-                pt2 = np.round(path_list[i + 1].pos[0:2]).astype("int32")
+                pt1 = np.round(path_list[i].pos.xy).astype("int32")
+                pt2 = np.round(path_list[i + 1].pos.xy).astype("int32")
                 cv2.line(img_new, pt1, pt2, path_color, 2)
 
         return img_new
@@ -101,11 +100,12 @@ class Room(SHNode):
                 raise ValueError("Path has not 2 points as expected")
             connection = []
             for point in path.coords:
-                p = round(point[0]), round(point[1])
-                if str(p) in self.get_childs("name"):
-                    loc = self._get_child(str(p))
+                pos = Position.from_iter(point)
+                name = pos.to_name()
+                if name in self.get_childs("name"):
+                    loc = self._get_child(name)
                 else:
-                    loc = Location(str(p), self, point + (0.0,))
+                    loc = Location(name, self, pos)
                     self.add_child_by_node(loc)
                 connection.append(loc)
             self.add_connection_by_nodes(connection[0], connection[1])
@@ -118,8 +118,8 @@ class Location(SHNode):
 
 
 if __name__ == "__main__":
-    G = SHGraph(root_name="Benchmark", root_pos=(0, 0, 0))
-    floor = Floor("ryu", G, (0, 0, 1), 'data/benchmark_maps/ryu.png', "config/ryu_params.yaml")
+    G = SHGraph(root_name="Benchmark", root_pos=Position(0, 0, 0))
+    floor = Floor("ryu", G, Position(0, 0, 1), 'data/benchmark_maps/ryu.png', "config/ryu_params.yaml")
     G.add_child_by_node(floor)
     print(G.get_childs("name"))
 

@@ -37,15 +37,15 @@ def draw_child_graph(parent_node: SHNode, path: Optional[Dict] = None, is_leaf: 
 
 def draw_child_graph_3d(parent_node: SHNode, path: Optional[Dict] = None, is_leaf: bool = False):
     graph: nx.Graph = parent_node.leaf_graph if is_leaf else parent_node.child_graph  # type: ignore
-    node_xyz = np.array([node.pos_abs for node in graph.nodes()])  # type: ignore
-    edge_xyz = np.array([(u.pos_abs, v.pos_abs) for u, v in graph.edges])
+    node_xyz = np.array([node.pos_abs.xyz for node in graph.nodes()])  # type: ignore
+    edge_xyz = np.array([(u.pos_abs.xyz, v.pos_abs.xyz) for u, v in graph.edges])
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection="3d")
     ax.scatter(*node_xyz.T, s=100, ec="w")  # type: ignore
 
     for node in graph.nodes():
-        ax.text(node.pos_abs[0], node.pos_abs[1], node.pos_abs[2],  # type: ignore
+        ax.text(node.pos_abs.x, node.pos_abs.y, node.pos_abs.z,  # type: ignore
                 node.unique_name, size=9, color='k')  # type: ignore
 
     for vizedge in edge_xyz:
@@ -54,7 +54,7 @@ def draw_child_graph_3d(parent_node: SHNode, path: Optional[Dict] = None, is_lea
     if path is not None:
         path_list = util.path_to_list(path, parent_node.hierarchy, is_leaf=is_leaf)
         if len(path_list) > 0:
-            path_xyz = np.array([node.pos_abs for node in path_list])
+            path_xyz = np.array([node.pos_abs.xyz for node in path_list])
             ax.plot(*path_xyz.T, color="tab:red")
 
     ax.grid(False)

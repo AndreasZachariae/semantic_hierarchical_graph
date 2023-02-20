@@ -1,8 +1,9 @@
 import networkx as nx
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Optional
 
 from semantic_hierarchical_graph.node import SHNode
 import semantic_hierarchical_graph.utils as util
+from semantic_hierarchical_graph.types import Position
 
 
 node_attributes = {
@@ -32,8 +33,6 @@ hierarchy_levels = {
 # 1. One single graph with all levels
 # 2. Hierachical graphs
 # 3. Dictionary like structure G["building F"]["floor 1"]["room 1"]
-
-Position = Tuple[float, float, float]
 
 
 class SHGraph(SHNode):
@@ -65,7 +64,7 @@ class SHGraph(SHNode):
         if node_1.is_leaf:
             node_2 = self.get_child_by_hierarchy(hierarchy_2)
             if distance is None:
-                distance = util.get_euclidean_distance(node_1.pos, node_2.pos)
+                distance = node_1.pos.distance(node_2.pos)
             self.leaf_graph.add_edge(node_1, node_2, distance=distance, color="black", **data)
 
     def get_child_by_hierarchy(self, hierarchy: List[str]) -> SHNode:

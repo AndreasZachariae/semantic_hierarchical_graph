@@ -3,11 +3,7 @@ import json
 import collections.abc
 from time import time
 import timeit
-from typing import Dict, List, Tuple, Union
-
-
-def get_euclidean_distance(pos_1: Tuple, pos_2: Tuple) -> float:
-    return ((pos_1[0] - pos_2[0]) ** 2 + (pos_1[1] - pos_2[1]) ** 2 + (pos_1[2] - pos_2[2]) ** 2) ** 0.5
+from typing import Dict, List, Union
 
 
 def round_up(n) -> int:
@@ -64,7 +60,7 @@ def _path_dict_to_child_path_list(path: Dict, child_hierarchy: List[str]):
 
 def _map_names_to_nodes(obj):
     if isinstance(obj, collections.abc.Mapping):
-        return {k.unique_name: _map_names_to_nodes(v) for k, v in obj.items()} # type: ignore
+        return {k.unique_name: _map_names_to_nodes(v) for k, v in obj.items()}  # type: ignore
     elif isinstance(obj, list):
         return [_map_names_to_nodes(elem) for elem in obj]
     else:

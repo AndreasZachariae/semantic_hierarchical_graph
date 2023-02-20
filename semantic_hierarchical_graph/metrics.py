@@ -9,6 +9,7 @@ import cv2
 from networkx.classes.function import path_weight
 import semantic_hierarchical_graph.segmentation as segmentation
 from semantic_hierarchical_graph.vector import Vector
+from semantic_hierarchical_graph.types import Position
 
 
 class Metrics():
@@ -96,7 +97,7 @@ class Metrics():
         length = path_weight(graph, path, weight="distance")
         # dist = 0
         # for i in range(len(path) - 1):
-        #     dist += util.get_euclidean_distance(path[i].pos, path[i + 1].pos)
+        #     dist += path[i].pos.distance(path[i + 1].pos)
         return length
 
     def _calc_smoothness(self, path) -> Tuple[int, float, float]:
@@ -125,12 +126,12 @@ class Metrics():
         # 2. Gewichtete Anzahl der turns mit stärke des Winkels 180° = 1, 0° = 0 und damit die jeden gewichteten turn aufsummieren
 
         vectors = deque(maxlen=2)
-        v0 = Vector.from_two_points(path[0].pos[:2], path[1].pos[:2])
+        v0 = Vector.from_two_points(path[0].pos.xy, path[1].pos.xy)
         vectors.append(v0)
         length = v0.norm()
 
         for i in range(1, len(path)-1):
-            vectors.append(Vector.from_two_points(path[i].pos[:2], path[i + 1].pos[:2]))
+            vectors.append(Vector.from_two_points(path[i].pos.xy, path[i + 1].pos.xy))
             angle = np.degrees(vectors[0].angle(vectors[1]))
             length += vectors[1].norm()
             if angle > 0:
@@ -178,8 +179,8 @@ class Metrics():
 
     def _draw_path(self, img: np.ndarray, path: List, color):
         for i in range(len(path) - 1):
-            pt1 = np.round(path[i].pos[0:2]).astype("int32")
-            pt2 = np.round(path[i + 1].pos[0:2]).astype("int32")
+            pt1 = np.round(path[i].pos.xy).astype("int32")
+            pt2 = np.round(path[i + 1].pos.xy).astype("int32")
             cv2.line(img, pt1, pt2, color, 1, cv2.LINE_4)
 
     def print_metrics(self) -> None:
@@ -196,8 +197,8 @@ if __name__ == "__main__":
     from semantic_hierarchical_graph import visualization as vis
     import semantic_hierarchical_graph.utils as util
 
-    G = SHGraph(root_name="Benchmark", root_pos=(0, 0, 0))
-    floor = Floor("ryu", G, (0, 0, 1), 'data/benchmark_maps/ryu.png', "config/ryu_params.yaml")
+    G = SHGraph(root_name="Benchmark", root_pos=Position(0, 0, 0))
+    floor = Floor("ryu", G, Position(0, 0, 1), 'data/benchmark_maps/ryu.png', "config/ryu_params.yaml")
     G.add_child_by_node(floor)
     print(G.get_childs("name"))
 

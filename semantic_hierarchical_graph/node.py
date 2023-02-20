@@ -4,10 +4,10 @@ from typing import Dict, List, Tuple, TypeVar, Generic, Optional
 import numpy as np
 
 import semantic_hierarchical_graph.utils as util
+from semantic_hierarchical_graph.types import Position
 
 
 T = TypeVar('T', bound='SHNode')
-Position = Tuple[float, float, float]
 
 
 class SHNode(Generic[T]):
@@ -20,7 +20,7 @@ class SHNode(Generic[T]):
         self.is_bridge: bool = is_bridge
         self.bridge_to: List = bridge_to
         self.pos: Position = pos
-        self.pos_abs: Position = tuple(np.add(pos, parent_node.pos_abs)) if not is_root else pos
+        self.pos_abs: Position = (pos + parent_node.pos_abs) if not is_root else pos
         self.parent_node: SHNode = parent_node
         self.hierarchy: List[str] = parent_node.hierarchy + [unique_name] if not is_root else []
         self.child_graph: nx.Graph = nx.Graph()
@@ -48,7 +48,7 @@ class SHNode(Generic[T]):
     def add_connection_by_nodes(self, child_1: T, child_2: T, distance: Optional[float] = None, **data):
         color = "gray"
         if distance is None:
-            distance = util.get_euclidean_distance(child_1.pos_abs, child_2.pos_abs)
+            distance = child_1.pos_abs.distance(child_2.pos_abs)
             color = "black"
         self.child_graph.add_edge(child_1, child_2, distance=distance, color=color, **data)
 
@@ -78,7 +78,7 @@ class SHNode(Generic[T]):
         if self._get_child(child_2_name, supress_error=True) is None:
             if debug:
                 print("Add new bridge node:", child_2_name, "in graph:", hierarchy_1[:hierarchy_level])
-            self.add_child_by_name(child_2_name, pos=(child_1.pos[0], child_1.pos[1], child_1.pos[2]+1),
+            self.add_child_by_name(child_2_name, pos=Position(child_1.pos.x, child_1.pos.y, child_1.pos.z+1),
                                    is_leaf=child_1.is_leaf, is_bridge=True, bridge_to=hierarchy_2, type="hierarchy_bridge")
 
         if debug:

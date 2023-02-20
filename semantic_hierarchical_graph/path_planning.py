@@ -8,8 +8,7 @@ import largestinteriorrectangle as lir
 from semantic_hierarchical_graph.environment import Environment
 from semantic_hierarchical_graph.parameters import Parameter
 import semantic_hierarchical_graph.segmentation as segmentation
-
-Position = Tuple[float, float, float]
+from semantic_hierarchical_graph.types import Position
 
 
 def _create_rooms(ws_erosion: np.ndarray, params: Dict[str, Any]) -> Tuple[Dict[int, Environment], Dict[int, List]]:
@@ -25,7 +24,7 @@ def _create_rooms(ws_erosion: np.ndarray, params: Dict[str, Any]) -> Tuple[Dict[
 
 def calc_largest_rectangles(ws_erosion: np.ndarray, env: Environment, params: Dict[str, Any]) -> Tuple[List, Position]:
     largest_rectangles: List = []
-    centroid: Position = (0, 0, 0)
+    centroid = Position(0, 0, 0)
     first_loop = True
     while True:
         segment = np.where(ws_erosion == env.room_id, 255, 0).astype("uint8")
@@ -40,7 +39,7 @@ def calc_largest_rectangles(ws_erosion: np.ndarray, env: Environment, params: Di
             M = cv2.moments(segment)
             cX = int(M["m10"] / M["m00"])
             cY = int(M["m01"] / M["m00"])
-            centroid = (cX, cY, 0)
+            centroid = Position(cX, cY, 0)
 
             x, y, w, h = cv2.boundingRect(c_max)
             # interior polygon (= free room) has to be inverted with [::-1] to be clear space in shapely
@@ -178,13 +177,15 @@ def connect_paths(env: Environment, bridge_nodes: Dict[Tuple, List], bridge_edge
     # env.plot()
     return bridge_points_not_connected
 
+
 def connect_point_to_path(point: Tuple[float, float], env: Environment, params: dict) -> Tuple[List[LineString], Any]:
     """ List of connections is always in direction from point to path.
         Every connection is a two point line without collision.
     """
-    connection, closest_path = env.find_shortest_connection(point, params["max_attempts_to_connect_bridge_point_straight"])
+    connection, closest_path = env.find_shortest_connection(
+        point, params["max_attempts_to_connect_bridge_point_straight"])
     if connection is None:
-        # TODO: find connection with auxillary points 
+        # TODO: find connection with auxillary points
         # TODO: find connection with A* algorithm
         print("No connection found point", point)
         return [], None
