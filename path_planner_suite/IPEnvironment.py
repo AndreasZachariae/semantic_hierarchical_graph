@@ -9,7 +9,7 @@ License is based on Creative Commons: Attribution-NonCommercial 4.0 Internationa
 from IPPerfMonitor import IPPerfMonitor
 
 from shapely.geometry import Point, Polygon, LineString
-from descartes.patch import PolygonPatch
+from shapely.plotting import plot_polygon
 
 
 class CollisionChecker(object):
@@ -50,5 +50,4 @@ class CollisionChecker(object):
 
     def drawObstacles(self, ax):
         for key, value in self.scene.items():
-            patch = PolygonPatch(value, facecolor="red", alpha=0.8, zorder=2, label=key)
-            ax.add_patch(patch)
+            plot_polygon(value, ax=ax, add_points=False, color="red", alpha=0.8)
