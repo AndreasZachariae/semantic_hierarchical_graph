@@ -1,6 +1,6 @@
 from collections import deque
 from typing import List, Tuple, Union
-from copy import deepcopy, copy
+from copy import deepcopy
 
 from shapely import LineString, Point
 from semantic_hierarchical_graph.exceptions import SHGGeometryError, SHGPlannerError
@@ -13,6 +13,7 @@ from semantic_hierarchical_graph.types import Position
 
 class ILIRPlanner():
     def __init__(self, room: Room):
+        self.name = "ILIR"
         self.room = room
 
     def _copy_graph(self):
@@ -27,17 +28,17 @@ class ILIRPlanner():
         self.room.child_graph = self.original_graph
         self.room._get_root_node().leaf_graph = self.original_leaf_graph
 
-    def plan(self, start: Union[Tuple, List, Position], goal: Union[Tuple, List, Position]):
+    def plan(self, start: Tuple, goal: Tuple):
         self._copy_graph()
         try:
-            start_name, start_pos = self._convert_position_to_grid_node(start)
-            goal_name, goal_pos = self._convert_position_to_grid_node(goal)
-            if start_name not in self.room.get_childs("name"):
-                self._add_path_to_roadmap(start_name, start_pos, type="start")
-            if goal_name not in self.room.get_childs("name"):
-                self._add_path_to_roadmap(goal_name, goal_pos, type="goal")
+            start_pos = Position.from_iter(start)
+            goal_pos = Position.from_iter(goal)
+            if start_pos.to_name() not in self.room.get_childs("name"):
+                self._add_path_to_roadmap(start_pos.to_name(), start_pos, type="start")
+            if goal_pos.to_name() not in self.room.get_childs("name"):
+                self._add_path_to_roadmap(goal_pos.to_name(), goal_pos, type="goal")
 
-            path = self.room._plan(start_name, goal_name)
+            path = self.room._plan(start_pos.to_name(), goal_pos.to_name())
         except SHGPlannerError as e:
             print("Error while planning with ILIRPlanner: ")
             print(e)
@@ -48,11 +49,10 @@ class ILIRPlanner():
 
         return path, vis_graph
 
-    def _convert_position_to_grid_node(self, pos: Union[Tuple, List, Position]) -> Tuple[str, Position]:
-        # TODO: Convert meters from map frame to pixels in grid map
-        if not isinstance(pos, Position):
-            pos = Position.from_iter(pos)
-        return pos.to_name(), pos
+    def plan_in_map_frame(self, start: Tuple, goal: Tuple):
+        start_pos = Position.convert_to_grid(start, self.room.params["grid_size"])
+        goal_pos = Position.convert_to_grid(goal, self.room.params["grid_size"])
+        self.plan(start_pos.xy, goal_pos.xy)
 
     def _add_path_to_roadmap(self, node_name, node_pos, type):
         if self.room.env._in_collision(Point(node_pos.xy)):
@@ -81,6 +81,7 @@ class ILIRPlanner():
         path_2_pos = Position.from_iter(closest_path.coords[1])
         path_1_node = self.room._get_child(path_1_pos.to_name())
         path_2_node = self.room._get_child(path_2_pos.to_name())
+        # TODO: In some cases the edge is not in the graph. Could be a logic error. Need to fix!
         self.room.child_graph.remove_edge(path_1_node, path_2_node)
         self.room.env.path.remove(closest_path)
         self.room.add_connection_by_nodes(path_1_node, nodes[1], path_1_pos.distance(nodes[1].pos))
