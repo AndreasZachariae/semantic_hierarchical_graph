@@ -14,6 +14,14 @@ class Position():
             pos = (pos[0], pos[1], 0.0)
         return cls(pos[0], pos[1], pos[2])
 
+    @classmethod
+    def convert_to_grid(cls, pos: Union[Tuple, List, 'Position'], grid_size: float) -> 'Position':
+        # TODO: Convert meters from map frame to pixels in grid map
+        resolution = grid_size  # [m/px]
+        if not isinstance(pos, Position):
+            pos = Position.from_iter(pos)
+        return pos
+
     @property
     def xy(self) -> Tuple:
         return (self.x, self.y)
