@@ -32,6 +32,7 @@ class AStar(PlanerBase):
         self.goalFound = False
 
         self.limits = self._collisionChecker.getEnvironmentLimits()
+        self.dim = self._collisionChecker.getDim()
 
         self.w = 0.5
         return
