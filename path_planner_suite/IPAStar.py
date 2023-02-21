@@ -19,7 +19,7 @@ from IPPerfMonitor import IPPerfMonitor
 
 
 class AStar(PlanerBase):
-    def __init__(self, collChecker=0):
+    def __init__(self, collChecker):
         """Contructor:
 
         Initialize all necessary members"""
