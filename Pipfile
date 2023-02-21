@@ -10,6 +10,9 @@ opencv-python = "*"
 largestinteriorrectangle = "*"
 shapely = "*"
 pyyaml = "*"
+scipy = "*"
+descartes = "*"
+pandas = "*"
 
 [dev-packages]
 autopep8 = "*"
