@@ -1,5 +1,5 @@
 import itertools
-from typing import Any, List, Union
+from typing import List, Union
 import matplotlib.pyplot as plt
 from shapely.plotting import plot_polygon, plot_line
 from shapely.geometry import Point, Polygon, LineString, MultiPolygon
