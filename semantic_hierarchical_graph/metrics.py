@@ -3,11 +3,13 @@ import json
 from time import time
 from typing import Dict, Any, List, Tuple
 from collections import deque
+from math import comb
 
 import numpy as np
 import cv2
 from networkx.classes.function import path_weight
 from shapely import Point
+from semantic_hierarchical_graph.astar_planner import AStarPlanner
 import semantic_hierarchical_graph.path_planning as path_planning
 import semantic_hierarchical_graph.segmentation as segmentation
 from semantic_hierarchical_graph.vector import Vector
@@ -26,10 +28,20 @@ class Metrics():
         self.metrics["ILIR_path_length"] = sum([path.length for path in room.env.path])
         self.metrics["ILIR_avg_line_length"] = self.metrics["ILIR_path_length"] / len(room.env.path)
 
-        path_metrics, room_mask_with_paths = self._calc_single_path_metrics(room)
-        self.metrics.update(path_metrics)
+        bridge_points = [point for points in room.bridge_nodes.values() for point in points]
+        self.metrics["num_bridge_points"] = len(bridge_points)
 
-        self.metrics["disturbance"] = self._calc_disturbance(room.mask, room_mask_with_paths)
+        random_points = self._get_random_valid_points(room, 5)
+        self.metrics["num_random_points"] = len(random_points)
+        # random_points = [(274, 243), (546, 303), (399, 278), (326, 294), (58, 325),
+        #                  (406, 262), (521, 252), (221, 310), (66, 341), (496, 249)]
+        bridge_points.extend(random_points)
+        self.metrics["num_paths"] = comb(len(bridge_points), 2)
+
+        for planner in [AStarPlanner(room)]:  # ILIRPlanner(room), AStarPlanner(room)]:
+            path_metrics, room_mask_with_paths = self._calc_single_path_metrics(room, bridge_points, planner)
+            path_metrics["disturbance"] = self._calc_disturbance(room.mask, room_mask_with_paths)
+            self.metrics[planner.name] = path_metrics
 
         print("Bridge points not connected:", room.bridge_points_not_connected)
         # room_img = cv2.cvtColor(room.mask, cv2.COLOR_GRAY2RGB)
@@ -38,7 +50,7 @@ class Metrics():
         # TODO: Deal with multiple possible solutions
         #       Check for correct distances on bridge connections
 
-    def _calc_single_path_metrics(self, room: Room) -> Tuple[Dict, np.ndarray]:
+    def _calc_single_path_metrics(self, room: Room, points: List, planner) -> Tuple[Dict, np.ndarray]:
         room_mask: np.ndarray = room.mask.copy()
         path_metrics: Dict[str, Any] = {}
         path_metrics["success_rate"] = []
@@ -50,20 +62,7 @@ class Metrics():
         path_metrics["obstacle_clearance"] = []
         path_metrics["obstacle_clearance_min"] = np.inf
 
-        bridge_points = [point for points in room.bridge_nodes.values() for point in points]
-        path_metrics["num_bridge_points"] = len(bridge_points)
-
-        # TODO: Generate more random points in the room to test
-        # TODO: Implement function to plan from arbitrary point to arbitrary point. Needs shortest connection to existing roadmap
-
-        random_points = self._get_random_valid_points(room, 10)
-        path_metrics["num_random_points"] = len(random_points)
-        # random_points = [(274, 243), (546, 303), (399, 278), (326, 294), (58, 325),
-        #                  (406, 262), (521, 252), (221, 310), (66, 341), (496, 249)]
-        bridge_points.extend(random_points)
-
-        planner = ILIRPlanner(room)
-        for point_1, point_2 in itertools.combinations(bridge_points, 2):
+        for point_1, point_2 in itertools.combinations(points, 2):
             ts = time()
             path, vis_graph = planner.plan(point_1, point_2)
             te = time()
@@ -82,13 +81,13 @@ class Metrics():
             path_metrics["obstacle_clearance_min"] = min(clearance_min, path_metrics["obstacle_clearance_min"])
 
             self._draw_path(room_mask, path, (0))
+            segmentation.show_imgs(room_mask)
             # vis.draw_child_graph(room, path, vis_graph)
 
         return self._average_metrics(path_metrics), room_mask
 
     def _average_metrics(self, path_metrics: Dict) -> Dict:
         new_metrics = {}
-        path_metrics["num_paths"] = len(path_metrics["success_rate"])
         for metric_name in path_metrics.keys():
             if isinstance(path_metrics[metric_name], list):
                 if metric_name == "success_rate":
@@ -96,10 +95,11 @@ class Metrics():
                     continue
                 if len(path_metrics[metric_name]) == 0:
                     continue
-                new_metrics["avg_"+metric_name] = [np.mean(path_metrics[metric_name]),
-                                                   np.std(path_metrics[metric_name]).item(),
-                                                   np.min(path_metrics[metric_name]).item(),
-                                                   np.max(path_metrics[metric_name]).item()]
+                # new_metrics["avg_"+metric_name] =
+                new_metrics[metric_name] = [np.mean(path_metrics[metric_name]),
+                                            np.std(path_metrics[metric_name]).item(),
+                                            np.min(path_metrics[metric_name]).item(),
+                                            np.max(path_metrics[metric_name]).item()]
         path_metrics.update(new_metrics)
 
         return path_metrics
