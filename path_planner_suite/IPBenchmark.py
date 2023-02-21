@@ -25,3 +25,13 @@ class Benchmark(object):
         self.goalList = goalList  # in limits, collision-free?
         self.description = description
         self.level = level  # in [1,2,3,4]
+
+
+class ResultCollection (object):
+
+    def __init__(self, plannerFactoryName, planner, benchmark, solution, perfDataFrame):
+        self.plannerFactoryName = plannerFactoryName
+        self.planner = planner
+        self.benchmark = benchmark
+        self.solution = solution
+        self.perfDataFrame = perfDataFrame
