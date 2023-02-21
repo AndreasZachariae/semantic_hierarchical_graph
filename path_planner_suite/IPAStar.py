@@ -92,12 +92,19 @@ class AStar(PlanerBase):
             currentBest["status"] = 'closed'
             if self._collisionChecker.pointInCollision(currentBest["pos"]):
                 currentBest['collision'] = 1
+                if len(self.openList) == 0:
+                    break
                 currentBestName = self._getBestNodeName()
                 continue
             self.graph.nodes[currentBestName]['collision'] = 0
 
             # handleNode merges with former expandNode
             self._handleNode(currentBestName)
+
+            # No new nodes could be added, so no solution exists
+            if len(self.openList) == 0:
+                break
+
             currentBestName = self._getBestNodeName()
 
         if self.goalFound:
@@ -133,7 +140,7 @@ class AStar(PlanerBase):
 
     @IPPerfMonitor
     def _handleNode(self, nodeName):
-        """Generats possible successor positions in all dimensions"""
+        """Generates possible successor positions in all dimensions"""
         result = []
         node = self.graph.nodes[nodeName]
         for i in range(len(node["pos"])):
