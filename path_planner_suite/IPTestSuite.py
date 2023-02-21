@@ -5,12 +5,12 @@ This code is part of the course "Introduction to robot path planning" (Author: B
 It gathers all visualizations of the investigated and explained planning algorithms.
 License is based on Creative Commons: Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) (pls. check: http://creativecommons.org/licenses/by-nc/4.0/)
 """
-
-from IPBenchmark import Benchmark
-from IPEnvironment import CollisionChecker
-from shapely.geometry import Point, Polygon, LineString
 import math
 import numpy as np
+from shapely.geometry import Point, Polygon, LineString
+
+from path_planner_suite.IPBenchmark import Benchmark
+from path_planner_suite.IPEnvironment import CollisionChecker
 
 
 benchList = list()

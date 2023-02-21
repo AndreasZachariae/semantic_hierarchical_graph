@@ -13,9 +13,9 @@ import copy
 import networkx as nx
 import heapq
 from scipy.spatial.distance import euclidean, cityblock
-from IPPlanerBase import PlanerBase
 
-from IPPerfMonitor import IPPerfMonitor
+from path_planner_suite.IPPlanerBase import PlanerBase
+from path_planner_suite.IPPerfMonitor import IPPerfMonitor
 
 
 class AStar(PlanerBase):
