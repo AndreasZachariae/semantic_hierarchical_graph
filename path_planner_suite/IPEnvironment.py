@@ -31,9 +31,13 @@ class CollisionChecker(object):
         inCollision -> True
         Free -> False """
         assert (len(pos) == self.getDim())
+        point = Point(pos[0], pos[1])
         for key, value in self.scene.items():
-            if value.intersects(Point(pos[0], pos[1])):
-                return True
+            if value.intersects(point):
+                # Change for compatibility with SHGraph
+                # points directly on the edge are not considered as collision
+                if not value.touches(point):
+                    return True
         return False
 
     @IPPerfMonitor
@@ -42,9 +46,13 @@ class CollisionChecker(object):
         assert (len(startPos) == self.getDim())
         assert (len(endPos) == self.getDim())
 
+        line = LineString([(startPos[0], startPos[1]), (endPos[0], endPos[1])])
         for key, value in self.scene.items():
-            if value.intersects(LineString([(startPos[0], startPos[1]), (endPos[0], endPos[1])])):
-                return True
+            if value.intersects(line):
+                # Change for compatibility with SHGraph
+                # points directly on the edge are not considered as collision
+                if not value.touches(line):
+                    return True
         return False
 
     def drawObstacles(self, ax):
