@@ -31,14 +31,15 @@ class Metrics():
         bridge_points = [point for points in room.bridge_nodes.values() for point in points]
         self.metrics["num_bridge_points"] = len(bridge_points)
 
-        random_points = self._get_random_valid_points(room, 5)
+        # random_points = self._get_random_valid_points(room, n=10)
+        random_points = [(355, 68), (363, 63), (325, 43), (276, 129), (302, 170),
+                         (339, 191), (373, 193), (342, 161), (393, 43), (339, 76)]
         self.metrics["num_random_points"] = len(random_points)
-        # random_points = [(274, 243), (546, 303), (399, 278), (326, 294), (58, 325),
-        #                  (406, 262), (521, 252), (221, 310), (66, 341), (496, 249)]
+        print("Random points:", random_points)
         bridge_points.extend(random_points)
         self.metrics["num_paths"] = comb(len(bridge_points), 2)
 
-        for planner in [AStarPlanner(room)]:  # ILIRPlanner(room), AStarPlanner(room)]:
+        for planner in [AStarPlanner(room), ILIRPlanner(room)]:  # ILIRPlanner(room), AStarPlanner(room)]:
             path_metrics, room_mask_with_paths = self._calc_single_path_metrics(room, bridge_points, planner)
             path_metrics["disturbance"] = self._calc_disturbance(room.mask, room_mask_with_paths)
             self.metrics[planner.name] = path_metrics
@@ -69,9 +70,10 @@ class Metrics():
             path_metrics["planning_time"].append(te - ts)
             if path is None:
                 path_metrics["success_rate"].append(0)
+                print(f"No path found from {point_1} to {point_2}")
                 continue
             path_metrics["success_rate"].append(1)
-            path_metrics["path_length"].append(self._calc_path_length(room.child_graph, path))
+            path_metrics["path_length"].append(self._calc_path_length(vis_graph, path))
             turns, angles, smoothness = self._calc_smoothness(path)
             path_metrics["num_turns"].append(turns)
             path_metrics["cumulative_turning_angle"].append(angles)
@@ -81,7 +83,7 @@ class Metrics():
             path_metrics["obstacle_clearance_min"] = min(clearance_min, path_metrics["obstacle_clearance_min"])
 
             self._draw_path(room_mask, path, (0))
-            segmentation.show_imgs(room_mask)
+            # segmentation.show_imgs(room_mask)
             # vis.draw_child_graph(room, path, vis_graph)
 
         return self._average_metrics(path_metrics), room_mask
@@ -104,10 +106,10 @@ class Metrics():
 
         return path_metrics
 
-    def _get_random_valid_points(self, room: Room, num_points: int) -> List[Tuple]:
+    def _get_random_valid_points(self, room: Room, n: int) -> List[Tuple]:
         points = []
         box = cv2.boundingRect(room.mask)
-        while len(points) < num_points:
+        while len(points) < n:
             x = np.random.randint(box[0], box[0] + box[2])
             y = np.random.randint(box[1], box[1] + box[3])
             if not room.env._in_collision(Point(x, y)):
@@ -119,7 +121,7 @@ class Metrics():
         return points
 
     def _calc_path_length(self, graph, path) -> float:
-        # length = path_weight(graph, path, weight="distance")
+        # dist = path_weight(graph, path, weight="distance")
         dist = 0
         for i in range(len(path) - 1):
             dist += path[i].pos.distance(path[i + 1].pos)
@@ -185,22 +187,24 @@ class Metrics():
         # 3. draw all paths on room mask with distinct color
         # 3.1. lookup all path pixel on dist_transform and calc metric obstacle_clearance
         # 3.2. change path to background color or threshold image
-        # 4. get single segments with cv2.findContours
+        # 4. get single segments with connectedComponentsWithStats
         # 5. calc max area and calc disturbance metric and draw in different color
         # 5.1 disturbance = Largest open area inside roadmap / Room area (- safety margin)
         # 6. convert colors to rgb
         # 7. Average metrics for all paths
 
         area = cv2.moments(room_mask, True)["m00"]
-        contours, _ = cv2.findContours(room_mask_with_paths, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-        contour_areas = list(map(cv2.contourArea, contours))
+        _, labels, stats, _ = cv2.connectedComponentsWithStats(room_mask_with_paths, connectivity=4)
+        largest_label = 1 + np.argmax(stats[1:, cv2.CC_STAT_AREA])
+        largest_free_area = stats[largest_label, cv2.CC_STAT_AREA]
+        # print("Largest free area", largest_label, largest_free_area, stats)
 
         # Only for visualization
-        c_max = contours[np.argmax(contour_areas)]
-        cv2.drawContours(room_mask_with_paths, [c_max], 0, (128), -1)
+        room_mask_with_paths[np.where(labels == largest_label)] = 128
+        # segmentation.show_imgs(labels)
         segmentation.show_imgs(room_mask_with_paths)
 
-        return max(contour_areas) / area
+        return largest_free_area / area
 
     def _draw_path(self, img: np.ndarray, path: List, color):
         for i in range(len(path) - 1):
