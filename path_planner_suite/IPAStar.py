@@ -62,6 +62,8 @@ class AStar(PlanerBase):
         """
         # 0. reset
         self.graph.clear()
+        self.openList = []
+        self.goalFound = False
 
         # 1. check start and goal whether collision free (s. BaseClass)
         checkedStartList, checkedGoalList = self._checkStartGoal(startList, goalList)
@@ -76,7 +78,8 @@ class AStar(PlanerBase):
         currentBestName = self._getBestNodeName()
         breakNumber = 0
         while currentBestName:
-            if breakNumber > 1000:
+            if breakNumber > 100000:
+                print("Planning interrupted due to over 100000 iterations")
                 break
 
             breakNumber += 1
