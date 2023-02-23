@@ -32,8 +32,13 @@ class Metrics():
         self.metrics["num_bridge_points"] = len(bridge_points)
 
         # random_points = self._get_random_valid_points(room, n=10)
-        random_points = [(355, 68), (363, 63), (325, 43), (276, 129), (302, 170),
-                         (339, 191), (373, 193), (342, 161), (393, 43), (339, 76)]
+        # Room 2
+        # random_points = [(355, 68), (363, 63), (325, 43), (276, 129), (302, 170),
+        #                  (339, 191), (373, 193), (342, 161), (393, 43), (339, 76)]
+        # Room 11
+        random_points = [(75, 275), (554, 341), (611, 287), (509, 283), (198, 296),
+                         (484, 300), (440, 303), (446, 314), (480, 265), (556, 296)]
+
         self.metrics["num_random_points"] = len(random_points)
         print("Random points:", random_points)
         bridge_points.extend(random_points)
@@ -98,10 +103,11 @@ class Metrics():
                 if len(path_metrics[metric_name]) == 0:
                     continue
                 # new_metrics["avg_"+metric_name] =
-                new_metrics[metric_name] = [np.mean(path_metrics[metric_name]),
-                                            np.std(path_metrics[metric_name]).item(),
-                                            np.min(path_metrics[metric_name]).item(),
-                                            np.max(path_metrics[metric_name]).item()]
+                new_metrics[metric_name] = {"mean": np.mean(path_metrics[metric_name]),
+                                            "std": np.std(path_metrics[metric_name]).item(),
+                                            "min": np.min(path_metrics[metric_name]).item(),
+                                            "max": np.max(path_metrics[metric_name]).item()}
+
         path_metrics.update(new_metrics)
 
         return path_metrics
@@ -202,7 +208,7 @@ class Metrics():
         # Only for visualization
         room_mask_with_paths[np.where(labels == largest_label)] = 128
         # segmentation.show_imgs(labels)
-        segmentation.show_imgs(room_mask_with_paths)
+        segmentation.show_imgs(room_mask_with_paths, name=f"{self.metrics['room_name']}_disturbance", save=False)
 
         return largest_free_area / area
 
@@ -238,7 +244,7 @@ if __name__ == "__main__":
     room_11 = floor._get_child("room_11")
     room_14 = floor._get_child("room_14")
 
-    metrics = Metrics(room_2)
+    metrics = Metrics(room_11)
     # metrics.print_metrics()
     metrics.save_metrics("data/ryu_metrics.json")
 
