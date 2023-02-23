@@ -1,6 +1,6 @@
 # MAP
 map_name: benchmark_maps/hou2_clean.png
-grid_size: 0.0 # [m/px]
+grid_size: 1.0 # [m/px]
 
 # ROBOT
 base_size: [7, 14] # width x lenght in drive direction
@@ -15,3 +15,4 @@ distance_threshold: 22 # 3 * safety_distance
 min_contour_area: 1000 # 4 * (2*safety_distance)**2
 min_corridor_width: 10 # 2*safety_distance
 max_rectangle_to_line_width: 35 # 5.5 * safety_distance
+max_attempts_to_connect_bridge_point_straight: 3

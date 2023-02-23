@@ -1,6 +1,6 @@
 # MAP
 map_name: benchmark_maps/ryu.png
-grid_size: 0.0 # [m/px]
+grid_size: 1.0 # [m/px]
 
 # ROBOT
 base_size: [10, 20] # width x lenght in drive direction
