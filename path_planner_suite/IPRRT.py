@@ -1,10 +1,16 @@
-from scipy.spatial import cKDTree
-from IPPRMBase import PRMBase
-from IPPerfMonitor import IPPerfMonitor
-import numpy as np
+# coding: utf-8
 
+"""
+This code is part of the course "Introduction to robot path planning" (Author: Bjoern Hein).
+
+License is based on Creative Commons: Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) (pls. check: http://creativecommons.org/licenses/by-nc/4.0/)
+"""
+import numpy as np
 import networkx as nx
-import random
+from scipy.spatial import cKDTree
+
+from path_planner_suite.IPPRMBase import PRMBase
+from path_planner_suite.IPPerfMonitor import IPPerfMonitor
 
 
 class RRT(PRMBase):

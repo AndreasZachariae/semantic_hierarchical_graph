@@ -5,19 +5,15 @@ This code is part of the course "Introduction to robot path planning" (Author: B
 
 License is based on Creative Commons: Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) (pls. check: http://creativecommons.org/licenses/by-nc/4.0/)
 """
-
-import IPPRMBase
-from IPPerfMonitor import IPPerfMonitor
 import networkx as nx
-import random
-import numpy as np
-import math
-
 # reduce coding effort by using function provided by scipy
 from scipy.spatial.distance import euclidean, cityblock
 
+from path_planner_suite.IPPRMBase import PRMBase
+from path_planner_suite.IPPerfMonitor import IPPerfMonitor
 
-class BasicPRM(IPPRMBase.PRMBase):
+
+class BasicPRM(PRMBase):
 
     def __init__(self, _collChecker):
         super(BasicPRM, self).__init__(_collChecker)
@@ -42,7 +38,7 @@ class BasicPRM(IPPRMBase.PRMBase):
 
         result = list()
         for node in self.graph.nodes(data=True):
-            if euclidean(node[1]['pos'], pos) <= radius:
+            if euclidean(node[1]['pos'], pos) <= radius:  # type: ignore
                 result.append(node)
 
         return result

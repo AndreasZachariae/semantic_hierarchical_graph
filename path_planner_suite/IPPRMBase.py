@@ -5,15 +5,10 @@ This code is part of the course "Introduction to robot path planning" (Author: B
 
 License is based on Creative Commons: Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) (pls. check: http://creativecommons.org/licenses/by-nc/4.0/)
 """
-
-from IPPerfMonitor import IPPerfMonitor
-
-try:
-    from IPPlanerBase import PlanerBase
-except:
-    from templates.IPPlanerBase import PlanerBase
-
 import random
+
+from path_planner_suite.IPPerfMonitor import IPPerfMonitor
+from path_planner_suite.IPPlanerBase import PlanerBase
 
 
 class PRMBase(PlanerBase):
