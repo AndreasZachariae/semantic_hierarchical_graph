@@ -9,12 +9,12 @@ import numpy as np
 import cv2
 from networkx.classes.function import path_weight
 from shapely import Point
-from semantic_hierarchical_graph.astar_planner import AStarPlanner
+from semantic_hierarchical_graph.planners.astar_planner import AStarPlanner
 import semantic_hierarchical_graph.path_planning as path_planning
 import semantic_hierarchical_graph.segmentation as segmentation
 from semantic_hierarchical_graph.types.vector import Vector
 from semantic_hierarchical_graph.types.position import Position
-from semantic_hierarchical_graph.ilir_planner import ILIRPlanner
+from semantic_hierarchical_graph.planners.ilir_planner import ILIRPlanner
 from semantic_hierarchical_graph.floor import Room
 
 
