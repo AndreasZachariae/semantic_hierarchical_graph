@@ -9,7 +9,7 @@ from semantic_hierarchical_graph.node import SHNode
 from semantic_hierarchical_graph.types.parameters import Parameter
 import semantic_hierarchical_graph.visualization as vis
 import semantic_hierarchical_graph.segmentation as segmentation
-import semantic_hierarchical_graph.path_planning as path_planning
+import semantic_hierarchical_graph.roadmap_creation as roadmap_creation
 from semantic_hierarchical_graph.types.position import Position
 
 
@@ -82,11 +82,11 @@ class Room(SHNode):
         self.params: Dict[str, Any] = params
         self.env: Environment = Environment(id)
         self.bridge_nodes: Dict[Tuple, List] = bridge_nodes
-        self.largest_rectangles, centroid = path_planning.calc_largest_rectangles(
+        self.largest_rectangles, centroid = roadmap_creation.calc_largest_rectangles(
             ws_erosion, self.env, self.params)
         super().__init__(f"room_{id}", parent_node, centroid, False, False)
 
-        self.bridge_points_not_connected: Set = path_planning.connect_paths(
+        self.bridge_points_not_connected: Set = roadmap_creation.connect_paths(
             self.env, bridge_nodes, bridge_edges, self.params)
 
     def create_roadmap(self):

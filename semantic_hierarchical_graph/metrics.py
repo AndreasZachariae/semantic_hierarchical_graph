@@ -10,7 +10,7 @@ import cv2
 from networkx.classes.function import path_weight
 from shapely import Point
 from semantic_hierarchical_graph.planners.astar_planner import AStarPlanner
-import semantic_hierarchical_graph.path_planning as path_planning
+import semantic_hierarchical_graph.roadmap_creation as roadmap_creation
 import semantic_hierarchical_graph.segmentation as segmentation
 from semantic_hierarchical_graph.types.vector import Vector
 from semantic_hierarchical_graph.types.position import Position
@@ -120,7 +120,7 @@ class Metrics():
             y = np.random.randint(box[1], box[1] + box[3])
             if not room.env._in_collision(Point(x, y)):
                 # TODO: Check if point can be connected is very expensive here. It will be done again in ILIRPlanner
-                connections, _ = path_planning.connect_point_to_path((x, y), room.env, room.params)
+                connections, _ = roadmap_creation.connect_point_to_path((x, y), room.env, room.params)
                 if len(connections) > 0:
                     points.append((x, y))
 
