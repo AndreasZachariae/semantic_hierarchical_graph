@@ -6,9 +6,10 @@ from shapely import LineString, Point
 from semantic_hierarchical_graph.types.exceptions import SHGGeometryError, SHGPlannerError
 from semantic_hierarchical_graph.graph import SHGraph
 from semantic_hierarchical_graph.floor import Room, Floor
-from semantic_hierarchical_graph import path_planning, segmentation, visualization as vis
+from semantic_hierarchical_graph import roadmap_creation, segmentation, visualization as vis
 import semantic_hierarchical_graph.utils as util
 from semantic_hierarchical_graph.types.position import Position
+import semantic_hierarchical_graph.planners.planner_conversion as pc
 
 
 class ILIRPlanner():
@@ -50,16 +51,15 @@ class ILIRPlanner():
         return path, vis_graph
 
     def plan_in_map_frame(self, start: Tuple, goal: Tuple):
-        start_pos = Position.convert_to_grid(start, self.room.params["grid_size"])
-        goal_pos = Position.convert_to_grid(goal, self.room.params["grid_size"])
-        self.plan(start_pos.xy, goal_pos.xy)
+        start_pos, goal_pos = pc.convert_map_frame_to_grid(start, goal, self.room.params["grid_size"])
+        self.plan(start_pos, goal_pos)
 
     def _add_path_to_roadmap(self, node_name, node_pos, type):
         if self.room.env._in_collision(Point(node_pos.xy)):
             raise SHGPlannerError(
                 f"Point {node_pos} is not in the drivable area (boundary + safety margin) of the room")
 
-        connections, closest_path = path_planning.connect_point_to_path(node_pos.xy, self.room.env, self.room.params)
+        connections, closest_path = roadmap_creation.connect_point_to_path(node_pos.xy, self.room.env, self.room.params)
 
         if len(connections) == 0:
             raise SHGPlannerError(f"No connection from point {node_pos.xy} to roadmap found")
