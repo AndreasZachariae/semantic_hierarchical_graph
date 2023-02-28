@@ -1,5 +1,5 @@
 from typing import Tuple, Union, List
-from semantic_hierarchical_graph.exceptions import SHGIndexError
+from semantic_hierarchical_graph.types.exceptions import SHGIndexError
 
 
 class Position():

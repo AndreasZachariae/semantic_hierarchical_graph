@@ -6,10 +6,10 @@ from shapely.ops import unary_union, polygonize_full
 from shapely import Polygon, LineString, MultiPolygon, GeometryCollection, Point
 import largestinteriorrectangle as lir
 from semantic_hierarchical_graph.environment import Environment
-from semantic_hierarchical_graph.exceptions import SHGGeometryError
-from semantic_hierarchical_graph.parameters import Parameter
+from semantic_hierarchical_graph.types.exceptions import SHGGeometryError
+from semantic_hierarchical_graph.types.parameters import Parameter
 import semantic_hierarchical_graph.segmentation as segmentation
-from semantic_hierarchical_graph.types import Position
+from semantic_hierarchical_graph.types.position import Position
 
 
 def _create_rooms(ws_erosion: np.ndarray, params: Dict[str, Any]) -> Tuple[Dict[int, Environment], Dict[int, List]]:

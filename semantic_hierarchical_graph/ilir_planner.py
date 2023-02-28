@@ -3,12 +3,12 @@ from typing import List, Tuple, Union
 from copy import deepcopy
 
 from shapely import LineString, Point
-from semantic_hierarchical_graph.exceptions import SHGGeometryError, SHGPlannerError
+from semantic_hierarchical_graph.types.exceptions import SHGGeometryError, SHGPlannerError
 from semantic_hierarchical_graph.graph import SHGraph
 from semantic_hierarchical_graph.floor import Room, Floor
 from semantic_hierarchical_graph import path_planning, segmentation, visualization as vis
 import semantic_hierarchical_graph.utils as util
-from semantic_hierarchical_graph.types import Position
+from semantic_hierarchical_graph.types.position import Position
 
 
 class ILIRPlanner():

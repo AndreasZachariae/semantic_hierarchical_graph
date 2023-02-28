@@ -6,7 +6,7 @@ from path_planner_suite.IPAStar import AStar
 from path_planner_suite.IPBenchmark import Benchmark
 from path_planner_suite.IPEnvironment import CollisionChecker
 from semantic_hierarchical_graph.floor import Room
-from semantic_hierarchical_graph.types import Position
+from semantic_hierarchical_graph.types.position import Position
 
 
 @dataclass

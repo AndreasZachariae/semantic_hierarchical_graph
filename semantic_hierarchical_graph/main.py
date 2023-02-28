@@ -1,7 +1,7 @@
 from semantic_hierarchical_graph.graph import SHGraph
 import semantic_hierarchical_graph.visualization as vis
 import semantic_hierarchical_graph.utils as util
-from semantic_hierarchical_graph.types import Position
+from semantic_hierarchical_graph.types.position import Position
 
 
 def main():

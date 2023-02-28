@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 from shapely.plotting import plot_polygon, plot_line
 from shapely.geometry import Point, Polygon, LineString, MultiPolygon
 from shapely.ops import nearest_points, transform, split
-from semantic_hierarchical_graph.exceptions import SHGGeometryError
-from semantic_hierarchical_graph.vector import Vector
+from semantic_hierarchical_graph.types.exceptions import SHGGeometryError
+from semantic_hierarchical_graph.types.vector import Vector
 
 
 class Environment():

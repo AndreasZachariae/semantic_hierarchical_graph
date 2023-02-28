@@ -2,7 +2,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 import cv2
 from matplotlib import pyplot as plt
-from semantic_hierarchical_graph.parameters import Parameter
+from semantic_hierarchical_graph.types.parameters import Parameter
 
 
 def marker_controlled_watershed(img: np.ndarray, params: dict) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:

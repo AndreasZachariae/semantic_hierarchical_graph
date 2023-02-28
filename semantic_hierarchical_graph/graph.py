@@ -3,8 +3,8 @@ from typing import Dict, List, Optional
 
 from semantic_hierarchical_graph.node import SHNode
 import semantic_hierarchical_graph.utils as util
-from semantic_hierarchical_graph.types import Position
-from semantic_hierarchical_graph.exceptions import SHGHierarchyError
+from semantic_hierarchical_graph.types.position import Position
+from semantic_hierarchical_graph.types.exceptions import SHGHierarchyError
 
 
 node_attributes = {

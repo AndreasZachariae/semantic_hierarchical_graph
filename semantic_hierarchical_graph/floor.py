@@ -1,16 +1,16 @@
 from typing import Any, Dict, List, Optional, Set, Tuple
 import cv2
 import numpy as np
-from semantic_hierarchical_graph.exceptions import SHGGeometryError
+from semantic_hierarchical_graph.types.exceptions import SHGGeometryError
 import semantic_hierarchical_graph.utils as util
 from semantic_hierarchical_graph.environment import Environment
 from semantic_hierarchical_graph.graph import SHGraph
 from semantic_hierarchical_graph.node import SHNode
-from semantic_hierarchical_graph.parameters import Parameter
+from semantic_hierarchical_graph.types.parameters import Parameter
 import semantic_hierarchical_graph.visualization as vis
 import semantic_hierarchical_graph.segmentation as segmentation
 import semantic_hierarchical_graph.path_planning as path_planning
-from semantic_hierarchical_graph.types import Position
+from semantic_hierarchical_graph.types.position import Position
 
 
 class Floor(SHNode):

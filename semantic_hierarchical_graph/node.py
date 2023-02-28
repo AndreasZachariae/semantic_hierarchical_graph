@@ -2,10 +2,10 @@ import networkx as nx
 from typing import Dict, List, Tuple, TypeVar, Generic, Optional
 # from typing_extensions import Self
 import numpy as np
-from semantic_hierarchical_graph.exceptions import SHGHierarchyError, SHGValueError
+from semantic_hierarchical_graph.types.exceptions import SHGHierarchyError, SHGValueError
 
 import semantic_hierarchical_graph.utils as util
-from semantic_hierarchical_graph.types import Position
+from semantic_hierarchical_graph.types.position import Position
 
 
 T = TypeVar('T', bound='SHNode')
