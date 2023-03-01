@@ -111,3 +111,13 @@ Integrate with SH-Graph
 Semantics
 
 - [ ] Add function to add semantic locations later into the graph and update env
+
+ROS node environment model
+
+- [ ] Wrap in python ros node
+- [ ] Create service for planning
+
+Visualization
+
+- [ ] Show panel with subplots for each hierarchy with planned path
+
