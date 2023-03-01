@@ -1,5 +1,4 @@
 from typing import List, Tuple
-from dataclasses import dataclass
 import cv2
 
 from path_planner_suite.IPBenchmark import Benchmark
@@ -8,9 +7,11 @@ from semantic_hierarchical_graph.floor import Room
 from semantic_hierarchical_graph.types.position import Position
 
 
-@dataclass
 class PathNode():
-    pos: Position
+    def __init__(self, pos: Position):
+        self.pos: Position = pos
+        self.pos_abs: Position = pos
+        self.unique_name: str = pos.to_name()
 
 
 def convert_to_start_goal_lists(start: Tuple, goal: Tuple) -> Tuple[List, List]:
