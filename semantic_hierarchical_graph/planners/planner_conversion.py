@@ -1,5 +1,6 @@
 from typing import List, Tuple
 import cv2
+import networkx as nx
 
 from path_planner_suite.IPBenchmark import Benchmark
 from path_planner_suite.IPEnvironment import CollisionChecker
@@ -34,11 +35,6 @@ def convert_room_to_IPBenchmark(room: Room):
     return Benchmark(f"room_{room.id}", IPcollision_checker, [], [], "", 1)
 
 
-def convert_path_to_PathNode(path):
-    return [PathNode(_get_pos_from_node_id(node)) for node in path]
-
-
-def _get_pos_from_node_id(node_id):
-    pos_split = node_id.split("-")
-    pos = Position(float(pos_split[1]), float(pos_split[2]), 0.0)
-    return pos
+def convert_path_to_PathNode(path, graph):
+    pos = nx.get_node_attributes(graph, 'pos')
+    return [PathNode(Position(pos[node][0], pos[node][1], 0.0)) for node in path]

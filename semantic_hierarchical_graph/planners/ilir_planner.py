@@ -16,6 +16,7 @@ class ILIRPlanner():
     def __init__(self, room: Room):
         self.name = "ILIR"
         self.room = room
+        self.config = dict()
 
     def _copy_graph(self):
         # TODO: This is a hack to make sure that the graph is not modified by the planner

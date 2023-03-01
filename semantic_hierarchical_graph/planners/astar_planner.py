@@ -26,7 +26,7 @@ class AStarPlanner():
             path = None
 
         if path is not None:
-            path = pc.convert_path_to_PathNode(path)
+            path = pc.convert_path_to_PathNode(path, self.planner.graph)
         return path, self.planner.graph
 
     def plan_in_map_frame(self, start: Tuple, goal: Tuple):
