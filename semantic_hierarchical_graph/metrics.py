@@ -4,18 +4,20 @@ from time import time
 from typing import Dict, Any, List, Tuple
 from collections import deque
 from math import comb
-
 import numpy as np
 import cv2
 from networkx.classes.function import path_weight
 from shapely import Point
-from semantic_hierarchical_graph.planners.astar_planner import AStarPlanner
+
 import semantic_hierarchical_graph.roadmap_creation as roadmap_creation
 import semantic_hierarchical_graph.segmentation as segmentation
 from semantic_hierarchical_graph.types.vector import Vector
 from semantic_hierarchical_graph.types.position import Position
-from semantic_hierarchical_graph.planners.ilir_planner import ILIRPlanner
 from semantic_hierarchical_graph.floor import Room
+from semantic_hierarchical_graph.planners.astar_planner import AStarPlanner
+from semantic_hierarchical_graph.planners.ilir_planner import ILIRPlanner
+from semantic_hierarchical_graph.planners.prm_planner import PRMPlanner
+from semantic_hierarchical_graph.planners.rrt_planner import RRTPlanner
 
 
 class Metrics():
@@ -33,21 +35,23 @@ class Metrics():
 
         # random_points = self._get_random_valid_points(room, n=10)
         # Room 2
-        # random_points = [(355, 68), (363, 63), (325, 43), (276, 129), (302, 170),
-        #                  (339, 191), (373, 193), (342, 161), (393, 43), (339, 76)]
+        random_points = [(380, 72), (363, 63), (325, 43), (276, 129), (302, 170),
+                         (273, 45), (373, 193), (342, 161), (393, 43), (339, 76)]
         # Room 11
-        random_points = [(75, 275), (554, 341), (611, 287), (509, 283), (198, 296),
-                         (484, 300), (440, 303), (446, 314), (480, 265), (556, 296)]
+        # random_points = [(75, 275), (554, 341), (611, 287), (509, 283), (198, 296),
+        #                  (484, 300), (440, 303), (446, 314), (480, 265), (556, 296)]
 
         self.metrics["num_random_points"] = len(random_points)
         print("Random points:", random_points)
         bridge_points.extend(random_points)
         self.metrics["num_paths"] = comb(len(bridge_points), 2)
 
-        for planner in [AStarPlanner(room), ILIRPlanner(room)]:  # ILIRPlanner(room), AStarPlanner(room)]:
+        # AStarPlanner(room), ILIRPlanner(room), PRMPlanner(room), RRTPlanner(room)
+        for planner in [AStarPlanner(room), ILIRPlanner(room), PRMPlanner(room), RRTPlanner(room)]:
             path_metrics, room_mask_with_paths = self._calc_single_path_metrics(room, bridge_points, planner)
             path_metrics["disturbance"] = self._calc_disturbance(room.mask, room_mask_with_paths)
-            self.metrics[planner.name] = path_metrics
+            self.metrics[planner.name] = planner.config
+            self.metrics[planner.name].update(path_metrics)
 
         print("Bridge points not connected:", room.bridge_points_not_connected)
         # room_img = cv2.cvtColor(room.mask, cv2.COLOR_GRAY2RGB)
@@ -69,11 +73,12 @@ class Metrics():
         path_metrics["obstacle_clearance_min"] = np.inf
 
         for point_1, point_2 in itertools.combinations(points, 2):
+            print(f"Planning path {len(path_metrics['success_rate'])+1}/{self.metrics['num_paths']}")
             ts = time()
             path, vis_graph = planner.plan(point_1, point_2)
             te = time()
             path_metrics["planning_time"].append(te - ts)
-            if path is None:
+            if path is None or path == []:
                 path_metrics["success_rate"].append(0)
                 print(f"No path found from {point_1} to {point_2}")
                 continue
@@ -210,7 +215,7 @@ class Metrics():
         # segmentation.show_imgs(labels)
         segmentation.show_imgs(room_mask_with_paths, name=f"{self.metrics['room_name']}_disturbance", save=False)
 
-        return largest_free_area / area
+        return 1 - (largest_free_area / area)
 
     def _draw_path(self, img: np.ndarray, path: List, color):
         for i in range(len(path) - 1):
@@ -244,7 +249,7 @@ if __name__ == "__main__":
     room_11 = floor._get_child("room_11")
     room_14 = floor._get_child("room_14")
 
-    metrics = Metrics(room_11)
+    metrics = Metrics(room_2)
     # metrics.print_metrics()
     metrics.save_metrics("data/ryu_metrics.json")
 
