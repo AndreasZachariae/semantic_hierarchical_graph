@@ -1,0 +1,193 @@
+{
+    "map_name": "benchmark_maps/ryu.png",
+    "grid_size": 1.0,
+    "base_size": [
+        10,
+        20
+    ],
+    "safety_margin": 5,
+    "distance_threshold": 30,
+    "min_contour_area": 1600,
+    "min_corridor_width": 20,
+    "max_rectangle_to_line_width": 55,
+    "max_attempts_to_connect_bridge_point_straight": 3,
+    "safety_distance": 10,
+    "room_name": "room_2",
+    "room_id": 2,
+    "num_nodes": 23,
+    "ILIR_path_length": 722.0,
+    "ILIR_avg_line_length": 34.38095238095238,
+    "num_bridge_points": 3,
+    "num_random_points": 10,
+    "num_paths": 78,
+    "AStar": {
+        "heuristic": "euclidean",
+        "w": 0.5,
+        "success_rate": 1.0,
+        "planning_time": {
+            "mean": 0.9647254607616327,
+            "std": 0.8519618347284366,
+            "min": 0.021451950073242188,
+            "max": 3.454340934753418
+        },
+        "path_length": {
+            "mean": 144.4102564102564,
+            "std": 65.63290214156311,
+            "min": 26.0,
+            "max": 284.0
+        },
+        "num_turns": {
+            "mean": 62.32051282051282,
+            "std": 49.66412665757943,
+            "min": 0,
+            "max": 224
+        },
+        "cumulative_turning_angle": {
+            "mean": 5608.846153846154,
+            "std": 4469.771399182149,
+            "min": 0.0,
+            "max": 20160.0
+        },
+        "smoothness": {
+            "mean": 39.1481705245301,
+            "std": 22.68867194561144,
+            "min": 0.0,
+            "max": 88.57142857142857
+        },
+        "obstacle_clearance": {
+            "mean": 21.106209895549675,
+            "std": 5.8647915605941785,
+            "min": 4.421661853790283,
+            "max": 34.65214157104492
+        },
+        "obstacle_clearance_min": 0.0,
+        "disturbance": 0.8629025748647994
+    },
+    "ILIR": {
+        "success_rate": 1.0,
+        "planning_time": {
+            "mean": 0.16328044732411703,
+            "std": 0.1091910440948319,
+            "min": 0.14209985733032227,
+            "max": 1.1199283599853516
+        },
+        "path_length": {
+            "mean": 188.018998452553,
+            "std": 84.25690845189256,
+            "min": 32.0,
+            "max": 346.0
+        },
+        "num_turns": {
+            "mean": 4.3076923076923075,
+            "std": 1.5632616486847366,
+            "min": 0,
+            "max": 8
+        },
+        "cumulative_turning_angle": {
+            "mean": 387.6923076923077,
+            "std": 140.69354838162627,
+            "min": 0.0,
+            "max": 720.0
+        },
+        "smoothness": {
+            "mean": 2.311989583604067,
+            "std": 1.0147718773896255,
+            "min": 0.0,
+            "max": 5.625
+        },
+        "obstacle_clearance": {
+            "mean": 16.75941852422861,
+            "std": 3.334256799378077,
+            "min": 11.432692527770996,
+            "max": 27.27039909362793
+        },
+        "obstacle_clearance_min": 11.0,
+        "disturbance": 0.5270804746145774
+    },
+    "PRM": {
+        "radius": 50,
+        "numNodes": 300,
+        "success_rate": 0.9871794871794872,
+        "planning_time": {
+            "mean": 0.985342047153375,
+            "std": 0.11654400859234224,
+            "min": 0.9125807285308838,
+            "max": 1.955404281616211
+        },
+        "path_length": {
+            "mean": 207.34798043774146,
+            "std": 90.8092492000989,
+            "min": 45.32162214344422,
+            "max": 415.2603493342423
+        },
+        "num_turns": {
+            "mean": 5.12987012987013,
+            "std": 2.4985743953518327,
+            "min": 1,
+            "max": 11
+        },
+        "cumulative_turning_angle": {
+            "mean": 344.3573778877668,
+            "std": 187.33717334797834,
+            "min": 12.773179200487972,
+            "max": 766.6807306132457
+        },
+        "smoothness": {
+            "mean": 1.6810784432734045,
+            "std": 0.6496878338452623,
+            "min": 0.18667603617124445,
+            "max": 4.575808647459729
+        },
+        "obstacle_clearance": {
+            "mean": 26.65480154210871,
+            "std": 3.2836318540230556,
+            "min": 15.733817100524902,
+            "max": 34.450721740722656
+        },
+        "obstacle_clearance_min": 11.0,
+        "disturbance": 0.6992896924691259
+    },
+    "RRT": {
+        "numberOfGeneratedNodes": 300,
+        "testGoalAfterNumberOfNodes": 10,
+        "success_rate": 1.0,
+        "planning_time": {
+            "mean": 0.009664303217178736,
+            "std": 0.006728065185900737,
+            "min": 0.004208803176879883,
+            "max": 0.039443016052246094
+        },
+        "path_length": {
+            "mean": 155.53220477179244,
+            "std": 73.30107668966924,
+            "min": 36.092067514938535,
+            "max": 319.59571450947413
+        },
+        "num_turns": {
+            "mean": 4.0256410256410255,
+            "std": 2.241647510971585,
+            "min": 0,
+            "max": 11
+        },
+        "cumulative_turning_angle": {
+            "mean": 215.3507829881881,
+            "std": 128.98271205421452,
+            "min": 0.0,
+            "max": 729.8327556347479
+        },
+        "smoothness": {
+            "mean": 1.504863350799667,
+            "std": 1.0411453980165846,
+            "min": 0.0,
+            "max": 8.003309867180892
+        },
+        "obstacle_clearance": {
+            "mean": 26.931481177990253,
+            "std": 4.412602996474662,
+            "min": 14.545454978942871,
+            "max": 35.02337646484375
+        },
+        "obstacle_clearance_min": 11.0,
+        "disturbance": 0.6673662119622246
+    }
+}
