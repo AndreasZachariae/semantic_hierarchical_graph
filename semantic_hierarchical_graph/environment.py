@@ -83,6 +83,8 @@ class Environment():
             if connection is not None:
                 return connection, closest_path
             tmp_path.remove(closest_path)
+            if len(tmp_path) == 0:
+                break
         return None, None
 
     def find_all_shortest_connections(self, mode: str, polygon=None):
@@ -164,7 +166,21 @@ class Environment():
             if line1.intersects(line2):
                 point = line1.intersection(line2)
                 if not point.geom_type == "Point":
-                    raise SHGGeometryError("Intersection is not a POINT but a", point.geom_type)
+                    if len(point.coords) > 2 or len(line1.coords) > 2 or len(line2.coords) > 2:
+                        raise SHGGeometryError(
+                            "Intersection is not a POINT or a LINE with max two points but a", point.geom_type)
+                    if line1.distance(Point(line2.coords[0])) < 1e-8:
+                        p2 = Point(line2.coords[0])
+                    else:
+                        p2 = Point(line2.coords[-1])
+                    if line2.distance(Point(line1.coords[0])) < 1e-8:
+                        p1 = Point(line1.coords[0])
+                    else:
+                        p1 = Point(line1.coords[-1])
+
+                    self._split_path(line1, p2, already_cut)
+                    self._split_path(line2, p1, already_cut)
+                    continue
                 # print("Intersection:", point)
 
                 self._split_path(line1, point, already_cut)
