@@ -2,7 +2,7 @@ import networkx as nx
 from typing import Dict, List, Tuple, TypeVar, Generic, Optional
 # from typing_extensions import Self
 import numpy as np
-from semantic_hierarchical_graph.types.exceptions import SHGHierarchyError, SHGValueError
+from semantic_hierarchical_graph.types.exceptions import SHGHierarchyError, SHGPlannerError, SHGValueError
 
 import semantic_hierarchical_graph.utils as util
 from semantic_hierarchical_graph.types.position import Position
@@ -154,11 +154,15 @@ class SHNode(Generic[T]):
         return s
 
     def _plan(self, start_name: str, goal_name: str) -> List[T]:
-        return nx.shortest_path(self.child_graph,
-                                source=self._get_child(start_name),
-                                target=self._get_child(goal_name),
-                                weight="distance",
-                                method="dijkstra")  # type: ignore
+        try:
+            path = nx.shortest_path(self.child_graph,
+                                    source=self._get_child(start_name),
+                                    target=self._get_child(goal_name),
+                                    weight="distance",
+                                    method="dijkstra")
+        except nx.NetworkXNoPath:
+            raise SHGPlannerError("No path found between {} and {}".format(start_name, goal_name))
+        return path  # type: ignore
 
     def _plan_recursive(self, start_name: str, goal_name: str, start_hierarchy: List[str], goal_hierarchy: List[str],
                         child_path: List[T], hierarchy_level: int, debug=False) -> Dict:
