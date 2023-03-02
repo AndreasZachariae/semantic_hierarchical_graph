@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Optional, Tuple
 
 from path_planner_suite.IPAStar import AStar
 from semantic_hierarchical_graph.floor import Room
@@ -6,12 +6,15 @@ import semantic_hierarchical_graph.planners.planner_conversion as pc
 
 
 class AStarPlanner():
-    def __init__(self, room: Room):
+    def __init__(self, room: Room, config: Optional[dict] = None):
         self.name = "AStar"
         self.room = room
-        self.config = dict()
-        self.config["heuristic"] = 'euclidean'
-        self.config["w"] = 0.5
+        if config is None:
+            self.config = dict()
+            self.config["heuristic"] = 'euclidean'
+            self.config["w"] = 0.5
+        else:
+            self.config = config
 
         self.benchmark = pc.convert_room_to_IPBenchmark(room)
         self.planner = AStar(self.benchmark.collisionChecker)

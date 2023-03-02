@@ -1,5 +1,5 @@
 from collections import deque
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 from copy import deepcopy
 
 from shapely import LineString, Point
@@ -13,10 +13,13 @@ import semantic_hierarchical_graph.planners.planner_conversion as pc
 
 
 class ILIRPlanner():
-    def __init__(self, room: Room):
+    def __init__(self, room: Room, config: Optional[dict] = None):
         self.name = "ILIR"
         self.room = room
-        self.config = dict()
+        if config is None:
+            self.config = dict()
+        else:
+            self.config = config
 
     def _copy_graph(self):
         # TODO: This is a hack to make sure that the graph is not modified by the planner

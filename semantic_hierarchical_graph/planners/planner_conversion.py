@@ -35,6 +35,6 @@ def convert_room_to_IPBenchmark(room: Room):
     return Benchmark(f"room_{room.id}", IPcollision_checker, [], [], "", 1)
 
 
-def convert_path_to_PathNode(path, graph):
+def convert_path_to_PathNode(path, graph) -> List:
     pos = nx.get_node_attributes(graph, 'pos')
     return [PathNode(Position(pos[node][0], pos[node][1], 0.0)) for node in path]
