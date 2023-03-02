@@ -2,10 +2,11 @@ import itertools
 from typing import Any, Dict, List, Optional, Set, Tuple
 import numpy as np
 import cv2
-from shapely.ops import unary_union, polygonize_full
+from shapely.ops import nearest_points, unary_union, polygonize_full
 from shapely import Polygon, LineString, MultiPolygon, GeometryCollection, Point
 import largestinteriorrectangle as lir
 from semantic_hierarchical_graph.environment import Environment
+import semantic_hierarchical_graph.planners.rrt_planner as rrt_planner
 from semantic_hierarchical_graph.types.exceptions import SHGGeometryError
 from semantic_hierarchical_graph.types.parameters import Parameter
 import semantic_hierarchical_graph.segmentation as segmentation
@@ -188,8 +189,24 @@ def connect_point_to_path(point: Tuple[float, float], env: Environment, params: 
     if connection is None:
         # TODO: find connection with auxillary points
         # TODO: find connection with A* algorithm
-        print("No connection found point", point)
-        return [], None
+
+        config = dict()
+        config["numberOfGeneratedNodes"] = 200
+        config["testGoalAfterNumberOfNodes"] = 1
+        planner = rrt_planner.RRTPlanner.around_point(point, params["rrt_max_distance_to_point"], env.scene, config)
+
+        pos = Point(point[0], point[1])
+        closest_path = min(env.path, key=lambda x: x.distance(pos))
+        closest_point: Point = nearest_points(closest_path, pos)[0]
+        path, vis_graph = planner.plan(point, (closest_point.x, closest_point.y))
+        if path == []:
+            print("No connection found point", point)
+            return [], None
+
+        connections = []
+        for i in range(1, len(path)):  # type: ignore
+            connections.append(LineString([path[i-1].pos.xy, path[i].pos.xy]))  # type: ignore
+        return connections, closest_path
 
     return [connection], closest_path
 
@@ -214,10 +231,10 @@ def _draw_all_paths(img: np.ndarray, envs: Dict[int, Environment],  color) -> np
 
 if __name__ == '__main__':
 
-    # img = cv2.imread('data/benchmark_maps/hou2_clean.png')
-    img = cv2.imread('data/benchmark_maps/ryu.png')
-    params = Parameter("config/ryu_params.yaml").params
-    # params = Parameter("config/hou2_params.yaml").params
+    img = cv2.imread('data/benchmark_maps/hou2_clean.png')
+    # img = cv2.imread('data/benchmark_maps/ryu.png')
+    # params = Parameter("config/ryu_params.yaml").params
+    params = Parameter("config/hou2_params.yaml").params
 
     ws, ws_erosion, dist_transform = segmentation.marker_controlled_watershed(img, params)
     bridge_nodes, bridge_edges = segmentation.find_bridge_nodes(ws_erosion, dist_transform)
