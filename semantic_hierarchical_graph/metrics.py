@@ -26,7 +26,7 @@ class Metrics():
         self.metrics.update(room.params)
         self.metrics["room_name"] = room.unique_name
         self.metrics["room_id"] = room.id
-        self.metrics["num_nodes"] = len(room.get_childs())
+        self.metrics["num_nodes"] = len(room.child_graph)
         self.metrics["ILIR_path_length"] = sum([path.length for path in room.env.path])
         self.metrics["ILIR_avg_line_length"] = self.metrics["ILIR_path_length"] / len(room.env.path)
 
@@ -35,11 +35,14 @@ class Metrics():
 
         # random_points = self._get_random_valid_points(room, n=10)
         # Room 2
-        random_points = [(380, 72), (363, 63), (325, 43), (276, 129), (302, 170),
-                         (273, 45), (373, 193), (342, 161), (393, 43), (339, 76)]
+        # random_points = [(380, 72), (363, 63), (325, 43), (276, 129), (302, 170),
+        #                  (273, 45), (373, 193), (342, 161), (393, 43), (339, 76)]
         # Room 11
         # random_points = [(75, 275), (554, 341), (611, 287), (509, 283), (198, 296),
         #                  (484, 300), (440, 303), (446, 314), (480, 265), (556, 296)]
+        # Hou2 room 9
+        random_points = [(280, 433), (435, 230), (171, 276), (297, 456), (280, 448),
+                         (153, 222), (111, 224), (283, 399), (452, 264), (300, 366)]
 
         self.metrics["num_random_points"] = len(random_points)
         print("Random points:", random_points)
@@ -234,31 +237,20 @@ class Metrics():
 if __name__ == "__main__":
     from semantic_hierarchical_graph.graph import SHGraph
     from semantic_hierarchical_graph.floor import Floor
-    from semantic_hierarchical_graph import visualization as vis
-    import semantic_hierarchical_graph.utils as util
 
     G = SHGraph(root_name="Benchmark", root_pos=Position(0, 0, 0))
-    floor = Floor("ryu", G, Position(0, 0, 1), 'data/benchmark_maps/ryu.png', "config/ryu_params.yaml")
+    # floor = Floor("ryu", G, Position(0, 0, 1), 'data/benchmark_maps/ryu.png', "config/ryu_params.yaml")
+    floor = Floor("hou2", G, Position(0, 0, 1), 'data/benchmark_maps/hou2_clean.png', "config/hou2_params.yaml")
     G.add_child_by_node(floor)
     print(G.get_childs("name"))
 
     floor.create_rooms()
     floor.create_bridges()
 
-    room_2 = floor._get_child("room_2")
-    room_11 = floor._get_child("room_11")
-    room_14 = floor._get_child("room_14")
+    # room_2 = floor._get_child("room_2")
+    # room_11 = floor._get_child("room_11")
+    room_9 = floor._get_child("room_9")
 
-    metrics = Metrics(room_2)
+    metrics = Metrics(room_9)
     # metrics.print_metrics()
-    metrics.save_metrics("data/ryu_metrics.json")
-
-    # path = room_11._plan("(555, 211)", "(81, 358)")
-    # path_list = util._map_names_to_nodes(path)
-
-    # print(path_list)
-    # vis.draw_child_graph_3d(room_11, path)
-
-    # ws2 = segmentation.draw(floor.watershed, floor.all_bridge_nodes, (22))
-    # ws4 = floor.draw_all_paths(ws2, (0), path_dict, (25))
-    # segmentation.show_imgs(ws4, name="map_benchmark_ryu_result", save=False)
+    metrics.save_metrics("data/hou2_metrics.json")
