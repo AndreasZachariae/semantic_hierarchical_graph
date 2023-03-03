@@ -6,6 +6,7 @@ from shapely.ops import nearest_points, unary_union, polygonize_full
 from shapely import Polygon, LineString, MultiPolygon, GeometryCollection, Point
 import largestinteriorrectangle as lir
 from semantic_hierarchical_graph.environment import Environment
+import semantic_hierarchical_graph.planners.astar_planner as astar_planner
 import semantic_hierarchical_graph.planners.rrt_planner as rrt_planner
 from semantic_hierarchical_graph.types.exceptions import SHGGeometryError
 from semantic_hierarchical_graph.types.parameters import Parameter
@@ -44,8 +45,10 @@ def calc_largest_rectangles(ws_erosion: np.ndarray, env: Environment, params: Di
             centroid = Position(cX, cY, 0)
 
             x, y, w, h = cv2.boundingRect(c_max)
+            padding = 10
             # interior polygon (= free room) has to be inverted with [::-1] to be clear space in shapely
-            walls = Polygon([(x-1, y-1), (x-1, y+h), (x+w, y+h), (x+w, y-1)], [c_max[:, 0, :][::-1]])
+            walls = Polygon([(x-1-padding, y-1-padding), (x-1-padding, y+h+padding),
+                            (x+w+padding, y+h+padding), (x+w+padding, y-1-padding)], [c_max[:, 0, :][::-1]])
             env.add_obstacle(walls)
             obstacle_index = np.where(hierarchy[0, :, 3] == c_max_index)[0]
             [env.add_obstacle(Polygon(contours[index][:, 0, :])) for index in obstacle_index]
@@ -190,10 +193,21 @@ def connect_point_to_path(point: Tuple[float, float], env: Environment, params: 
         # TODO: find connection with auxillary points
         # TODO: find connection with A* algorithm
 
+        # config = dict()
+        # config["numberOfGeneratedNodes"] = 200
+        # config["testGoalAfterNumberOfNodes"] = 1
+        # planner = rrt_planner.RRTPlanner.around_point(point, params["rrt_max_distance_to_point"], env.scene, config)
+
         config = dict()
-        config["numberOfGeneratedNodes"] = 200
-        config["testGoalAfterNumberOfNodes"] = 1
-        planner = rrt_planner.RRTPlanner.around_point(point, params["rrt_max_distance_to_point"], env.scene, config)
+        config["heuristic"] = 'euclidean'
+        config["w"] = 0.5
+        config["smoothing_enabled"] = True
+        config["smoothing_iterations"] = 50
+        config["smoothing_max_k"] = 20
+        config["smoothing_epsilon"] = 0.5
+        config["smoothing_variance_window"] = 10
+        config["smoothing_min_variance"] = 0.0
+        planner = astar_planner.AStarPlanner.around_point(point, params["rrt_max_distance_to_point"], env.scene, config)
 
         pos = Point(point[0], point[1])
         closest_path = min(env.path, key=lambda x: x.distance(pos))
@@ -201,6 +215,7 @@ def connect_point_to_path(point: Tuple[float, float], env: Environment, params: 
         path, vis_graph = planner.plan(point, (closest_point.x, closest_point.y))
         if path == []:
             print("No connection found point", point)
+            env.plot()
             return [], None
 
         connections = []
