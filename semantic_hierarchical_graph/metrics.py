@@ -35,14 +35,14 @@ class Metrics():
 
         # random_points = self._get_random_valid_points(room, n=10)
         # Room 2
-        # random_points = [(380, 72), (363, 63), (325, 43), (276, 129), (302, 170),
-        #                  (273, 45), (373, 193), (342, 161), (393, 43), (339, 76)]
+        random_points = [(380, 72), (363, 63), (325, 43), (276, 129), (302, 170),
+                         (273, 45), (373, 193), (342, 161), (393, 43), (339, 76)]
         # Room 11
         # random_points = [(75, 275), (554, 341), (611, 287), (509, 283), (198, 296),
         #                  (484, 300), (440, 303), (446, 314), (480, 265), (556, 296)]
         # Hou2 room 9
-        random_points = [(280, 433), (435, 230), (171, 276), (297, 456), (280, 448),
-                         (153, 222), (111, 224), (283, 399), (452, 264), (300, 366)]
+        # random_points = [(280, 433), (435, 230), (171, 276), (297, 456), (280, 448),
+        #                  (153, 222), (111, 224), (283, 399), (452, 264), (300, 366)]
 
         self.metrics["num_random_points"] = len(random_points)
         print("Random points:", random_points)
@@ -239,18 +239,18 @@ if __name__ == "__main__":
     from semantic_hierarchical_graph.floor import Floor
 
     G = SHGraph(root_name="Benchmark", root_pos=Position(0, 0, 0))
-    # floor = Floor("ryu", G, Position(0, 0, 1), 'data/benchmark_maps/ryu.png', "config/ryu_params.yaml")
-    floor = Floor("hou2", G, Position(0, 0, 1), 'data/benchmark_maps/hou2_clean.png', "config/hou2_params.yaml")
+    floor = Floor("ryu", G, Position(0, 0, 1), 'data/benchmark_maps/ryu.png', "config/ryu_params.yaml")
+    # floor = Floor("hou2", G, Position(0, 0, 1), 'data/benchmark_maps/hou2_clean.png', "config/hou2_params.yaml")
     G.add_child_by_node(floor)
     print(G.get_childs("name"))
 
     floor.create_rooms()
     floor.create_bridges()
 
-    # room_2 = floor._get_child("room_2")
-    # room_11 = floor._get_child("room_11")
-    room_9 = floor._get_child("room_9")
+    room = floor._get_child("room_2")
+    # room = floor._get_child("room_11")
+    # room = floor._get_child("room_9")
 
-    metrics = Metrics(room_9)
+    metrics = Metrics(room)
     # metrics.print_metrics()
     metrics.save_metrics("data/hou2_metrics.json")
