@@ -25,10 +25,10 @@ class IPSmoothing:
     """
     statistics = []
 
-    def __init__(self, result, temporary_planner):
-        self.graph = result.planner.graph
-        self.solution = result.solution
-        self.collision_checker = result.planner._collisionChecker
+    def __init__(self, graph, path, collision_checker):
+        self.graph = graph
+        self.original_path = path
+        self.collision_checker = collision_checker
         # self.benchmark = result.benchmark
         # self.planner = result.planner
         # self.plannerFactoryName = result.plannerFactoryName
@@ -37,7 +37,7 @@ class IPSmoothing:
         self.length_history = []
         self.debug = False
 
-    def smooth_solution(self, k_max, eps, variance_steps, min_variance, debug=False):
+    def smooth_solution(self, iterations, k_max, eps, variance_window, min_variance, debug=False):
         """
         Smooths the path solution over a range of iterations, breaking if the range count is exceeded, or if the path
         variance is smaller than a minimum value.
@@ -59,51 +59,38 @@ class IPSmoothing:
 
         self.debug = debug
 
-        if self.solution == []:
-            return None
+        if self.original_path is None or len(self.original_path) <= 2:
+            return self.original_path
 
-        pos = nx.get_node_attributes(self.graph, 'pos')
-        smooth_graph = nx.Graph(nx.subgraph(self.graph, self.solution))
-        path = nx.shortest_path(smooth_graph, "start", "goal")
+        smooth_graph = nx.Graph(nx.subgraph(self.graph, self.original_path))
+        pos = nx.get_node_attributes(smooth_graph, 'pos')
+        path = self.original_path.copy()
 
-        self.length_history.append(self.get_path_length(smooth_graph, path))
+        self.length_history.append(self.get_path_length(pos, path))
         self.size_history.append(len(path))
-        if debug:
-            tx = 0
 
-        for n in range(50):
-            rolling_var = pd.DataFrame(self.length_history).rolling(window=10).var()
-            if debug:
-                print(f"Length of History: {len(self.length_history)}")
-                print(rolling_var)
+        for n in range(iterations):
+            if n > variance_window:
+                rolling_var = np.var(self.length_history[-variance_window])
+            else:
+                rolling_var = np.nan
 
-            if len(self.length_history) > variance_steps and rolling_var.iloc[-1:].to_numpy() < min_variance:
-                print(f"Variance: {rolling_var.iloc[-1:].to_numpy()}")
-                print("Breaking due to small variance")
+            if len(path) <= 2:
                 break
 
-            if debug:
-                xx = 0
+            # print(f"Variance: {rolling_var}")
+            # print("Size: ", len(path))
+            # print("Length: ", self.length_history[-1])
+
+            # if rolling_var != np.nan and rolling_var <= min_variance:
+            #     print(f"Variance: {rolling_var}")
+            #     print("Breaking due to small variance")
+            #     break
 
             i = random.randint(1, len(path)-2)
-            break_loop = False
+            k_max = min(k_max, len(path)-2)
 
             for k in range(k_max, 0, -1):
-                if break_loop:
-                    if debug:
-                        print("Line Connected, Break_Loop triggered")
-                    break
-
-                iscolliding = False
-
-                if debug:
-                    tx += 1
-                    xx += 1
-                    print(f"total steps: {tx}")
-                    print(f"n step: {xx}")
-                    print(f"n: {n}")
-                    print(f"k: {k}")
-                    print(self.plannerFactoryName)
 
                 if i-k <= 0:
                     k_prev_node = "start"
@@ -117,6 +104,8 @@ class IPSmoothing:
 
                 if debug:
                     print(f"Initial Path: {path}")
+                    print(f"edges: {smooth_graph.edges}")
+                    print(f"K: {k}")
                     print(f"i: {i}")
                     print(f"length of path: {len(path)}")
                     print(f"k_prev: {k_prev_node}")
@@ -126,8 +115,6 @@ class IPSmoothing:
                 if self.collision_checker.lineInCollision(pos[k_prev_node], pos[k_next_node]):
                     if debug:
                         print("Line collides, No change")
-
-                    iscolliding = True
 
                 else:
                     smooth_graph.add_edge(k_prev_node, k_next_node)
@@ -144,35 +131,32 @@ class IPSmoothing:
                         print(f'New path: {path}')
                         self.visualize_path(self.temp_planner, smooth_graph)
 
-                    break_loop = True
+                    break
 
-                self.length_history.append(self.get_path_length(smooth_graph, path))
-                self.size_history.append(len(path))
-
-                if k == 1 and iscolliding and not break_loop:
-                    smooth_graph = self.del_tree(smooth_graph, path, eps, i)
+                # if k == 1 and iscolliding and not break_loop:
+                #     smooth_graph = self.del_tree(smooth_graph, path, eps, i)
 
                 if debug:
                     #  Allows for iterative visualization
                     self.visualize_path(self.temp_planner, smooth_graph)
 
-                pos = nx.get_node_attributes(smooth_graph, 'pos')
-                path = nx.shortest_path(smooth_graph, "start", "goal")
+            self.length_history.append(self.get_path_length(pos, path))
+            self.size_history.append(len(path))
 
         end_time = time.time()
         # IPSmoothing.statistics.append({"benchmark_name": self.benchmark.name,
         #                                "planner_name": self.plannerFactoryName,
-        #                                "original_length": self.get_path_length(self.graph, self.solution),
-        #                                "original_size": len(self.solution),
-        #                                "smoothed_length": self.get_path_length(smooth_graph, path),
+        #                                "original_length": self.get_path_length(pos, self.original_path),
+        #                                "original_size": len(self.original_path),
+        #                                "smoothed_length": self.get_path_length(pos, path),
         #                                "smoothed_size": len(path),
-        #                                # self.get_path_length(smooth_graph, ["start", "goal"]),
-        #                                "min_length": self.get_path_length(smooth_graph, path),
+        #                                # self.get_path_length(pos, ["start", "goal"]),
+        #                                "min_length": self.get_path_length(pos, path),
         #                                "length_history": self.length_history,
         #                                "size_history": self.size_history,
         #                                "time": end_time-start_time})
 
-        return smooth_graph
+        return path
 
     def del_tree(self, graph, path, eps, center_index):
         """
@@ -252,7 +236,7 @@ class IPSmoothing:
                     print("DelTree line collides")
 
             path = nx.shortest_path(graph, "start", "goal")
-            self.length_history.append(self.get_path_length(graph, path))
+            self.length_history.append(self.get_path_length(nx.get_node_attributes(graph, 'pos'), path))
             self.size_history.append(len(path))
 
             t += 1
@@ -274,7 +258,7 @@ class IPSmoothing:
         ax.set_title(title, color='w')
 
         # Draw scene with original solution
-        plannerFactory[self.plannerFactoryName][2](self.planner, self.solution, ax=ax, nodeSize=100)
+        plannerFactory[self.plannerFactoryName][2](self.planner, self.original_path, ax=ax, nodeSize=100)
 
         pos = nx.get_node_attributes(smoothed_graph, 'pos')
 
@@ -321,7 +305,7 @@ class IPSmoothing:
         ax2.plot(x, IPSmoothing.statistics[-1]["size_history"], color='purple')  # , marker='o', linestyle='dashed')
         ax2.set_ylabel(IPSmoothing.statistics[-1]["benchmark_name"] + " Number of nodes", color="purple")
 
-    def get_path_length(self, graph, solution):
+    def get_path_length(self, pos, solution):
         """
         Calculates the length of the path based on each node's position. Returns length.
 
@@ -330,7 +314,7 @@ class IPSmoothing:
         :return: length -- the length of the solution path
         """
 
-        pos = nx.get_node_attributes(graph, 'pos')
+        # pos = nx.get_node_attributes(graph, 'pos')
 
         prev_node = None
         length = 0
