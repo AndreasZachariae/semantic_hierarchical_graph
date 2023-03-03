@@ -1,12 +1,11 @@
 from typing import Optional, Tuple
 
 from path_planner_suite.IPBasicPRM import BasicPRM
-from semantic_hierarchical_graph.floor import Room
 import semantic_hierarchical_graph.planners.planner_conversion as pc
 
 
 class PRMPlanner():
-    def __init__(self, room: Room, config: Optional[dict] = None):
+    def __init__(self, room, config: Optional[dict] = None):
         self.name = "PRM"
         self.room = room
         if config is None:
@@ -16,8 +15,8 @@ class PRMPlanner():
         else:
             self.config = config
 
-        self.benchmark = pc.convert_room_to_IPBenchmark(room)
-        self.planner = BasicPRM(self.benchmark.collisionChecker)
+        self.collision_checker = pc.convert_room_to_IPCollisionChecker(room)
+        self.planner = BasicPRM(self.collision_checker)
 
     def plan(self, start: Tuple, goal: Tuple):
         start_list, goal_list = pc.convert_to_start_goal_lists(start, goal)

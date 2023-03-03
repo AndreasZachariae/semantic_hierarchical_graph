@@ -2,12 +2,11 @@ from typing import Any, List, Optional, Tuple
 from path_planner_suite.IPEnvironment import CollisionChecker
 
 from path_planner_suite.IPRRT import RRT
-from semantic_hierarchical_graph.floor import Room
 import semantic_hierarchical_graph.planners.planner_conversion as pc
 
 
 class RRTPlanner():
-    def __init__(self, room: Room, config: Optional[dict] = None):
+    def __init__(self, room, config: Optional[dict] = None):
         self.name = "RRT"
         self.room = room
         if config is None:
@@ -17,8 +16,8 @@ class RRTPlanner():
         else:
             self.config = config
 
-        self.benchmark = pc.convert_room_to_IPBenchmark(room)
-        self.planner = RRT(self.benchmark.collisionChecker)
+        self.collision_checker = pc.convert_room_to_IPCollisionChecker(room)
+        self.planner = RRT(self.collision_checker)
 
     @classmethod
     def around_point(cls, point: Tuple[float, float], max_dist: float, scene: List, config: Optional[dict] = None):
