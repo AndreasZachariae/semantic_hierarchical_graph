@@ -87,10 +87,12 @@ Improvements
 Every bridge point has to be connected
 
 - [x] 1. straight line connection
-- [ ] 2. visibility algorithm with lines in random directions
-- [ ] 2.1. Find orthogonal lines between bridge point and closest path and find third point on this line which connects both
-- [ ] 2.2. Change the angle of the line in x degree steps and change distance of thrid point in x steps
-- [ ] 3. A*
+- [x] 2. visibility algorithm with lines in random directions
+- [x] 2.1. Find orthogonal lines between bridge point and closest path and find third point on this line which connects both
+- [x] 2.2. Change the angle of the line in x degree steps and change distance of thrid point in x steps
+- [x] 3. A*
+- [ ] 3.1 Make all points of apth valid goal points for A*
+- [ ] 3.2 Dont limit the scene
 - [ ] Check if valid path between all bridge points
 
 Smoothing
@@ -107,6 +109,10 @@ Integrate with SH-Graph
 
 - [x] create graph from paths
 - [x] integrate room graph into sh-graph
+
+Evaluation
+
+- [ ] Make fair time comparison. Add time for roadmap generation to ilir planning time.
 
 Semantics
 
