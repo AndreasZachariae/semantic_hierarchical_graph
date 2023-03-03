@@ -89,6 +89,11 @@ class AStar(PlanerBase):
             if currentBest["pos"] == self.goal:
                 self.solutionPath = []
                 self._collectPath(currentBestName, self.solutionPath)
+                mapping = {self.solutionPath[0]: 'start',
+                           self.solutionPath[-1]: 'goal'}
+                self.graph = nx.relabel_nodes(self.graph, mapping)
+                self.solutionPath[0] = "start"
+                self.solutionPath[-1] = "goal"
                 self.goalFound = True
                 break
 
@@ -113,7 +118,7 @@ class AStar(PlanerBase):
         if self.goalFound:
             return self.solutionPath
         else:
-            return None
+            return []
 
     def _insertNodeNameInOpenList(self, nodeName):
         """Get an existing node stored in graph and put it in the OpenList"""
