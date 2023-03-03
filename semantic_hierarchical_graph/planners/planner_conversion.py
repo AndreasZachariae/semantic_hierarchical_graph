@@ -2,9 +2,7 @@ from typing import List, Tuple
 import cv2
 import networkx as nx
 
-from path_planner_suite.IPBenchmark import Benchmark
 from path_planner_suite.IPEnvironment import CollisionChecker
-from semantic_hierarchical_graph.floor import Room
 from semantic_hierarchical_graph.types.position import Position
 
 
@@ -27,12 +25,11 @@ def convert_map_frame_to_grid(start: Tuple, goal: Tuple, grid_size: float) -> Tu
     return start_pos.xy, goal_pos.xy
 
 
-def convert_room_to_IPBenchmark(room: Room):
+def convert_room_to_IPCollisionChecker(room):
     box = cv2.boundingRect(room.mask)
     IPlimits = [[box[0], box[0] + box[2]], [box[1], box[1] + box[3]]]
     IPscene = {str(i): obstacle for i, obstacle in enumerate(room.env.scene)}
-    IPcollision_checker = CollisionChecker(IPscene, IPlimits)
-    return Benchmark(f"room_{room.id}", IPcollision_checker, [], [], "", 1)
+    return CollisionChecker(IPscene, IPlimits)
 
 
 def convert_path_to_PathNode(path, graph) -> List:
