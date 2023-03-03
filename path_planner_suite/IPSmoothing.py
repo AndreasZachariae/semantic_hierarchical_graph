@@ -29,10 +29,10 @@ class IPSmoothing:
         self.graph = result.planner.graph
         self.solution = result.solution
         self.collision_checker = result.planner._collisionChecker
-        self.benchmark = result.benchmark
-        self.planner = result.planner
-        self.plannerFactoryName = result.plannerFactoryName
-        self.temp_planner = temporary_planner
+        # self.benchmark = result.benchmark
+        # self.planner = result.planner
+        # self.plannerFactoryName = result.plannerFactoryName
+        # self.temp_planner = temporary_planner
         self.size_history = []
         self.length_history = []
         self.debug = False
@@ -160,17 +160,17 @@ class IPSmoothing:
                 path = nx.shortest_path(smooth_graph, "start", "goal")
 
         end_time = time.time()
-        IPSmoothing.statistics.append({"benchmark_name": self.benchmark.name,
-                                       "planner_name": self.plannerFactoryName,
-                                       "original_length": self.get_path_length(self.graph, self.solution),
-                                       "original_size": len(self.solution),
-                                       "smoothed_length": self.get_path_length(smooth_graph, path),
-                                       "smoothed_size": len(path),
-                                       # self.get_path_length(smooth_graph, ["start", "goal"]),
-                                       "min_length": self.get_path_length(smooth_graph, path),
-                                       "length_history": self.length_history,
-                                       "size_history": self.size_history,
-                                       "time": end_time-start_time})
+        # IPSmoothing.statistics.append({"benchmark_name": self.benchmark.name,
+        #                                "planner_name": self.plannerFactoryName,
+        #                                "original_length": self.get_path_length(self.graph, self.solution),
+        #                                "original_size": len(self.solution),
+        #                                "smoothed_length": self.get_path_length(smooth_graph, path),
+        #                                "smoothed_size": len(path),
+        #                                # self.get_path_length(smooth_graph, ["start", "goal"]),
+        #                                "min_length": self.get_path_length(smooth_graph, path),
+        #                                "length_history": self.length_history,
+        #                                "size_history": self.size_history,
+        #                                "time": end_time-start_time})
 
         return smooth_graph
 
@@ -348,7 +348,7 @@ class IPSmoothing:
         # print(point_1, point_2, distance)
         return distance
 
-    def draw_statistics(benchList):
+    def draw_statistics(self, benchList):
         """
         Plots a bar graph for every benchmark with (smoothed) solution path per planner algorithm. No return.
 
@@ -392,7 +392,7 @@ class IPSmoothing:
 
             ax.legend(loc='upper right')
 
-    def draw_history_per_benchmark(benchList, num_coll_checks, combine_all):
+    def draw_history_per_benchmark(self, benchList, num_coll_checks, combine_all):
         """
         Draws a history graph for all algorithms per benchmark. No return.
 
