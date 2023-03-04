@@ -13,6 +13,8 @@ class Environment():
         self.room_id: int = room_id
         self.scene: List[Polygon] = []
         self.path: List[LineString] = []
+        self.room_bbox: List[int] = [0, 0, 0, 0]
+        self.floor_bbox: List[int] = [0, 0, 0, 0]
 
     def add_obstacle(self, obstacle):
         if obstacle not in self.scene:

@@ -45,6 +45,8 @@ def calc_largest_rectangles(ws_erosion: np.ndarray, env: Environment, params: Di
             centroid = Position(cX, cY, 0)
 
             x, y, w, h = cv2.boundingRect(c_max)
+            env.room_bbox = [x, y, w, h]
+            env.floor_bbox = [0, 0, ws_erosion.shape[1], ws_erosion.shape[0]]
             padding = 10
             # interior polygon (= free room) has to be inverted with [::-1] to be clear space in shapely
             walls = Polygon([(x-1-padding, y-1-padding), (x-1-padding, y+h+padding),
@@ -188,42 +190,65 @@ def connect_point_to_path(point: Tuple[float, float], env: Environment, params: 
         Every connection is a two point line without collision.
     """
     connection, closest_path = env.find_shortest_connection(
-        point, params["max_attempts_to_connect_bridge_point_straight"])
+        point, params["max_attempts_to_connect_points_straight"])
     if connection is None:
-        # TODO: find connection with auxillary points
-        # TODO: find connection with A* algorithm
+        path = _connect_point_with_astar(point, env, params)
+        # path = _connect_point_with_rrt(point, env, params)
 
-        # config = dict()
-        # config["numberOfGeneratedNodes"] = 200
-        # config["testGoalAfterNumberOfNodes"] = 1
-        # planner = rrt_planner.RRTPlanner.around_point(point, params["rrt_max_distance_to_point"], env.scene, config)
-
-        config = dict()
-        config["heuristic"] = 'euclidean'
-        config["w"] = 0.5
-        config["smoothing_enabled"] = True
-        config["smoothing_iterations"] = 50
-        config["smoothing_max_k"] = 20
-        config["smoothing_epsilon"] = 0.5
-        config["smoothing_variance_window"] = 10
-        config["smoothing_min_variance"] = 0.0
-        planner = astar_planner.AStarPlanner.around_point(point, params["rrt_max_distance_to_point"], env.scene, config)
-
-        pos = Point(point[0], point[1])
-        closest_path = min(env.path, key=lambda x: x.distance(pos))
-        closest_point: Point = nearest_points(closest_path, pos)[0]
-        path, vis_graph = planner.plan(point, (closest_point.x, closest_point.y))
-        if path == []:
-            print("No connection found point", point)
-            env.plot()
+        if path == [] or path is None:
+            print("No connection found for point", point)
             return [], None
 
-        connections = []
-        for i in range(1, len(path)):  # type: ignore
-            connections.append(LineString([path[i-1].pos.xy, path[i].pos.xy]))  # type: ignore
+        connections = [LineString([path[i-1].pos.xy, path[i].pos.xy]) for i in range(1, len(path))]  # type: ignore
         return connections, closest_path
 
     return [connection], closest_path
+
+
+def _connect_point_with_rrt(point: Tuple[float, float], env: Environment, params: dict) -> List:
+    config = dict()
+    config["numberOfGeneratedNodes"] = 200
+    config["testGoalAfterNumberOfNodes"] = 1
+    config["smoothing_iterations"] = 50
+    config["smoothing_max_k"] = 20
+    config["smoothing_epsilon"] = 0.5
+    config["smoothing_variance_window"] = 10
+    config["smoothing_min_variance"] = 0.0
+    planner = rrt_planner.RRTPlanner.around_point(point, params["max_distance_to_connect_points"], env.scene, config)
+
+    pos = Point(point[0], point[1])
+    closest_path = min(env.path, key=lambda x: x.distance(pos))
+    closest_point: Point = nearest_points(closest_path, pos)[0]
+    return planner.plan(point, (closest_point.x, closest_point.y, True))[0]  # type: ignore
+
+
+def _connect_point_with_astar(point: Tuple[float, float], env: Environment, params: dict) -> List:
+    config = dict()
+    config["heuristic"] = 'euclidean'
+    config["w"] = 0.5
+    config['max_iterations'] = 10000
+    config["smoothing_iterations"] = 50
+    config["smoothing_max_k"] = 20
+    config["smoothing_epsilon"] = 0.5
+    config["smoothing_variance_window"] = 10
+    config["smoothing_min_variance"] = 0.0
+    planner = astar_planner.AStarPlanner.around_point(
+        point, params["max_distance_to_connect_points"], env.scene, config)
+
+    goal_list = _get_goal_points(env)
+    return planner.plan_with_lists([[point[0], point[1]]], goal_list, True)[0]  # type: ignore
+
+
+def _get_goal_points(env: Environment):
+    room_img = np.zeros((env.floor_bbox[3], env.floor_bbox[2]), np.uint8)
+    room_img = _draw_path(room_img, env, (1,), 1)
+    goal_points = np.flip(np.argwhere(room_img == 1))
+    return goal_points.tolist()
+
+
+def _draw_path(img: np.ndarray, env: Environment, color: Tuple, thickness: int) -> np.ndarray:
+    [cv2.polylines(img, [line.coords._coords.astype("int32")], False,  color, thickness) for line in env.path]
+    return img
 
 
 def _plot_all_envs(envs: Dict[int, Environment]):
@@ -235,11 +260,10 @@ def _plot_all_envs(envs: Dict[int, Environment]):
     all_envs.plot()
 
 
-def _draw_all_paths(img: np.ndarray, envs: Dict[int, Environment],  color) -> np.ndarray:
+def _draw_all_paths(img: np.ndarray, envs: Dict[int, Environment],  color: Tuple) -> np.ndarray:
     img_new = img.copy()
-    all_envs = Environment(-1)
     for env in envs.values():
-        [cv2.polylines(img_new, [line.coords._coords.astype("int32")], False,  color, 2) for line in env.path]
+        _draw_path(img_new, env, color, 2)
 
     return img_new
 
@@ -259,5 +283,5 @@ if __name__ == '__main__':
 
     ws2 = segmentation.draw(ws, bridge_nodes, (22))
     # ws3 = segmentation.draw(ws2, largest_rectangles, (21))
-    ws4 = _draw_all_paths(ws2, segment_envs, (25))
+    ws4 = _draw_all_paths(ws2, segment_envs, (25,))
     segmentation.show_imgs(ws4, name="map_benchmark_ryu_result", save=False)
