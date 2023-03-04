@@ -34,6 +34,7 @@ class Floor(SHNode):
             room_bridge_edges = {adj_rooms: edges for adj_rooms, edges in bridge_edges.items()
                                  if i in adj_rooms}
             room_mask = np.where(self.watershed == i, 255, 0).astype("uint8")
+            # room_mask = np.where(ws_erosion == i, 255, 0).astype("uint8")
             room = Room(i, self, ws_tmp, room_mask, self.params, room_bridge_nodes, room_bridge_edges)
             self.bridge_points_not_connected.update(room.bridge_points_not_connected)
             self.add_child_by_node(room)
