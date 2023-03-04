@@ -6,10 +6,8 @@ from collections import deque
 from math import comb
 import numpy as np
 import cv2
-from networkx.classes.function import path_weight
 from shapely import Point
 
-import semantic_hierarchical_graph.roadmap_creation as roadmap_creation
 import semantic_hierarchical_graph.segmentation as segmentation
 from semantic_hierarchical_graph.types.vector import Vector
 from semantic_hierarchical_graph.types.position import Position
@@ -50,10 +48,10 @@ class Metrics():
         self.metrics["num_paths"] = comb(len(bridge_points), 2)
 
         # AStarPlanner(room), ILIRPlanner(room), PRMPlanner(room), RRTPlanner(room)
-        for planner in [AStarPlanner(room), ILIRPlanner(room), PRMPlanner(room), RRTPlanner(room)]:
+        for planner in [AStarPlanner(room), ILIRPlanner(room), PRMPlanner(room), RRTPlanner(room),]:
             path_metrics, room_mask_with_paths = self._calc_single_path_metrics(room, bridge_points, planner)
-            path_metrics["disturbance"] = self._calc_disturbance(room.mask, room_mask_with_paths)
             self.metrics[planner.name] = planner.config
+            path_metrics["disturbance"] = self._calc_disturbance(room.mask, room_mask_with_paths)
             self.metrics[planner.name].update(path_metrics)
 
         print("Bridge points not connected:", room.bridge_points_not_connected)
@@ -78,7 +76,7 @@ class Metrics():
         for point_1, point_2 in itertools.combinations(points, 2):
             print(f"Planning path {len(path_metrics['success_rate'])+1}/{self.metrics['num_paths']}")
             ts = time()
-            path, vis_graph = planner.plan(point_1, point_2)
+            path, vis_graph = planner.plan(point_1, point_2, True)
             te = time()
             path_metrics["planning_time"].append(te - ts)
             if path is None or path == []:
@@ -127,15 +125,11 @@ class Metrics():
             x = np.random.randint(box[0], box[0] + box[2])
             y = np.random.randint(box[1], box[1] + box[3])
             if not room.env._in_collision(Point(x, y)):
-                # TODO: Check if point can be connected is very expensive here. It will be done again in ILIRPlanner
-                connections, _ = roadmap_creation.connect_point_to_path((x, y), room.env, room.params)
-                if len(connections) > 0:
-                    points.append((x, y))
+                points.append((x, y))
 
         return points
 
     def _calc_path_length(self, graph, path) -> float:
-        # dist = path_weight(graph, path, weight="distance")
         dist = 0
         for i in range(len(path) - 1):
             dist += path[i].pos.distance(path[i + 1].pos)
@@ -216,7 +210,8 @@ class Metrics():
         # Only for visualization
         room_mask_with_paths[np.where(labels == largest_label)] = 128
         # segmentation.show_imgs(labels)
-        segmentation.show_imgs(room_mask_with_paths, name=f"{self.metrics['room_name']}_disturbance", save=False)
+        segmentation.show_imgs(
+            room_mask_with_paths, name=f"{self.metrics['room_name']}_disturbance_{list(self.metrics.keys())[-1]}", save=False)
 
         return 1 - (largest_free_area / area)
 
@@ -253,4 +248,5 @@ if __name__ == "__main__":
 
     metrics = Metrics(room)
     # metrics.print_metrics()
-    metrics.save_metrics("data/hou2_metrics.json")
+    # metrics.save_metrics("data/hou2_metrics.json")
+    metrics.save_metrics("data/ryu_metrics.json")
