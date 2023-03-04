@@ -12,6 +12,7 @@ License is based on Creative Commons: Attribution-NonCommercial 4.0 Internationa
 import copy
 import networkx as nx
 import heapq
+import numpy as np
 from scipy.spatial.distance import euclidean, cityblock
 
 from path_planner_suite.IPPlanerBase import PlanerBase
@@ -72,21 +73,22 @@ class AStar(PlanerBase):
         self.w = config["w"]
         self.heuristic = config["heuristic"]
 
-        self.goal = checkedGoalList[0]
-        self._addGraphNode(checkedStartList[0])
+        self.goal = checkedGoalList
+        for start in checkedStartList:
+            self._addGraphNode(start)
 
         currentBestName = self._getBestNodeName()
         breakNumber = 0
         while currentBestName:
-            if breakNumber > 100000:
-                print("Planning interrupted due to over 100000 iterations")
+            if breakNumber > config["max_iterations"]:
+                print(f"Planning interrupted due to over {config['max_iterations']} iterations")
                 break
 
             breakNumber += 1
 
             currentBest = self.graph.nodes[currentBestName]
 
-            if currentBest["pos"] == self.goal:
+            if currentBest["pos"] in self.goal:
                 self.solutionPath = []
                 self._collectPath(currentBestName, self.solutionPath)
                 mapping = {self.solutionPath[0]: 'start',
@@ -172,12 +174,16 @@ class AStar(PlanerBase):
     def _computeHeuristicValue(self, nodeName):
         """ Computes Heuristic Value: Manhattan Distance """
 
-        result = 0
+        dist = np.inf
         node = self.graph.nodes[nodeName]
-        if self.heuristic == "euclidean":
-            return euclidean(self.goal, node["pos"])
-        else:
-            return cityblock(self.goal, node["pos"])
+        for goal in self.goal:
+            if self.heuristic == "euclidean":
+                new_dist = euclidean(goal, node["pos"])
+            else:
+                new_dist = cityblock(goal, node["pos"])
+            if new_dist < dist:
+                dist = new_dist
+        return dist
 
     @IPPerfMonitor
     def _evaluateNode(self, nodeName):
