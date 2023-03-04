@@ -1,36 +1,22 @@
-from typing import Optional, Tuple
+from typing import Dict, Optional
 
 from path_planner_suite.IPBasicPRM import BasicPRM
-import semantic_hierarchical_graph.planners.planner_conversion as pc
+from semantic_hierarchical_graph.planners.planner_interface import PlannerInterface
 
 
-class PRMPlanner():
-    def __init__(self, room, config: Optional[dict] = None):
-        self.name = "PRM"
-        self.room = room
+class PRMPlanner(PlannerInterface):
+    def __init__(self, room, config: Optional[Dict] = None):
         if config is None:
-            self.config = dict()
-            self.config["radius"] = 50
-            self.config["numNodes"] = 300
-        else:
-            self.config = config
+            config = dict()
+            config["radius"] = 50
+            config["numNodes"] = 300
+            config["smoothing_iterations"] = 50
+            config["smoothing_max_k"] = 20
+            config["smoothing_epsilon"] = 0.5
+            config["smoothing_variance_window"] = 10
+            config["smoothing_min_variance"] = 0.0
 
-        self.collision_checker = pc.convert_room_to_IPCollisionChecker(room)
+        super().__init__(room, config)
+
+        self.name = "PRM"
         self.planner = BasicPRM(self.collision_checker)
-
-    def plan(self, start: Tuple, goal: Tuple):
-        start_list, goal_list = pc.convert_to_start_goal_lists(start, goal)
-        try:
-            path = self.planner.planPath(start_list, goal_list, self.config)
-        except Exception as e:
-            print("Error while planning with PRMPlanner: ")
-            print(e)
-            path = None
-
-        if path is not None:
-            path = pc.convert_path_to_PathNode(path, self.planner.graph)
-        return path, self.planner.graph
-
-    def plan_in_map_frame(self, start: Tuple, goal: Tuple):
-        start_pos, goal_pos = pc.convert_map_frame_to_grid(start, goal, self.room.params["grid_size"])
-        self.plan(start_pos, goal_pos)

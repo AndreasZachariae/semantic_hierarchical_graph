@@ -1,25 +1,32 @@
 from collections import deque
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple
 from copy import deepcopy
 
 from shapely import LineString, Point
+from semantic_hierarchical_graph.planners.planner_interface import PlannerInterface
 from semantic_hierarchical_graph.types.exceptions import SHGGeometryError, SHGPlannerError
 from semantic_hierarchical_graph.graph import SHGraph
 from semantic_hierarchical_graph.floor import Room, Floor
 from semantic_hierarchical_graph import roadmap_creation, segmentation, visualization as vis
 import semantic_hierarchical_graph.utils as util
 from semantic_hierarchical_graph.types.position import Position
-import semantic_hierarchical_graph.planners.planner_conversion as pc
 
 
-class ILIRPlanner():
-    def __init__(self, room: Room, config: Optional[dict] = None):
-        self.name = "ILIR"
-        self.room = room
+class ILIRPlanner(PlannerInterface):
+    def __init__(self, room: Room, config: Optional[Dict] = None):
         if config is None:
-            self.config = dict()
-        else:
-            self.config = config
+            config = dict()
+            config["smoothing_iterations"] = 50
+            config["smoothing_max_k"] = 20
+            config["smoothing_epsilon"] = 0.5
+            config["smoothing_variance_window"] = 10
+            config["smoothing_min_variance"] = 0.0
+
+        super().__init__(room, config)
+
+        self.name = "ILIR"
+        self.graph = self.room.child_graph
+        self.planner = self
 
     def _copy_graph(self):
         # TODO: This is a hack to make sure that the graph is not modified by the planner
@@ -33,11 +40,16 @@ class ILIRPlanner():
         self.room.child_graph = self.original_graph
         self.room._get_root_node().leaf_graph = self.original_leaf_graph
 
-    def plan(self, start: Tuple, goal: Tuple):
+    def plan_with_lists(self, start_list: List, goal_list: List, smoothing_enabled: bool = False):
+        return self.plan(start_list[0], goal_list[0], False)
+
+    def plan(self, start: Tuple, goal: Tuple, smoothing_enabled: bool = False):
         self._copy_graph()
         try:
             start_pos = Position.from_iter(start)
             goal_pos = Position.from_iter(goal)
+            if start_pos.xy in self.room.bridge_points_not_connected or goal_pos.xy in self.room.bridge_points_not_connected:
+                raise SHGPlannerError(f"This bridge point {start_pos} can not be connected to the roadmap")
             if start_pos.to_name() not in self.room.get_childs("name"):
                 self._add_path_to_roadmap(start_pos.to_name(), start_pos, type="start")
             if goal_pos.to_name() not in self.room.get_childs("name"):
@@ -53,10 +65,6 @@ class ILIRPlanner():
             self._reset_graph()
 
         return path, vis_graph
-
-    def plan_in_map_frame(self, start: Tuple, goal: Tuple):
-        start_pos, goal_pos = pc.convert_map_frame_to_grid(start, goal, self.room.params["grid_size"])
-        self.plan(start_pos, goal_pos)
 
     def _add_path_to_roadmap(self, node_name, node_pos, type):
         if self.room.env._in_collision(Point(node_pos.xy)):
