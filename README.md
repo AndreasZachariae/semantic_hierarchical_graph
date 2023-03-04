@@ -83,6 +83,7 @@ Improvements
 - [ ] Detect if the whole room is a corridor (With corridor width thresholds) and don't collapse rectangles in other rooms -> Add is_corridor flag to rooms
 - [ ] Adjust planning in graph for multiple possible paths. Plan all paths and compare lenghts for shortest
 - [ ] Make sure correct hierarchy distances are in the graph edges
+- [ ] Do not generate multiple rectangles. Only keep largest merged one and connect bridge points with A*
 
 Every bridge point has to be connected
 
@@ -91,8 +92,9 @@ Every bridge point has to be connected
 - [x] 2.1. Find orthogonal lines between bridge point and closest path and find third point on this line which connects both
 - [x] 2.2. Change the angle of the line in x degree steps and change distance of thrid point in x steps
 - [x] 3. A*
-- [ ] 3.1 Make all points of apth valid goal points for A*
-- [ ] 3.2 Dont limit the scene
+- [x] 3.1 Make all points of apth valid goal points for A*
+- [x] 3.2 Dont limit the scene
+- [ ] 3.3 Improve lookup time in A* for multiple goal points with hashable sets
 - [ ] Check if valid path between all bridge points
 
 Smoothing
@@ -113,6 +115,7 @@ Integrate with SH-Graph
 Evaluation
 
 - [ ] Make fair time comparison. Add time for roadmap generation to ilir planning time.
+- [x] Smooth all planners except ILIR
 
 Semantics
 
