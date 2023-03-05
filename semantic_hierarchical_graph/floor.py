@@ -6,7 +6,7 @@ import semantic_hierarchical_graph.utils as util
 from semantic_hierarchical_graph.environment import Environment
 from semantic_hierarchical_graph.graph import SHGraph
 from semantic_hierarchical_graph.node import SHNode
-from semantic_hierarchical_graph.types.parameters import Parameter
+from semantic_hierarchical_graph.types.parameter import Parameter
 import semantic_hierarchical_graph.visualization as vis
 import semantic_hierarchical_graph.segmentation as segmentation
 import semantic_hierarchical_graph.roadmap_creation as roadmap_creation

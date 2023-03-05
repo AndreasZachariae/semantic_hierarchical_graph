@@ -9,7 +9,7 @@ from semantic_hierarchical_graph.environment import Environment
 import semantic_hierarchical_graph.planners.astar_planner as astar_planner
 import semantic_hierarchical_graph.planners.rrt_planner as rrt_planner
 from semantic_hierarchical_graph.types.exceptions import SHGGeometryError
-from semantic_hierarchical_graph.types.parameters import Parameter
+from semantic_hierarchical_graph.types.parameter import Parameter
 import semantic_hierarchical_graph.segmentation as segmentation
 from semantic_hierarchical_graph.types.position import Position
 
