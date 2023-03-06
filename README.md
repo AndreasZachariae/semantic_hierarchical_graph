@@ -99,7 +99,8 @@ Every bridge point has to be connected
 
 Smoothing
 
-- [ ] Find shortcuts in the graph but not through largest rectangle
+- [-] Find shortcuts in the graph but not through largest rectangle
+- [ ] Implement deterministic smoothing by bechthold and glavina
 
 Make 3 levels of connectivity:
 
@@ -120,6 +121,7 @@ Evaluation
 Semantics
 
 - [ ] Add function to add semantic locations later into the graph and update env
+- [ ] GUI Editor to chnge graph nodes and add semantic locations and areas
 
 ROS node environment model
 
