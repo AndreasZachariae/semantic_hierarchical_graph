@@ -120,7 +120,7 @@ class Location(SHNode):
 
 if __name__ == "__main__":
     G = SHGraph(root_name="Benchmark", root_pos=Position(0, 0, 0))
-    floor = Floor("ryu", G, Position(0, 0, 1), 'data/benchmark_maps/ryu.png', "config/ryu_params.yaml")
+    floor = Floor("ryu", G, Position(0, 0, 1), 'data/benchmark_maps/ryu_clean.png', "config/ryu_params.yaml")
     G.add_child_by_node(floor)
     print(G.get_childs("name"))
 

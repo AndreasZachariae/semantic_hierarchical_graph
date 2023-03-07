@@ -271,7 +271,7 @@ def _draw_all_paths(img: np.ndarray, envs: Dict[int, Environment],  color: Tuple
 if __name__ == '__main__':
 
     img = cv2.imread('data/benchmark_maps/hou2_clean.png')
-    # img = cv2.imread('data/benchmark_maps/ryu.png')
+    # img = cv2.imread('data/benchmark_maps/ryu_clean.png')
     # params = Parameter("config/ryu_params.yaml").params
     params = Parameter("config/hou2_params.yaml").params
 
