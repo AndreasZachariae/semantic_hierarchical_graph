@@ -223,6 +223,7 @@ def _connect_point_with_rrt(point: Tuple[float, float], env: Environment, params
 
 
 def _connect_point_with_astar(point: Tuple[float, float], env: Environment, params: dict) -> List:
+    import time
     config = dict()
     config["heuristic"] = 'euclidean'
     config["w"] = 0.5
@@ -236,7 +237,10 @@ def _connect_point_with_astar(point: Tuple[float, float], env: Environment, para
         point, params["max_distance_to_connect_points"], env.scene, config)
 
     goal_list = _get_goal_points(env)
-    return planner.plan_with_lists([[point[0], point[1]]], goal_list, True)[0]  # type: ignore
+    ts = time.time()
+    path = planner.plan_with_lists([[point[0], point[1]]], goal_list, True)[0]
+    print("Time", time.time() - ts)
+    return path  # type: ignore
 
 
 def _get_goal_points(env: Environment):

@@ -83,6 +83,7 @@ class PlannerInterface():
 if __name__ == "__main__":
     import cv2
     import numpy as np
+    import time
     from matplotlib import pyplot as plt
     from semantic_hierarchical_graph.graph import SHGraph
     from semantic_hierarchical_graph.floor import Floor
@@ -103,9 +104,12 @@ if __name__ == "__main__":
     room = floor._get_child("room_11")
     # room = floor._get_child("room_14")
 
-    planner = RRTPlanner(room)
-    path, vis_graph = planner.plan((480, 250), (75, 260))  # type: ignore
-    # path, _ = planner.plan((555, 211), (81, 358))
+    # planner = RRTPlanner(room)
+    planner = AStarPlanner(room)
+    ts = time.time()
+    path, vis_graph = planner.plan((480, 250), (75, 260), True)  # type: ignore
+    # path, _ = planner.plan((555, 211), (81, 358), True)
+    print("Time", time.time() - ts)
     path_list = util._map_names_to_nodes(path)
 
     print(path_list)
