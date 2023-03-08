@@ -29,6 +29,7 @@ def calc_largest_rectangles(ws_erosion: np.ndarray, env: Environment, params: Di
     largest_rectangles: List = []
     centroid = Position(0, 0, 0)
     first_loop = True
+    is_corridor = False
     while True:
         segment = np.where(ws_erosion == env.room_id, 255, 0).astype("uint8")
         # TODO: Changed from cv2.RETR_TREE to EXTERNAL because it is faster and hierarchy doesn't matter
@@ -81,6 +82,8 @@ def calc_largest_rectangles(ws_erosion: np.ndarray, env: Environment, params: Di
 
 
 def _path_from_rectangle(rectangle: np.ndarray, params: dict) -> LineString:
+    nonlocal is_corridor
+
     x, y, w, h = rectangle
 
     if w < params["min_corridor_width"] or h < params["min_corridor_width"]:
