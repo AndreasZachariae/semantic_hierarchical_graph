@@ -12,8 +12,10 @@ Solution path:
 
 ![path](docs/path.png)
 
+<details>
+  <summary>path.json</summary>
+
 ```json
-// path.json
 {
     "LTC Campus": {
         "Building F": {
@@ -48,6 +50,7 @@ Solution path:
     }
 }
 ```
+</details>
 
 ## Compare durations
 
@@ -94,7 +97,7 @@ Every bridge point has to be connected
 - [x] 3. A*
 - [x] 3.1 Make all points of apth valid goal points for A*
 - [x] 3.2 Dont limit the scene
-- [ ] 3.3 Improve lookup time in A* for multiple goal points with hashable sets
+- [x] 3.3 Improve lookup time in A* for multiple goal points with hashable sets
 - [ ] Check if valid path between all bridge points
 
 Smoothing
@@ -121,7 +124,7 @@ Evaluation
 Semantics
 
 - [ ] Add function to add semantic locations later into the graph and update env
-- [ ] GUI Editor to chnge graph nodes and add semantic locations and areas
+- [ ] GUI Editor to change graph nodes and add semantic locations and areas
 
 ROS node environment model
 
