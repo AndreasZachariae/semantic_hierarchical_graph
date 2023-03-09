@@ -83,9 +83,9 @@ class Room(SHNode):
         self.params: Dict[str, Any] = params
         self.env: Environment = Environment(id)
         self.bridge_nodes: Dict[Tuple, List] = bridge_nodes
-        self.largest_rectangles, centroid = roadmap_creation.calc_largest_rectangles(
+        self.largest_rectangles, self.centroid = roadmap_creation.calc_largest_rectangles(
             ws_erosion, self.env, self.params)
-        super().__init__(f"room_{id}", parent_node, centroid, False, False)
+        super().__init__(f"room_{id}", parent_node, self.centroid, False, False)
 
         self.bridge_points_not_connected: Set = roadmap_creation.connect_paths(
             self.env, bridge_nodes, bridge_edges, self.params)
