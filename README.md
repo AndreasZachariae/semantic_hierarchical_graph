@@ -83,10 +83,10 @@ Improvements
 - [ ] (optional) use dist_transform instead of ws_erosion
 - [x] remove brisge points which are in collision with ws_erosion
 - [x] clear bridge edges in the beginning with dist_transform or ws_erosion
-- [ ] Detect if the whole room is a corridor (With corridor width thresholds) and don't collapse rectangles in other rooms -> Add is_corridor flag to rooms
+- [x] Detect if the whole room is a corridor (With corridor width thresholds) and don't collapse rectangles in other rooms -> Add is_corridor flag to rooms
 - [ ] Adjust planning in graph for multiple possible paths. Plan all paths and compare lenghts for shortest
 - [ ] Make sure correct hierarchy distances are in the graph edges
-- [ ] Do not generate multiple rectangles. Only keep largest merged one and connect bridge points with A*
+- [x] Do not generate multiple rectangles. Only keep largest merged one and connect bridge points with A*
 
 Every bridge point has to be connected
 
