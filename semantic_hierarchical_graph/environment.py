@@ -84,34 +84,6 @@ class Environment():
             return connection, closest_path
         return None, None
 
-    def find_all_shortest_connections(self, mode: str, polygon=None):
-        """ Find all shortest connections between all shapes in path that are not in collision """
-        new_connections = []
-        for path, other_path in itertools.permutations(self.path, 2):
-            closest_point_path = Point(min(path.coords, key=lambda x: other_path.distance(Point(x[0], x[1]))))
-            closest_point_other_path: Point = nearest_points(other_path, closest_point_path)[0]
-            connection = self.get_valid_connection(closest_point_path, closest_point_other_path, mode, polygon)
-            if connection is not None:
-                new_connections.append(connection)
-
-        return new_connections
-
-    def find_all_vertex_connections(self, mode: str, polygon=None):
-        """ Find all connections between all vertices in path that are not in collision """
-        new_connections = []
-        for path, other_path in itertools.combinations(self.path, 2):
-            for point in path.coords:
-                # closest_point_other_path: Point = nearest_points(other_path, Point(point))[0]
-                # connection = self.get_connection(Point(point), closest_point_other_path, mode, polygon)
-                # if connection is not None:
-                #     new_connections.append(connection)
-                for other_point in other_path.coords:
-                    connection = self.get_valid_connection(Point(point), Point(other_point), mode, polygon)
-                    if connection is not None:
-                        new_connections.append(connection)
-
-        return new_connections
-
     def _reverse_geom(self, geom):
         def _reverse(x, y, z=None):
             if z:

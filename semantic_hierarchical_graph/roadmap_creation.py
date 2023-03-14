@@ -39,7 +39,6 @@ def calc_largest_rectangles(ws_erosion: np.ndarray, env: Environment, params: Di
         c_max = contours[c_max_index]
 
         if first_loop:
-            first_loop = False
             M = cv2.moments(segment)
             cX = int(M["m10"] / M["m00"])
             cY = int(M["m01"] / M["m00"])
@@ -57,8 +56,6 @@ def calc_largest_rectangles(ws_erosion: np.ndarray, env: Environment, params: Di
             [env.add_obstacle(Polygon(contours[index][:, 0, :])) for index in obstacle_index]
 
         elif np.max(contour_areas) < params["min_contour_area"]:
-            # TODO: find better threshold specification
-            # currently 9 * 10 * 30 = 2700
             # print("New contour too small", cv2.contourArea(c_max))
             break
 
@@ -66,7 +63,7 @@ def calc_largest_rectangles(ws_erosion: np.ndarray, env: Environment, params: Di
 
         largest_rectangles.append(rectangle)
 
-        path = _path_from_rectangle(rectangle, params, is_corridor)
+        path = _path_from_rectangle(rectangle, params, is_corridor, first_loop)
         if not path.is_empty:
             env.add_path(path)
 
@@ -75,17 +72,18 @@ def calc_largest_rectangles(ws_erosion: np.ndarray, env: Environment, params: Di
         shrinkage = 1
         ws_erosion = cv2.rectangle(ws_erosion, (x+shrinkage, y+shrinkage),
                                    (x+w-1-shrinkage, y+h-1-shrinkage), (1), -1)
+        first_loop = False
 
     # env.plot()
     # segmentation.show_imgs(segment, ws_erosion)
     return largest_rectangles, centroid
 
 
-def _path_from_rectangle(rectangle: np.ndarray, params: dict, is_corridor: List) -> LineString:
+def _path_from_rectangle(rectangle: np.ndarray, params: dict, is_corridor: List, first_loop: bool) -> LineString:
     x, y, w, h = rectangle
 
-    if w < params["min_corridor_width"] or h < params["min_corridor_width"]:
-        # print("corridor too small")
+    if (w * h) < params["min_roadmap_area"]:
+        # print("area for roadmap too small")
         return LineString()
 
     # Offset of -1 pixel needed because opencv retuns w, h instead of coordinates
@@ -95,24 +93,28 @@ def _path_from_rectangle(rectangle: np.ndarray, params: dict, is_corridor: List)
 
     w -= 1
     h -= 1
-    if w < params["max_rectangle_to_line_width"] or h < params["max_rectangle_to_line_width"]:
-        is_corridor[0] = True
-        if w < h:
-            point_1 = (x + w//2, y)
-            point_2 = (x + w//2, y+h)
-        else:
-            point_1 = (x, y+h//2)
-            point_2 = (x + w, y+h//2)
+    if first_loop:
+        if w < params["max_corridor_width"] or h < params["max_corridor_width"]:
+            is_corridor[0] = True
+            if w < h:
+                point_1 = (x + w//2, y)
+                point_2 = (x + w//2, y+h)
+            else:
+                point_1 = (x, y+h//2)
+                point_2 = (x + w, y+h//2)
 
-        # cv2.line(ws, point_1, point_2, (25), 2)
-        return LineString([point_1, point_2])
-    else:
+            # cv2.line(ws, point_1, point_2, (25), 2)
+            return LineString([point_1, point_2])
+
+    if not is_corridor[0]:
         point_1 = (x, y)
         point_2 = (x + w, y)
         point_3 = (x + w, y + h)
         point_4 = (x, y + h)
         # ws = cv2.rectangle(ws, rectangle, (25), 2)
         return LineString([point_1, point_2, point_3, point_4, point_1])
+    else:
+        return LineString()
 
 
 def _create_paths(envs: Dict[int, Environment], bridge_nodes: Dict[Tuple, List], bridge_edges: Dict[Tuple, List], params: dict):
@@ -157,7 +159,8 @@ def connect_paths(env: Environment, bridge_nodes: Dict[Tuple, List], bridge_edge
         result, dangles, cuts, invalids = polygonize_full(env.path)
         union_polygon: Polygon = unary_union(result)
         if isinstance(union_polygon, MultiPolygon):
-            env.path = [poly.boundary for poly in union_polygon.geoms]
+            max_poly = max(union_polygon.geoms, key=lambda x: x.area)
+            env.path = [max_poly.boundary]
         elif isinstance(union_polygon, Polygon):
             env.path = [union_polygon.boundary]
         elif isinstance(union_polygon, GeometryCollection):
@@ -165,15 +168,6 @@ def connect_paths(env: Environment, bridge_nodes: Dict[Tuple, List], bridge_edge
             pass
         else:
             raise SHGGeometryError("unknown shape returned from polygon union")
-        if len(dangles.geoms) > 0 or len(invalids.geoms):
-            raise SHGGeometryError("unhandled dangles or invalids are not added to env.path")
-        for cut in cuts.geoms:
-            env.add_path(cut)
-
-        connections = env.find_all_shortest_connections(mode="without_polygon", polygon=union_polygon)
-        # connections = env.find_all_vertex_connections(mode="without_polygon", polygon=union_polygon)
-        for connection in connections:
-            env.add_path(connection)
 
         for point in bridge_points:
             connections, _ = connect_point_to_path(point, env, params)
@@ -191,8 +185,7 @@ def connect_point_to_path(point: Tuple[float, float], env: Environment, params: 
     """ List of connections is always in direction from point to path.
         Every connection is a two point line without collision.
     """
-    connection, closest_path = env.find_shortest_connection(
-        point, params["max_attempts_to_connect_points_straight"])
+    connection, closest_path = env.find_shortest_connection(point)
     if connection is None:
         path = _connect_point_with_astar(point, env, params)
         # path = _connect_point_with_rrt(point, env, params)
@@ -276,10 +269,10 @@ def _draw_all_paths(img: np.ndarray, envs: Dict[int, Environment],  color: Tuple
 
 if __name__ == '__main__':
 
-    img = cv2.imread('data/benchmark_maps/hou2_clean.png')
-    # img = cv2.imread('data/benchmark_maps/ryu.png')
-    # params = Parameter("config/ryu_params.yaml").params
-    params = Parameter("config/hou2_params.yaml").params
+    # img = cv2.imread('data/benchmark_maps/hou2_clean.png')
+    img = cv2.imread('data/benchmark_maps/ryu.png')
+    params = Parameter("config/ryu_params.yaml").params
+    # params = Parameter("config/hou2_params.yaml").params
 
     ws, ws_erosion, dist_transform = segmentation.marker_controlled_watershed(img, params)
     bridge_nodes, bridge_edges = segmentation.find_bridge_nodes(ws_erosion, dist_transform)
