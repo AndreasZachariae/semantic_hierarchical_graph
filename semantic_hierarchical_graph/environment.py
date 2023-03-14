@@ -73,20 +73,15 @@ class Environment():
                         return None
             return connection
 
-    def find_shortest_connection(self, pos, max_attempts=1):
+    def find_shortest_connection(self, pos):
         """ Find the shortest path from pos to any path that is not in collision """
         if not isinstance(pos, Point):
             pos = Point(pos[0], pos[1])
-        tmp_path = self.path.copy()
-        for attempts in range(max_attempts):
-            closest_path = min(tmp_path, key=lambda x: x.distance(pos))
-            closest_point: Point = nearest_points(closest_path, pos)[0]
-            connection = self.get_valid_connection(pos, closest_point)
-            if connection is not None:
-                return connection, closest_path
-            tmp_path.remove(closest_path)
-            if len(tmp_path) == 0:
-                break
+        closest_path = min(self.path, key=lambda x: x.distance(pos))
+        closest_point: Point = nearest_points(closest_path, pos)[0]
+        connection = self.get_valid_connection(pos, closest_point)
+        if connection is not None:
+            return connection, closest_path
         return None, None
 
     def find_all_shortest_connections(self, mode: str, polygon=None):
