@@ -12,8 +12,7 @@ distance_threshold: 30 # 3 * safety_distance
 # PATH PLANNING
 # safety_distance: round_up(base_size[0]/2 + safety_margin)
 # values on image with erosion
-min_contour_area: 1600 # 4 * (2*safety_distance)**2
-min_corridor_width: 20 # 2*safety_distance
-max_rectangle_to_line_width: 55 # 5.5 * safety_distance
-max_attempts_to_connect_points_straight: 3
+min_contour_area: 4000 # 4 * (2*safety_distance)**2
+min_roadmap_area: 1500 # 2*safety_distance
+max_corridor_width: 55 # 5.5 * safety_distance
 max_distance_to_connect_points: 200
