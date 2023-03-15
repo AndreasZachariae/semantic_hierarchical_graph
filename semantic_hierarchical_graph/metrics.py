@@ -70,6 +70,7 @@ class Metrics():
         path_metrics["num_turns"] = []
         path_metrics["cumulative_turning_angle"] = []
         path_metrics["smoothness"] = []
+        path_metrics["obstacle_distance_std"] = []
         path_metrics["obstacle_clearance"] = []
         path_metrics["obstacle_clearance_min"] = np.inf
         path_metrics["centroid_distance"] = []
@@ -90,10 +91,12 @@ class Metrics():
             path_metrics["num_turns"].append(turns)
             path_metrics["cumulative_turning_angle"].append(angles)
             path_metrics["smoothness"].append(smoothness)
-            clearance, clearance_min = self._calc_obstacle_clearance(room, path)
+            clearance, clearance_min, clearance_std = self._calc_obstacle_clearance(room, path)
+            path_metrics["obstacle_distance_std"].append(clearance_std)
             path_metrics["obstacle_clearance"].append(clearance)
             path_metrics["obstacle_clearance_min"] = min(clearance_min, path_metrics["obstacle_clearance_min"])
-            path_metrics["centroid_distance"].append(self._calc_centroid_distance(room.centroid,room.mask.copy(),  path))
+            path_metrics["centroid_distance"].append(
+                self._calc_centroid_distance(room.centroid, room.mask.copy(),  path))
 
             self._draw_path(room_mask, path, (0))
             # segmentation.show_imgs(room_mask)
@@ -181,22 +184,20 @@ class Metrics():
 
         return turns, angles, normalized_smoothness
 
-    def _calc_obstacle_clearance(self, room: Room, path) -> Tuple[float, float]:
+    def _calc_obstacle_clearance(self, room: Room, path) -> Tuple[float, float, float]:
         dist_transform = room.parent_node.dist_transform  # type: ignore
         path_mask: np.ndarray = np.zeros(dist_transform.shape, dtype=np.uint8)
         self._draw_path(path_mask, path, 1)
         path_mask = np.where(path_mask == 1, True, False)
         path_distances = dist_transform[path_mask]
         # segmentation.show_imgs(path_mask)
-        return np.mean(path_distances).item(), np.min(path_distances).item()
-    
+        return np.mean(path_distances).item(), np.min(path_distances).item(), np.std(path_distances).item()
+
     def _calc_centroid_distance(self, centroid: Position, room_mask: np.ndarray, path) -> float:
         self._draw_path(room_mask, path, 1)
         path_points = np.argwhere(room_mask == 1)
-        distances = [((centroid.x- point[1]) **2 + (centroid.y - point[0]) **2)**0.5 for point in path_points]
-        x = np.mean(distances).item()
-        print("Centroid distance", x)
-        return x
+        distances = [((centroid.x - point[1]) ** 2 + (centroid.y - point[0]) ** 2)**0.5 for point in path_points]
+        return np.mean(distances).item()
 
     def _calc_disturbance(self, room_mask, room_mask_with_paths: np.ndarray) -> float:
         # 0. remove not connected bridge nodes from list or try to plan and adjust success rate
