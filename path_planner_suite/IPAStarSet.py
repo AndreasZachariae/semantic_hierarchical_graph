@@ -98,7 +98,7 @@ class AStar(PlanerBase):
 
             currentBest = self.graph.nodes[currentBestName]
 
-            if self._getNodeID(currentBest["pos"]) in self.goal:
+            if currentBestName in self.goal:
                 self.solutionPath = []
                 self._collectPath(currentBestName, self.solutionPath)
                 mapping = {self.solutionPath[0]: 'start',

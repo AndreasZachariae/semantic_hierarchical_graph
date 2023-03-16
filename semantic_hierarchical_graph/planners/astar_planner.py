@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional, Tuple
 
-from path_planner_suite.IPAStar import AStar
+from path_planner_suite.IPAStarSet import AStar
 from semantic_hierarchical_graph.planners.planner_interface import PlannerInterface
 
 
