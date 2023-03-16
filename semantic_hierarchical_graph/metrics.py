@@ -141,7 +141,7 @@ class Metrics():
         return dist
 
     def _calc_smoothness(self, path) -> Tuple[int, float, float]:
-        turns, angles, smoothness = 0, 0, 0
+        turns, angles = 0, 0
         # As defined in this paper https://www.mdpi.com/1424-8220/20/23/6822
         # Sum up all path segemnts and take the min angle between the segment and the following segment.
         # 180° is the best case, 0° is the worst case.
@@ -220,9 +220,8 @@ class Metrics():
 
         # Only for visualization
         room_mask_with_paths[np.where(labels == largest_label)] = 128
-        # segmentation.show_imgs(labels)
-        segmentation.show_imgs(
-            room_mask_with_paths, name=f"{self.metrics['room_name']}_disturbance_{list(self.metrics.keys())[-1]}", save=False)
+        # segmentation.show_imgs(
+        #     room_mask_with_paths, name=f"{self.metrics['room_name']}_disturbance_{list(self.metrics.keys())[-1]}", save=False)
 
         return 1 - (largest_free_area / area)
 
