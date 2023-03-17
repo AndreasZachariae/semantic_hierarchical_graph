@@ -69,6 +69,8 @@ def main():
                                ["Building F", "Floor 0", "RoboEduLab"], name="door")
     G.add_connection_recursive(["Building F", "Floor 0", "Staircase"],
                                ["Building F", "Floor 1", "Staircase"], distance=4.0, name="stair_F")
+    # G.add_connection_recursive(["Building F", "Floor 0", "Lab"],
+    #                            ["Building A", "Floor 0", "Entrance"], name="terrace_door")
     G.add_connection_recursive(["Building F", "Floor 1", "Staircase"],
                                ["Building F", "Floor 1", "Corridor"], name="floor_door")
     G.add_connection_recursive(["Building F", "Floor 1", "Corridor"],

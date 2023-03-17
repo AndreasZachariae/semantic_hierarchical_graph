@@ -2,6 +2,7 @@ import networkx as nx
 from typing import Dict, List, Optional
 
 from semantic_hierarchical_graph.node import SHNode
+from semantic_hierarchical_graph.path import SHPath
 import semantic_hierarchical_graph.utils as util
 from semantic_hierarchical_graph.types.position import Position
 from semantic_hierarchical_graph.types.exceptions import SHGHierarchyError
@@ -82,12 +83,14 @@ class SHGraph(SHNode):
         if len(start_hierarchy) != len(goal_hierarchy):
             raise SHGHierarchyError("Hierarchies must have same length")
 
-        child_path: List[SHNode] = self._plan(start_hierarchy[0], goal_hierarchy[0])
-        path_dict = {}
-        path_dict[self] = self._plan_recursive(start_hierarchy[0], goal_hierarchy[0], start_hierarchy, goal_hierarchy, child_path,
-                                               hierarchy_level=0)
+        path = SHPath(start_hierarchy, goal_hierarchy)
+        while not path.all_paths_checked():
+            path_dict = {}
+            path_dict[self] = self._plan_recursive(start_hierarchy[0], goal_hierarchy[0],
+                                                   start_hierarchy, goal_hierarchy, hierarchy_level=0)
+            path.all_paths.append(path_dict)
 
-        return path_dict
+        return path.get_shortest_path()
 
     # @util.timing
     def plan_in_leaf_graph(self, start_hierarchy: List[str], goal_hierarchy: List[str]) -> List[SHNode]:
