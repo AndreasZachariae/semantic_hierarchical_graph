@@ -87,6 +87,9 @@ Improvements
 - [ ] Adjust planning in graph for multiple possible paths. Plan all paths and compare lenghts for shortest
 - [ ] Make sure correct hierarchy distances are in the graph edges
 - [x] Do not generate multiple rectangles. Only keep largest merged one and connect bridge points with A*
+- [ ] Add shortest distance between each nodes on 1+ level as distance on edge
+- [ ] Special case for start and goal point (networkx all_simple_paths, all_shortest_paths)
+- [ ] Special case if two rooms are connected with two different doors. Find cases plan all paths and decided after with shortest distance
 
 Every bridge point has to be connected
 
