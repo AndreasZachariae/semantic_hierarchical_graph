@@ -164,14 +164,25 @@ class SHNode(Generic[T]):
             raise SHGPlannerError("No path found between {} and {}".format(start_name, goal_name))
         return path  # type: ignore
 
-    def _plan_recursive(self, start_name: str, goal_name: str, start_hierarchy: List[str], goal_hierarchy: List[str],
-                        child_path: List[T], hierarchy_level: int, debug=False) -> Dict:
+    def _plan_recursive(self, start_name: str, goal_name: str, start_hierarchy: List[str],
+                        goal_hierarchy: List[str], hierarchy_level: int, debug=False) -> Dict:
         path_dict = {}
-        for i, node in enumerate(child_path):
+        path = self._plan(start_name, goal_name)
+
+        if debug:
+            print("----------------------------")
+            print("Graph name:", self.unique_name)
+            print("Child graph:", self.get_childs("name"))
+            print("Start node:", start_name)
+            print("Goal node:", goal_name)
+            print("path:", [node.unique_name for node in path])
+
+        for i, node in enumerate(path):
 
             # if node is leaf, no deeper planning
             if node.is_leaf:
                 if debug:
+                    print("----------------------------")
                     print("Leaf reached:", node.unique_name)
                 path_dict[node] = {}
                 continue
@@ -179,34 +190,25 @@ class SHNode(Generic[T]):
             # if node is bridge, go to next in path
             if node.is_bridge:
                 if debug:
+                    print("----------------------------")
                     print("Bridge reached:", node.unique_name)
                 path_dict[node] = {}
                 continue
 
             # if current node is not the start node, start from bridge
-            if node.unique_name != start_name:
-                child_start_name = self._get_bridge_node_name(node, child_path[i-1], hierarchy_level)
+            if node.unique_name != path[0].unique_name:
+                child_start_name = self._get_bridge_node_name(node, path[i-1], hierarchy_level)
             else:
                 child_start_name = start_hierarchy[hierarchy_level+1]
 
             # if current node is not the goal node, go to next bridge
-            if node.unique_name != goal_name:
-                child_goal_name = self._get_bridge_node_name(node, child_path[i+1], hierarchy_level)
+            if node.unique_name != path[-1].unique_name:
+                child_goal_name = self._get_bridge_node_name(node, path[i+1], hierarchy_level)
             else:
                 child_goal_name = goal_hierarchy[hierarchy_level+1]
 
-            path = node._plan(child_start_name, child_goal_name)
-
-            if debug:
-                print("----------------------------")
-                print("Node name:", node.unique_name, "in graph:", self.unique_name)
-                print("Child graph:", node.get_childs("name"))
-                print("Start node:", child_start_name)
-                print("Goal node:", child_goal_name)
-                print("path:", [node.unique_name for node in path])
-
-            path_dict[node] = node._plan_recursive(path[0].unique_name, path[-1].unique_name, start_hierarchy, goal_hierarchy,
-                                                   path, hierarchy_level + 1)
+            path_dict[node] = node._plan_recursive(child_start_name, child_goal_name,
+                                                   start_hierarchy, goal_hierarchy, hierarchy_level + 1)
 
         return path_dict
 
