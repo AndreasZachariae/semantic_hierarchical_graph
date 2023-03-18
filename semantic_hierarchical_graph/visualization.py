@@ -37,6 +37,9 @@ def draw_child_graph(parent_node: SHNode, path: Union[Dict, List, None] = None, 
             labels=nx.get_node_attributes(graph, 'name'),
             with_labels=True)
 
+    edge_labels = nx.get_edge_attributes(graph, "distance")
+    nx.draw_networkx_edge_labels(graph, pos_dict, edge_labels)
+
     plt.show()
 
 
