@@ -1,3 +1,4 @@
+import pickle
 import networkx as nx
 from typing import Dict, List, Optional
 
@@ -107,3 +108,12 @@ class SHGraph(SHNode):
                                      method="dijkstra")
 
         return path_list  # type: ignore
+
+    def save_graph(self, path: str):
+        with open(path, 'wb') as handle:
+            pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    @staticmethod
+    def load_graph(path: str) -> 'SHGraph':
+        with open(path, 'rb') as handle:
+            return pickle.load(handle)

@@ -119,30 +119,34 @@ class Location(SHNode):
 
 
 if __name__ == "__main__":
-    G = SHGraph(root_name="Benchmark", root_pos=Position(0, 0, 0))
-    floor = Floor("ryu", G, Position(0, 0, 1), 'data/benchmark_maps/ryu.png', "config/ryu_params.yaml")
-    G.add_child_by_node(floor)
-    print(G.get_childs("name"))
+    # G = SHGraph(root_name="Benchmark", root_pos=Position(0, 0, 0))
+    # floor = Floor("ryu", G, Position(0, 0, 1), 'data/benchmark_maps/ryu.png', "config/ryu_params.yaml")
+    # G.add_child_by_node(floor)
+    # print(G.get_childs("name"))
 
-    floor.create_rooms()
-    floor.create_bridges()
+    # floor.create_rooms()
+    # floor.create_bridges()
+
+    # G.save_graph("data/graph.pickle")
+    G = SHGraph.load_graph("data/graph.pickle")
+    floor = G._get_child("ryu")
 
     # print(floor.get_childs("name"))
     room_2 = floor._get_child("room_2")
     room_11 = floor._get_child("room_11")
     # print(room_2.get_childs("name"))
 
-    path_dict = G.plan_recursive(["ryu", "room_2", "(387, 60)"], ["ryu", "room_12", "(1526, 480)"])
+    path_dict = G.plan_recursive(["ryu", "room_2", "(387, 42)"], ["ryu", "room_12", "(1526, 480)"])
     # util.save_dict_to_json(path_dict, "data/ryu_path.json")
 
-    # vis.draw_child_graph(floor, path_dict)
-    # vis.draw_child_graph(room_2, path_dict)
+    vis.draw_child_graph(floor, path_dict)
+    vis.draw_child_graph(room_2, path_dict)
     vis.draw_child_graph(G, path_dict, is_leaf=True)
     vis.draw_child_graph_3d(floor, path_dict)
     vis.draw_child_graph_3d(room_11, path_dict)
     # vis.draw_child_graph_3d(G, path_dict, is_leaf=True)
 
-    floor.plot_all_envs()
+    # floor.plot_all_envs()
     ws2 = segmentation.draw(floor.watershed, floor.all_bridge_nodes, (22))
     # ws3 = segmentation.draw(ws2, floor.get_largest_rectangles(), (21))
     ws4 = floor.draw_all_paths(ws2, (0), path_dict, (25))

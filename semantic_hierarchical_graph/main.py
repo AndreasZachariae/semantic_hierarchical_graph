@@ -108,6 +108,9 @@ def main():
     G.add_connection_recursive(["Building A", "Floor 0", "Staircase"],
                                ["Building A", "Floor 0", "Entrance"], name="floor_door")
 
+    G.save_graph("data/graph.pickle")
+    G = SHGraph.load_graph("data/graph.pickle")
+
     path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 1", "Cantina"])
     # path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building F", "Floor 3", "Office"])
     # path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 0", "Entrance"])
@@ -118,13 +121,13 @@ def main():
 
     print(util.path_to_list(path_dict, [], with_names=True, is_leaf=True))
 
-    # vis.draw_child_graph(G, path_dict)
-    # vis.draw_child_graph(build_f, path_dict, view_axis="x")
-    # vis.draw_child_graph(build_a, path_dict, view_axis="x")
-    # vis.draw_child_graph(floor_f0, path_dict)
-    # vis.draw_child_graph(floor_f1, path_dict)
-    # vis.draw_child_graph(floor_a1, path_dict)
-    # vis.draw_child_graph(floor_a0, path_dict)
+    vis.draw_child_graph(G, path_dict)
+    vis.draw_child_graph(build_f, path_dict, view_axis="x")
+    vis.draw_child_graph(build_a, path_dict, view_axis="x")
+    vis.draw_child_graph(floor_f0, path_dict)
+    vis.draw_child_graph(floor_f1, path_dict)
+    vis.draw_child_graph(floor_a1, path_dict)
+    vis.draw_child_graph(floor_a0, path_dict)
 
     vis.draw_child_graph_3d(floor_f1, path_dict)
     vis.draw_child_graph_3d(G, path_dict, is_leaf=True)
