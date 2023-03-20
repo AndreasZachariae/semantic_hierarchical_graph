@@ -90,6 +90,8 @@ Improvements
 - [ ] Add shortest distance between each nodes on 1+ level as distance on edge
 - [ ] Special case for start and goal point (networkx all_simple_paths, all_shortest_paths)
 - [ ] Special case if two rooms are connected with two different doors. Find cases plan all paths and decided after with shortest distance
+- [ ] Check if all paths in one room are one connected component. Sometimes there are separated paths due to rounding errors
+- [ ] Fix error with min distance. Shortest path per room has dependencies to bridge nodes also for paths in next room
 
 Every bridge point has to be connected
 
