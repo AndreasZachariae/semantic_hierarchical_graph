@@ -1,7 +1,9 @@
+import itertools
 import networkx as nx
-from typing import Dict, List, Tuple, TypeVar, Generic, Optional
+from typing import Dict, Iterator, List, Tuple, TypeVar, Generic, Optional
 # from typing_extensions import Self
 import numpy as np
+from semantic_hierarchical_graph.path import SHMultiPaths, SHPath
 from semantic_hierarchical_graph.types.exceptions import SHGHierarchyError, SHGPlannerError, SHGValueError
 
 import semantic_hierarchical_graph.utils as util
@@ -108,7 +110,7 @@ class SHNode(Generic[T]):
                                           hierarchy_mask, hierarchy_level + 1, distance, **data)
 
     def _get_hierarchy_bridge_name(self, hierarchy: List[str], hierarchy_mask: List[bool], hierarchy_level: int):
-        """ Return concated name of all graph levels where the branch is different 
+        """ Return concated name of all graph levels where the branch is different
             including the node name on the same level. """
         inverted_mask = [not elem for elem in hierarchy_mask][:hierarchy_level+2]
         relevant_hierarchy = hierarchy[:hierarchy_level+2]
@@ -148,82 +150,95 @@ class SHNode(Generic[T]):
         return self.child_graph.has_node(node)
 
     def get_dict(self) -> dict:
-        s = {}
-        for node in self.child_graph.nodes:
-            s[node.unique_name] = node.get_dict()
-        return s
+        return {node.unique_name: node.get_dict() for node in self.child_graph.nodes}
 
-    def _plan(self, start_name: str, goal_name: str) -> List[T]:
+    def _plan(self, start_name: str, goal_name: str) -> Iterator[List[T]]:
         try:
-            path = nx.shortest_path(self.child_graph,
-                                    source=self._get_child(start_name),
-                                    target=self._get_child(goal_name),
-                                    weight="distance",
-                                    method="dijkstra")
+            # path = nx.shortest_path(self.child_graph,
+            #                         source=self._get_child(start_name),
+            #                         target=self._get_child(goal_name),
+            #                         weight="distance",
+            #                         method="dijkstra")
+            path = nx.all_simple_paths(self.child_graph,
+                                       source=self._get_child(start_name),
+                                       target=self._get_child(goal_name))
         except nx.NetworkXNoPath:
             raise SHGPlannerError("No path found between {} and {}".format(start_name, goal_name))
-        return path  # type: ignore
+        return path
 
     def _plan_recursive(self, start_name: str, goal_name: str, start_hierarchy: List[str],
-                        goal_hierarchy: List[str], hierarchy_level: int, debug=False) -> Dict:
-        path_dict = {}
-        path = self._plan(start_name, goal_name)
+                        goal_hierarchy: List[str], hierarchy_level: int, debug=True) -> SHPath:
+        if start_name == goal_name:
+            path_generator = [[self._get_child(start_name)]]
+        else:
+            path_generator = self._plan(start_name, goal_name)
 
-        if debug:
-            print("----------------------------")
-            print("Graph name:", self.unique_name)
-            print("Child graph:", self.get_childs("name"))
-            print("Start node:", start_name)
-            print("Goal node:", goal_name)
-            print("path:", [node.unique_name for node in path])
+        multiple_paths = SHMultiPaths()
+        for path in path_generator:
+            distance = nx.path_weight(self.child_graph, path, weight="distance")
+            single_path = SHPath(start_name, goal_name, self, distance)
 
-        for i, node in enumerate(path):
+            if debug:
+                print("----------------------------")
+                print("Graph name:", self.unique_name)
+                # print("Child graph:", self.get_childs("name"))
+                print("Start node:", start_name)
+                print("Goal node:", goal_name)
+                print("Path:", [node.unique_name for node in path])
+                print("Distance:", distance)
 
-            # if node is leaf, no deeper planning
-            if node.is_leaf:
-                if debug:
-                    print("----------------------------")
-                    print("Leaf reached:", node.unique_name)
-                path_dict[node] = {}
-                continue
+            for i, node in enumerate(path):
 
-            # if node is bridge, go to next in path
-            if node.is_bridge:
-                if debug:
-                    print("----------------------------")
-                    print("Bridge reached:", node.unique_name)
-                path_dict[node] = {}
-                continue
+                # if node is leaf, no deeper planning
+                if node.is_leaf:
+                    single_path.add(SHPath(start_name, goal_name, node, 0.0))
+                    continue
 
-            # if current node is not the start node, start from bridge
-            if node.unique_name != path[0].unique_name:
-                child_start_name = self._get_bridge_node_name(node, path[i-1], hierarchy_level)
-            else:
-                child_start_name = start_hierarchy[hierarchy_level+1]
+                # if node is bridge, go to next in path
+                if node.is_bridge:
+                    single_path.add(SHPath(start_name, goal_name, node, 0.0))
+                    continue
 
-            # if current node is not the goal node, go to next bridge
-            if node.unique_name != path[-1].unique_name:
-                child_goal_name = self._get_bridge_node_name(node, path[i+1], hierarchy_level)
-            else:
-                child_goal_name = goal_hierarchy[hierarchy_level+1]
+                # if current node is not the start node, start from bridge
+                if node.unique_name != path[0].unique_name:
+                    child_start_names = self._get_bridge_node_name(node, path[i-1], hierarchy_level)
+                else:
+                    child_start_names = [start_hierarchy[hierarchy_level+1]]
 
-            path_dict[node] = node._plan_recursive(child_start_name, child_goal_name,
-                                                   start_hierarchy, goal_hierarchy, hierarchy_level + 1)
+                # if current node is not the goal node, go to next bridge
+                if node.unique_name != path[-1].unique_name:
+                    child_goal_names = self._get_bridge_node_name(node, path[i+1], hierarchy_level)
+                else:
+                    child_goal_names = [goal_hierarchy[hierarchy_level+1]]
 
-        return path_dict
+                multi_bridges_path = SHMultiPaths()
+                for child_start_name, child_goal_name in itertools.product(child_start_names, child_goal_names):
+                    # print("START:", child_start_name, "GOAL:", child_goal_name)
+                    bridges_path = node._plan_recursive(child_start_name, child_goal_name,
+                                                        start_hierarchy, goal_hierarchy, hierarchy_level + 1)
+                    multi_bridges_path.add(bridges_path)
+                    # print(len(bridges_path.path), bridges_path.distance)
 
-    def _get_bridge_node_name(self, node: T, bridge_node: T, hierarchy_level: int) -> str:
-        bridge_found = []
+                single_path.add(multi_bridges_path.shortest_path)
+            multiple_paths.add(single_path)
+
+        if multiple_paths.num_paths == 0:
+            print("ERROR No path found between {} and {}".format(start_name, goal_name))
+            return SHPath(start_name, goal_name, self, np.inf)
+            # raise SHGPlannerError("No path found between {} and {}".format(start_name, goal_name))
+
+        return multiple_paths.shortest_path
+
+    def _get_bridge_node_name(self, node: T, bridge_node: T, hierarchy_level: int) -> List[str]:
+        bridges_found = []
         for n in node.get_childs():
             if n.is_bridge:
                 if bridge_node.is_bridge and (n.bridge_to == bridge_node.bridge_to):
-                    bridge_found.append(n.unique_name)
+                    bridges_found.append(n.unique_name)
                     continue
                 elif n.bridge_to[hierarchy_level] == bridge_node.unique_name:
-                    bridge_found.append(n.unique_name)
+                    bridges_found.append(n.unique_name)
 
-        if len(bridge_found) == 1:
-            return bridge_found[0]
-        elif len(bridge_found) > 1:
-            raise SHGHierarchyError("Multiple bridges found")
-        raise SHGHierarchyError("No next child as bridge to other branch can be found")
+        if len(bridges_found) == 0:
+            raise SHGHierarchyError("No next child as bridge to other branch can be found")
+        return bridges_found
