@@ -32,11 +32,6 @@ hierarchy_levels = {
     'gridmap': 6
 }
 
-# 3 Alternatives:
-# 1. One single graph with all levels
-# 2. Hierachical graphs
-# 3. Dictionary like structure G["building F"]["floor 1"]["room 1"]
-
 
 class SHGraph(SHNode):
     def __init__(self,  root_name: str, root_pos: Position):
@@ -47,9 +42,6 @@ class SHGraph(SHNode):
     def add_child_by_hierarchy(self, hierarchy: List[str], name: str, pos: Position, is_leaf: bool = False) -> SHNode:
         """ Add a child node with name to the parent node defined by the hierarchy list"""
         return self.get_child_by_hierarchy(hierarchy).add_child_by_name(name, pos, is_leaf=is_leaf)
-
-    def add_child_recursive(self):
-        pass
 
     def _get_root_node(self):
         return self
@@ -76,22 +68,14 @@ class SHGraph(SHNode):
             child = child._get_child(name)
         return child
 
-    def create_graph_from_dict(self):
-        pass
-
     # @util.timing
-    def plan_recursive(self, start_hierarchy: List[str], goal_hierarchy: List[str]) -> Dict:
+    def plan_recursive(self, start_hierarchy: List[str], goal_hierarchy: List[str]) -> SHPath:
         if len(start_hierarchy) != len(goal_hierarchy):
             raise SHGHierarchyError("Hierarchies must have same length")
 
-        path = SHPath(start_hierarchy, goal_hierarchy)
-        while not path.all_paths_checked():
-            path_dict = {}
-            path_dict[self] = self._plan_recursive(start_hierarchy[0], goal_hierarchy[0],
-                                                   start_hierarchy, goal_hierarchy, hierarchy_level=0)
-            path.all_paths.append(path_dict)
-
-        return path.get_shortest_path()
+        path: SHPath = self._plan_recursive(start_hierarchy[0], goal_hierarchy[0],
+                                            start_hierarchy, goal_hierarchy, hierarchy_level=0)
+        return path
 
     # @util.timing
     def plan_in_leaf_graph(self, start_hierarchy: List[str], goal_hierarchy: List[str]) -> List[SHNode]:
