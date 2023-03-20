@@ -69,8 +69,8 @@ def main():
                                ["Building F", "Floor 0", "RoboEduLab"], name="door")
     G.add_connection_recursive(["Building F", "Floor 0", "Staircase"],
                                ["Building F", "Floor 1", "Staircase"], distance=4.0, name="stair_F")
-    # G.add_connection_recursive(["Building F", "Floor 0", "Lab"],
-    #                            ["Building A", "Floor 0", "Entrance"], name="terrace_door")
+    G.add_connection_recursive(["Building F", "Floor 0", "Lab"],
+                               ["Building A", "Floor 0", "Entrance"], name="terrace_door")
     G.add_connection_recursive(["Building F", "Floor 1", "Staircase"],
                                ["Building F", "Floor 1", "Corridor"], name="floor_door")
     G.add_connection_recursive(["Building F", "Floor 1", "Corridor"],
@@ -108,16 +108,17 @@ def main():
     G.add_connection_recursive(["Building A", "Floor 0", "Staircase"],
                                ["Building A", "Floor 0", "Entrance"], name="floor_door")
 
-    G.save_graph("data/graph.pickle")
-    G = SHGraph.load_graph("data/graph.pickle")
+    # G.save_graph("data/graph.pickle")
+    # G = SHGraph.load_graph("data/graph.pickle")
 
-    path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 1", "Cantina"])
-    # path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building F", "Floor 3", "Office"])
-    # path_dict = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 0", "Entrance"])
+    path = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 1", "Cantina"])
+    # path = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building F", "Floor 3", "Office"])
+    # path = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 0", "Entrance"])
 
     # leaf_path_list = G.plan_in_leaf_graph(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 0", "Entrance"])
 
-    util.save_dict_to_json(path_dict, "data/path.json")
+    path_dict = path.to_dict()
+    path.to_json("data/path.json")
 
     print(util.path_to_list(path_dict, [], with_names=True, is_leaf=True))
 
