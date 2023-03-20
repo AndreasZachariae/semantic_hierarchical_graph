@@ -1,6 +1,7 @@
 import itertools
 from typing import List, Union
 import matplotlib.pyplot as plt
+from shapely import snap
 from shapely.plotting import plot_polygon, plot_line
 from shapely.geometry import Point, Polygon, LineString, MultiPolygon
 from shapely.ops import nearest_points, transform, split
@@ -119,6 +120,8 @@ class Environment():
 
     def split_multipoint_lines(self):
         """ Split multipoint lines in two point segments"""
+        # TODO: Fix paths not connecting due to rounding errors
+        # self.snap_together()
         new_lines = []
         remove_lines = []
         for line in self.path:
@@ -127,6 +130,14 @@ class Environment():
                 for i in range(len(line.coords) - 1):
                     new_lines.append(LineString([line.coords[i], line.coords[i + 1]]))
         self.path = list((set(self.path) - set(remove_lines)) | set(new_lines))
+
+    def snap_together(self):
+        """ Snap together all paths that are separated due to rounding errors"""
+        new_paths = []
+        for line, reference in itertools.permutations(self.path, 2):
+            new_line = snap(line, reference, tolerance=0.5)
+            new_paths.append(new_line)
+        self.path = new_paths
 
     def split_path_at_intersections(self):
         """ Split all paths at intersections"""
