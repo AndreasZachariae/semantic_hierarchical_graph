@@ -67,13 +67,6 @@ def _map_names_to_nodes(obj):
         return obj.unique_name
 
 
-def save_dict_to_json(dict, file_path: str, convert_to_names: bool = True):
-    if convert_to_names:
-        dict = _map_names_to_nodes(dict)
-    with open(file_path, 'w') as outfile:
-        json.dump(dict, outfile, indent=4, sort_keys=False)
-
-
 def timing(f):
     @wraps(f)
     def wrap(*args, **kw):
