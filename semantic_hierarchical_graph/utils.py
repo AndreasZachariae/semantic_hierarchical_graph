@@ -39,23 +39,17 @@ def _path_dict_to_leaf_path_list(path: Dict):
 
 
 def _path_dict_to_child_path_list(path: Dict, child_hierarchy: List[str]):
-    child_path = []
-
     # if path from root_node is asked
     if len(child_hierarchy) == 0:
-        [child_path.append(k) for k, v in path.items()]
-        return child_path
+        return list(path.keys())
 
     for node, dict in path.items():
         if node.unique_name == child_hierarchy[0]:
             if len(child_hierarchy) > 1:
-                child_path.extend(_path_dict_to_child_path_list(dict, child_hierarchy[1:]))
+                return _path_dict_to_child_path_list(dict, child_hierarchy[1:])
             else:
-                [child_path.append(k) for k, v in dict.items()]
-        else:
-            child_path = _path_dict_to_child_path_list(list(path.values())[0], child_hierarchy)
-
-    return child_path
+                return list(dict.keys())
+    return []
 
 
 def _map_names_to_nodes(obj):

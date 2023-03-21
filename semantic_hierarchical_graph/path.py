@@ -40,11 +40,11 @@ class SHPath():
         self.path.append(path)
         self.distance += path.distance
 
-    def _to_dict(self, names: bool):
-        return {node.parent.unique_name + " - " + str(round(node.distance)) if names else node.parent: node._to_dict(names) for node in self.path}
-
     def to_dict(self, names: bool = False):
-        return {self.parent.unique_name if names else self.parent: self._to_dict(names)}
+        return {node.parent.unique_name + " - " + str(round(node.distance)) if names else node.parent: node.to_dict(names) for node in self.path}
+
+    # def to_dict(self, names: bool = False):
+    #     return {self.parent.unique_name if names else self.parent: self._to_dict(names)}
 
     def to_json(self, file_path: str):
         dict = self.to_dict(names=True)
