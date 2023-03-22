@@ -1,4 +1,5 @@
 from semantic_hierarchical_graph.graph import SHGraph
+from semantic_hierarchical_graph.path import SHPath
 import semantic_hierarchical_graph.visualization as vis
 import semantic_hierarchical_graph.utils as util
 from semantic_hierarchical_graph.types.position import Position
@@ -70,7 +71,7 @@ def main():
     G.add_connection_recursive(["Building F", "Floor 0", "Staircase"],
                                ["Building F", "Floor 1", "Staircase"], distance=4.0, name="stair_F")
     G.add_connection_recursive(["Building F", "Floor 0", "Lab"],
-                               ["Building A", "Floor 0", "Entrance"], name="terrace_door")
+                               ["Building A", "Floor 0", "Entrance"], distance=10.0, name="terrace_door")
     G.add_connection_recursive(["Building F", "Floor 1", "Staircase"],
                                ["Building F", "Floor 1", "Corridor"], name="floor_door")
     G.add_connection_recursive(["Building F", "Floor 1", "Corridor"],
@@ -111,14 +112,13 @@ def main():
     # G.save_graph("data/graph.pickle")
     # G = SHGraph.load_graph("data/graph.pickle")
 
-    path = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 1", "Cantina"])
-    # path = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building F", "Floor 3", "Office"])
-    # path = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 0", "Entrance"])
+    path_dict, distance = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 1", "Cantina"])
+    # path_dict, distance = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building F", "Floor 3", "Office"])
+    # path_dict, distance = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 0", "Entrance"])
 
     # leaf_path_list = G.plan_in_leaf_graph(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 0", "Entrance"])
 
-    path_dict = path.to_dict()
-    path.to_json("data/path.json")
+    SHPath.save_path(path_dict, "data/path.json")
 
     print(util.path_to_list(path_dict, [], with_names=True, is_leaf=True))
 

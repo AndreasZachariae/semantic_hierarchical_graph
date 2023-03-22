@@ -55,7 +55,7 @@ class ILIRPlanner(PlannerInterface):
             if goal_pos.to_name() not in self.room.get_childs("name"):
                 self._add_path_to_roadmap(goal_pos.to_name(), goal_pos, type="goal")
 
-            path = self.room._plan(start_pos.to_name(), goal_pos.to_name())
+            path = self.room.plan_in_graph(start_pos.to_name(), goal_pos.to_name())
         except SHGPlannerError as e:
             print("Error while planning with ILIRPlanner: ")
             print(e)

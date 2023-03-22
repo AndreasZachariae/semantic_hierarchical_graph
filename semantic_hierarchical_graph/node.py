@@ -1,12 +1,11 @@
 import itertools
 import networkx as nx
-from typing import Dict, Iterator, List, Tuple, TypeVar, Generic, Optional
+from typing import List, TypeVar, Generic, Optional, Union
 # from typing_extensions import Self
 import numpy as np
+
 from semantic_hierarchical_graph.path import SHMultiPaths, SHPath
 from semantic_hierarchical_graph.types.exceptions import SHGHierarchyError, SHGPlannerError, SHGValueError
-
-import semantic_hierarchical_graph.utils as util
 from semantic_hierarchical_graph.types.position import Position
 
 
@@ -152,28 +151,27 @@ class SHNode(Generic[T]):
     def get_dict(self) -> dict:
         return {node.unique_name: node.get_dict() for node in self.child_graph.nodes}
 
-    def _plan(self, start_name: str, goal_name: str) -> Iterator[List[T]]:
+    def plan_in_graph(self, start_name: str, goal_name: str) -> List[T]:
         try:
-            # path = nx.shortest_path(self.child_graph,
-            #                         source=self._get_child(start_name),
-            #                         target=self._get_child(goal_name),
-            #                         weight="distance",
-            #                         method="dijkstra")
-            path = nx.all_simple_paths(self.child_graph,
-                                       source=self._get_child(start_name),
-                                       target=self._get_child(goal_name))
+            path = nx.shortest_path(self.child_graph,
+                                    source=self._get_child(start_name),
+                                    target=self._get_child(goal_name),
+                                    weight="distance",
+                                    method="dijkstra")
         except nx.NetworkXNoPath:
             raise SHGPlannerError("No path found between {} and {}".format(start_name, goal_name))
-        return path
+        return path  # type: ignore
 
     def _plan_recursive(self, start_name: str, goal_name: str, start_hierarchy: List[str],
-                        goal_hierarchy: List[str], hierarchy_level: int, debug=True) -> SHPath:
+                        goal_hierarchy: List[str], hierarchy_level: int, debug=False) -> Union['SHPath', 'SHMultiPaths']:
         if start_name == goal_name:
             path_generator = [[self._get_child(start_name)]]
         else:
-            path_generator = self._plan(start_name, goal_name)
+            path_generator = nx.all_simple_paths(self.child_graph,
+                                                 source=self._get_child(start_name),
+                                                 target=self._get_child(goal_name))
 
-        multiple_paths = SHMultiPaths()
+        multiple_paths = SHMultiPaths(self)
         for path in path_generator:
             distance = nx.path_weight(self.child_graph, path, weight="distance")
             single_path = SHPath(start_name, goal_name, self, distance)
@@ -211,15 +209,13 @@ class SHNode(Generic[T]):
                 else:
                     child_goal_names = [goal_hierarchy[hierarchy_level+1]]
 
-                multi_bridges_path = SHMultiPaths()
+                multi_bridges_path = SHMultiPaths(node)
                 for child_start_name, child_goal_name in itertools.product(child_start_names, child_goal_names):
-                    # print("START:", child_start_name, "GOAL:", child_goal_name)
                     bridges_path = node._plan_recursive(child_start_name, child_goal_name,
                                                         start_hierarchy, goal_hierarchy, hierarchy_level + 1)
                     multi_bridges_path.add(bridges_path)
-                    # print(len(bridges_path.path), bridges_path.distance)
 
-                single_path.add(multi_bridges_path.shortest_path)
+                single_path.add(multi_bridges_path.reduce_if_one())
             multiple_paths.add(single_path)
 
         if multiple_paths.num_paths == 0:
@@ -227,7 +223,7 @@ class SHNode(Generic[T]):
             return SHPath(start_name, goal_name, self, np.inf)
             # raise SHGPlannerError("No path found between {} and {}".format(start_name, goal_name))
 
-        return multiple_paths.shortest_path
+        return multiple_paths.reduce_to_different_goals()
 
     def _get_bridge_node_name(self, node: T, bridge_node: T, hierarchy_level: int) -> List[str]:
         bridges_found = []

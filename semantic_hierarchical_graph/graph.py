@@ -1,9 +1,9 @@
 import pickle
 import networkx as nx
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from semantic_hierarchical_graph.node import SHNode
-from semantic_hierarchical_graph.path import SHPath
+from semantic_hierarchical_graph.path import SHMultiPaths
 import semantic_hierarchical_graph.utils as util
 from semantic_hierarchical_graph.types.position import Position
 from semantic_hierarchical_graph.types.exceptions import SHGHierarchyError
@@ -69,13 +69,17 @@ class SHGraph(SHNode):
         return child
 
     # @util.timing
-    def plan_recursive(self, start_hierarchy: List[str], goal_hierarchy: List[str]) -> SHPath:
+    def plan_recursive(self, start_hierarchy: List[str], goal_hierarchy: List[str]) -> Tuple[Dict, float]:
         if len(start_hierarchy) != len(goal_hierarchy):
             raise SHGHierarchyError("Hierarchies must have same length")
 
-        path: SHPath = self._plan_recursive(start_hierarchy[0], goal_hierarchy[0],
-                                            start_hierarchy, goal_hierarchy, hierarchy_level=0)
-        return path
+        path = self._plan_recursive(start_hierarchy[0], goal_hierarchy[0],
+                                    start_hierarchy, goal_hierarchy, hierarchy_level=0)
+
+        # All possible paths including invalids
+        # path.to_json("data/multi_path.json")
+
+        return SHMultiPaths.get_shortest_path(path)
 
     # @util.timing
     def plan_in_leaf_graph(self, start_hierarchy: List[str], goal_hierarchy: List[str]) -> List[SHNode]:
