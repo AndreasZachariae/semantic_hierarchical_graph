@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional, Set, Tuple
 import cv2
 import numpy as np
+from semantic_hierarchical_graph.path import SHPath
 from semantic_hierarchical_graph.types.exceptions import SHGGeometryError
 import semantic_hierarchical_graph.utils as util
 from semantic_hierarchical_graph.environment import Environment
@@ -133,17 +134,19 @@ if __name__ == "__main__":
 
     # print(floor.get_childs("name"))
     room_2 = floor._get_child("room_2")
-    room_11 = floor._get_child("room_11")
-    # print(room_2.get_childs("name"))
+    room_16 = floor._get_child("room_16")
+    # print(room_20.get_childs("name"))
 
-    path_dict = G.plan_recursive(["ryu", "room_2", "(387, 42)"], ["ryu", "room_12", "(1526, 480)"])
-    # util.save_dict_to_json(path_dict, "data/ryu_path.json")
+    path_dict, distance = G.plan_recursive(["ryu", "room_16", "(88, 358)"], ["ryu", "room_12", "(1526, 480)"])
+    # path_dict, distance = G.plan_recursive(["ryu", "room_12", "(1337, 285)"], ["ryu", "room_12", "(1526, 480)"])
+    # path_dict, distance = G.plan_recursive(["ryu", "room_2", "(387, 42)"], ["ryu", "room_2", "(251, 182)"])
+    SHPath.save_path(path_dict, "data/ryu_path.json")
 
-    vis.draw_child_graph(floor, path_dict)
-    vis.draw_child_graph(room_2, path_dict)
-    vis.draw_child_graph(G, path_dict, is_leaf=True)
-    vis.draw_child_graph_3d(floor, path_dict)
-    vis.draw_child_graph_3d(room_11, path_dict)
+    # vis.draw_child_graph(floor, path_dict)
+    vis.draw_child_graph(room_16, path_dict)
+    # vis.draw_child_graph(G, path_dict, is_leaf=True)
+    # vis.draw_child_graph_3d(floor, path_dict)
+    vis.draw_child_graph_3d(room_16, path_dict)
     # vis.draw_child_graph_3d(G, path_dict, is_leaf=True)
 
     # floor.plot_all_envs()
