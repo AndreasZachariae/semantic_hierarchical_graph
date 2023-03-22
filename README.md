@@ -84,14 +84,14 @@ Improvements
 - [x] remove brisge points which are in collision with ws_erosion
 - [x] clear bridge edges in the beginning with dist_transform or ws_erosion
 - [x] Detect if the whole room is a corridor (With corridor width thresholds) and don't collapse rectangles in other rooms -> Add is_corridor flag to rooms
-- [ ] Adjust planning in graph for multiple possible paths. Plan all paths and compare lenghts for shortest
+- [x] Adjust planning in graph for multiple possible paths. Plan all paths and compare lenghts for shortest
 - [ ] Make sure correct hierarchy distances are in the graph edges
 - [x] Do not generate multiple rectangles. Only keep largest merged one and connect bridge points with A*
-- [ ] Add shortest distance between each nodes on 1+ level as distance on edge
-- [ ] Special case for start and goal point (networkx all_simple_paths, all_shortest_paths)
-- [ ] Special case if two rooms are connected with two different doors. Find cases plan all paths and decided after with shortest distance
+- [x] Add shortest distance between each nodes on 1+ level as distance on edge
+- [x] Special case for start and goal point (networkx all_simple_paths, all_shortest_paths)
+- [x] Special case if two rooms are connected with two different doors. Find cases plan all paths and decided after with shortest distance
 - [ ] Check if all paths in one room are one connected component. Sometimes there are separated paths due to rounding errors
-- [ ] Fix error with min distance. Shortest path per room has dependencies to bridge nodes also for paths in next room
+- [x] Fix error with min distance. Shortest path per room has dependencies to bridge nodes also for paths in next room
 
 Every bridge point has to be connected
 
@@ -103,7 +103,7 @@ Every bridge point has to be connected
 - [x] 3.1 Make all points of apth valid goal points for A*
 - [x] 3.2 Dont limit the scene
 - [x] 3.3 Improve lookup time in A* for multiple goal points with hashable sets
-- [ ] Check if valid path between all bridge points
+- [x] Check if valid path between all bridge points
 
 Smoothing
 
