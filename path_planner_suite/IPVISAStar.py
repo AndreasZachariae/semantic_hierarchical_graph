@@ -44,7 +44,7 @@ def aStarVisualize(planner, solution, ax=None, nodeSize=300):
     # draw edges based on solution path
     nx.draw_networkx_edges(Gsp, pos, alpha=0.8, edge_color='g', width=10, arrows=True)
 
-    if solution is None:
+    if solution is not None:
         nx.draw_networkx_nodes(graph, pos, nodelist=[solution[0]],
                                node_size=300,
                                node_color='#00dd00',  ax=ax)
