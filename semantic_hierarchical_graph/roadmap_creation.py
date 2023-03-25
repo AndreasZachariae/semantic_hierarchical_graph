@@ -167,7 +167,8 @@ def connect_paths(env: Environment, bridge_nodes: Dict[Tuple, List], bridge_edge
             # union polygon is empty. No polygon in original room path
             pass
         else:
-            raise SHGGeometryError("unknown shape returned from polygon union")
+            print("unknown shape returned from polygon union")
+            raise SHGGeometryError()
 
         for point in bridge_points:
             connections, _ = connect_point_to_path(point, env, params)
@@ -204,11 +205,8 @@ def _connect_point_with_rrt(point: Tuple[float, float], env: Environment, params
     config = dict()
     config["numberOfGeneratedNodes"] = 200
     config["testGoalAfterNumberOfNodes"] = 1
-    config["smoothing_iterations"] = 50
-    config["smoothing_max_k"] = 20
-    config["smoothing_epsilon"] = 0.5
-    config["smoothing_variance_window"] = 10
-    config["smoothing_min_variance"] = 0.0
+    config["smoothing_max_iterations"] = 100
+    config["smoothing_max_k"] = 50
     planner = rrt_planner.RRTPlanner.around_point(point, params["max_distance_to_connect_points"], env.scene, config)
 
     pos = Point(point[0], point[1])
@@ -223,11 +221,8 @@ def _connect_point_with_astar(point: Tuple[float, float], env: Environment, para
     config["heuristic"] = 'euclidean'
     config["w"] = 0.5
     config['max_iterations'] = 10000
-    config["smoothing_iterations"] = 50
-    config["smoothing_max_k"] = 20
-    config["smoothing_epsilon"] = 0.5
-    config["smoothing_variance_window"] = 10
-    config["smoothing_min_variance"] = 0.0
+    config["smoothing_max_iterations"] = 100
+    config["smoothing_max_k"] = 50
     planner = astar_planner.AStarPlanner.around_point(
         point, params["max_distance_to_connect_points"], env.scene, config)
 

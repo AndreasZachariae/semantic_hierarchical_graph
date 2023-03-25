@@ -31,6 +31,7 @@ class PlannerInterface():
         try:
             path = self.planner.planPath(start_list, goal_list, self.config)
             print(len(path), "Size original path")
+            graph = self.planner.graph
         except Exception as e:
             print(f"Error while planning with {self.name}: ")
             print(e)
@@ -38,16 +39,13 @@ class PlannerInterface():
 
         if smoothing_enabled:
             smoother = IPSmoothing(self.planner.graph, path, self.collision_checker)
-            path = smoother.smooth_solution(self.config["smoothing_iterations"],
-                                            self.config["smoothing_max_k"],
-                                            self.config["smoothing_epsilon"],
-                                            self.config["smoothing_variance_window"],
-                                            self.config["smoothing_min_variance"])
+            path, graph = smoother.smooth_solution(self.config["smoothing_max_iterations"],
+                                                   self.config["smoothing_max_k"])
             print(len(path), "Size after smoothing")
 
         if path is not None:
-            path = self._convert_path_to_PathNode(path, self.planner.graph)
-        return path, self.planner.graph
+            path = self._convert_path_to_PathNode(path, graph)
+        return path, graph
 
     def plan_in_map_frame(self, start: Tuple, goal: Tuple, smoothing_enabled: bool):
         start_pos, goal_pos = self._convert_map_frame_to_grid(start, goal, self.room.params["grid_size"])

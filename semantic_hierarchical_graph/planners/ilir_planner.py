@@ -16,11 +16,8 @@ class ILIRPlanner(PlannerInterface):
     def __init__(self, room: Room, config: Optional[Dict] = None):
         if config is None:
             config = dict()
-            config["smoothing_iterations"] = 50
-            config["smoothing_max_k"] = 20
-            config["smoothing_epsilon"] = 0.5
-            config["smoothing_variance_window"] = 10
-            config["smoothing_min_variance"] = 0.0
+            config["smoothing_max_iterations"] = 100
+            config["smoothing_max_k"] = 50
 
         super().__init__(room, config)
 
