@@ -262,4 +262,4 @@ if __name__ == "__main__":
     # metrics.save_metrics("data/hou2_metrics.json")
     metrics.save_metrics("data/ryu_metrics.json")
 
-    plot_metrics(metrics, "data/ryu_metrics.png")
+    plot_metrics(metrics.metrics, "data/ryu_metrics.png")
