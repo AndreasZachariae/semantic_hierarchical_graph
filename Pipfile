@@ -12,6 +12,7 @@ shapely = "*"
 pyyaml = "*"
 scipy = "*"
 pandas = "*"
+requests = "*"
 
 [dev-packages]
 autopep8 = "*"
