@@ -1,0 +1,3 @@
+graph_node:
+  ros__parameters:
+    parameter: 123
