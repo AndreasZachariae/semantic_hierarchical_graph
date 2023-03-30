@@ -17,23 +17,6 @@ def wait_for_flask_webserver(max_wait_time=10):
             time.sleep(1)
 
 
-def get_emergency_state():
-    response = requests.get(flask_webserver_ip + "/emergency_button")
-    emergency_state = response.json()["state"]
-    print(emergency_state)
-
-
-def set_emergency_state():
-    response = requests.post(flask_webserver_ip + "/emergency_button", json={"state": True})
-    print(response.text)
-
-
-def get_transport_start():
-    response = requests.get(flask_webserver_ip + "/transport_start_button")
-    transport_start = response.json()["state"]
-    print(transport_start)
-
-
 def send_new_floor_map():
     """ svg: floor map as svg
         origin: (x, y) pixel coordinates of the origin of the map
@@ -93,9 +76,6 @@ def send_new_robot_path():
 
 if __name__ == "__main__":
     wait_for_flask_webserver()
-    get_emergency_state()
-    set_emergency_state()
-    get_transport_start()
     send_new_floor_map()
     update_robot_pose()
     send_new_robot_path()
