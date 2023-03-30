@@ -1,6 +1,7 @@
 # Custom
 data/*.png
 data/*.pickle
+data/tmp
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

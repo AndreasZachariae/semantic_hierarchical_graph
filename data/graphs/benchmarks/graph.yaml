@@ -1,0 +1,5 @@
+graph_name: "benchmarks"
+hierarchy_level: ["floor", "room", "location"]
+connections:
+  - [["ryu", "room_16", "(88, 358)"], ["hou2", "room_9", "(88, 358)"]]
+  - [["test"], ["test2"]]
