@@ -23,6 +23,7 @@ def generate_launch_description():
             executable='graph_node',
             name='graph_node',
             output='screen',
-            parameters=[config]
+            parameters=[config],
+            emulate_tty=True,
         )
     ])

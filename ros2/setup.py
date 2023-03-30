@@ -17,12 +17,9 @@ setup(
          glob('../semantic_hierarchical_graph/types/*.py')),
         (os.path.join('lib', package_name, 'semantic_hierarchical_graph/planners'),
          glob('../semantic_hierarchical_graph/planners/*.py')),
-        (os.path.join('lib', package_name, 'semantic_hierarchical_graph'), glob('../semantic_hierarchical_graph/*.py')),
         (os.path.join('lib', package_name, 'path_planner_suite'), glob('../path_planner_suite/*.py')),
-        (os.path.join('lib', package_name, 'config'), glob('../config/*.yaml')),
-        (os.path.join('lib', package_name, 'data/benchmark_maps'), glob('../data/benchmark_maps/*')),
         (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
-        (os.path.join('share', package_name, 'config'), glob('config/*.yaml'))
+        # (os.path.join('share', package_name, 'config'), glob('config/*.yaml'))
     ],
     install_requires=['setuptools'],
     zip_safe=True,
