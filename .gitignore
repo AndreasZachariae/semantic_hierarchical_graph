@@ -2,6 +2,9 @@
 data/*.png
 data/*.pickle
 data/tmp
+data/graphs/*/*.png
+data/graphs/*/*.pickle
+data/graphs/*/*.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
