@@ -189,6 +189,7 @@ Integrate with SH-Graph
 
 - [x] create graph from paths
 - [x] integrate room graph into sh-graph
+- [ ] Make SHGPlanner able to plan from arbitrary positions and connect to roadmap
 
 Evaluation
 
@@ -196,6 +197,7 @@ Evaluation
 - [x] Smooth all planners except ILIR
 - [ ] Evaluation per floor. Compare against all other planners planning on complete floor map vs hierarchical ILIR
 - [x] Automate process to generate only metric diagramms
+- [ ] Evaluate against roadmap of prm or rrt
 
 Semantics
 
@@ -204,7 +206,7 @@ Semantics
 
 ROS node environment model
 
-- [ ] Wrap in python ros node
+- [x] Wrap in python ros node
 - [ ] Create service for planning
 
 Visualization
