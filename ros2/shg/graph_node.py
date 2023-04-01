@@ -4,9 +4,7 @@ import rclpy
 from rclpy.node import Node
 from ament_index_python.packages import get_package_prefix
 
-from semantic_hierarchical_graph.floor import Floor
-from semantic_hierarchical_graph.graph import SHGraph
-from semantic_hierarchical_graph.types.position import Position
+from semantic_hierarchical_graph.planners.shg_planner import SHGPlanner
 import os
 
 
@@ -17,15 +15,17 @@ class GraphNode(Node):
 
         self.declare_parameter("parameter", 0)
         self.parameter_ = self.get_parameter("parameter").get_parameter_value().integer_value
-        pkg_prefix = os.path.join(get_package_prefix('shg'), 'lib', 'shg')
-
-        G = SHGraph(root_name="Benchmark", root_pos=Position(0, 0, 0))
-        floor = Floor("ryu", G, Position(0, 0, 1), pkg_prefix + '/data/benchmark_maps/ryu.png',
-                      pkg_prefix + "/config/ryu_params.yaml")
-        G.add_child_by_node(floor)
-        print(G.get_childs("name"))
-
         self.get_logger().info("parameter = " + str(self.parameter_))
+        src_prefix = os.path.join(get_package_prefix('shg'), '..', '..', 'src', 'semantic_hierarchical_graph')
+
+        shg_planner = SHGPlanner(src_prefix + "/data/graphs/benchmarks", "graph.pickle", False)
+
+        path_dict, distance = shg_planner.plan(["ryu", "room_8", "(1418, 90)"], ["hou2", "room_17", "(186, 505)"])
+        ryu_path = shg_planner.get_path_on_floor(["ryu"], only_names=True)
+        hou2_path = shg_planner.get_path_on_floor(["hou2"], only_names=True)
+        print(len(ryu_path))
+        print(len(hou2_path))
+
         self.get_logger().info("Started graph_node")
 
 
