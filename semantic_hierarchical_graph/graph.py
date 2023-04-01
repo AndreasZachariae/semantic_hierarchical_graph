@@ -34,8 +34,9 @@ hierarchy_levels = {
 
 
 class SHGraph(SHNode):
-    def __init__(self,  root_name: str, root_pos: Position):
+    def __init__(self,  root_name: str, root_pos: Position, params=None):
         self.leaf_graph: nx.Graph = nx.Graph()
+        self.params: Dict = params if params is not None else {}
         super().__init__(unique_name=root_name,
                          parent_node=self, pos=root_pos, is_root=True)
 
