@@ -31,6 +31,8 @@ def draw_child_graph(parent_node: SHNode, path: Union[Dict, List, None] = None, 
     else:
         edge_colors = None
 
+    plt.title("Child graph of " + parent_node.unique_name)
+
     nx.draw(graph,
             pos=pos_dict,
             edge_color=edge_colors,
@@ -76,6 +78,7 @@ def draw_child_graph_3d(parent_node: SHNode, path: Union[Dict, List, None] = Non
     ax.set_xlabel("x")
     ax.set_ylabel("y")
     ax.set_zlabel("z")  # type: ignore
+    ax.set_title("Child graph of " + parent_node.unique_name)
 
     fig.tight_layout()
     plt.show()
