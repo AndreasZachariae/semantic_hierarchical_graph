@@ -24,7 +24,7 @@ def path_to_list(path: Union[List, Dict], relevant_hierarchy: List[str], with_na
     else:
         path_list: List = path
     if with_names:
-        path_list = _map_names_to_nodes(path_list)  # type: ignore
+        path_list = map_names_to_nodes(path_list)  # type: ignore
     return path_list
 
 
@@ -52,11 +52,11 @@ def _path_dict_to_child_path_list(path: Dict, child_hierarchy: List[str]):
     return []
 
 
-def _map_names_to_nodes(obj):
+def map_names_to_nodes(obj):
     if isinstance(obj, collections.abc.Mapping):
-        return {k.unique_name: _map_names_to_nodes(v) for k, v in obj.items()}  # type: ignore
+        return {k.unique_name: map_names_to_nodes(v) for k, v in obj.items()}  # type: ignore
     elif isinstance(obj, list):
-        return [_map_names_to_nodes(elem) for elem in obj]
+        return [map_names_to_nodes(elem) for elem in obj]
     else:
         return obj.unique_name
 

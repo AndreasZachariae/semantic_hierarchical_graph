@@ -115,7 +115,7 @@ if __name__ == "__main__":
     # segmentation.show_imgs(room_11.mask)
     path, vis_graph = planner.plan((480, 250), (75, 260))
     # path = planner.plan((555, 211), (81, 358))
-    path_list = util._map_names_to_nodes(path)
+    path_list = util.map_names_to_nodes(path)
 
     print(path_list)
     vis.draw_child_graph_3d(room_11, path, vis_graph)

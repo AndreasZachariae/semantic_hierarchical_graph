@@ -108,7 +108,7 @@ if __name__ == "__main__":
     path, vis_graph = planner.plan((480, 250), (75, 260), True)  # type: ignore
     # path, _ = planner.plan((555, 211), (81, 358), True)
     print("Time", time.time() - ts)
-    path_list = util._map_names_to_nodes(path)
+    path_list = util.map_names_to_nodes(path)
 
     print(path_list)
     print("Path length", len(path_list))

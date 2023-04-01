@@ -138,8 +138,8 @@ def show_imgs(img: np.ndarray, img_2: np.ndarray = None, name: str = None, save=
         plt.imshow(img)
 
     if save:
-        # cv2.imwrite("data/" + name + '.png', img)
-        plt.savefig("data/" + name + '.png')
+        # cv2.imwrite("data/tmp/" + name + '.png', img)
+        plt.savefig("data/tmp/" + name + '.png')
     else:
         plt.show()
 

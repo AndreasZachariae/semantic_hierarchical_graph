@@ -62,7 +62,11 @@ class Floor(SHNode):
     def draw_all_paths(self, img: np.ndarray,  color, path: Optional[Dict] = None, path_color=None) -> np.ndarray:
         img_new = img.copy()
         for room in self.get_childs():
-            [cv2.polylines(img_new, [line.coords._coords.astype("int32")], False,  color, 2) for line in room.env.path]
+            try:
+                [cv2.polylines(img_new, [line.coords._coords.astype("int32")], False,  color, 2)
+                 for line in room.env.path]
+            except AttributeError:
+                continue
         if path is not None:
             path_list = util._path_dict_to_leaf_path_list(path)
             for i in range(len(path_list) - 1):
@@ -142,12 +146,11 @@ if __name__ == "__main__":
     # path_dict, distance = G.plan_recursive(["ryu", "room_2", "(387, 42)"], ["ryu", "room_2", "(251, 182)"])
     SHPath.save_path(path_dict, "data/ryu_path.json")
 
-    # vis.draw_child_graph(floor, path_dict)
+    vis.draw_child_graph(floor, path_dict)
     vis.draw_child_graph(room_16, path_dict)
-    # vis.draw_child_graph(G, path_dict, is_leaf=True)
-    # vis.draw_child_graph_3d(floor, path_dict)
+    vis.draw_child_graph_3d(G, path_dict, is_leaf=True)
+    vis.draw_child_graph_3d(floor, path_dict)
     vis.draw_child_graph_3d(room_16, path_dict)
-    # vis.draw_child_graph_3d(G, path_dict, is_leaf=True)
 
     # floor.plot_all_envs()
     ws2 = segmentation.draw(floor.watershed, floor.all_bridge_nodes, (22))

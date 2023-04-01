@@ -152,7 +152,7 @@ class SHPath():
     @staticmethod
     def save_path(path: Dict, file_path: str):
         try:
-            path_names = util._map_names_to_nodes(path)
+            path_names = util.map_names_to_nodes(path)
         except:
             path_names = path
         with open(file_path, 'w') as outfile:

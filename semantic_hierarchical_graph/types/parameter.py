@@ -4,10 +4,11 @@ from semantic_hierarchical_graph.utils import round_up
 
 
 class Parameter():
-    def __init__(self, path: str):
+    def __init__(self, path: str, is_floor: bool = True):
         self.params: dict[str, Any] = self.load_params(path)
-        self.params["safety_distance"] = self.get_safety_distance(
-            self.params["base_size"], self.params["safety_margin"])
+        if is_floor:
+            self.params["safety_distance"] = self.get_safety_distance(
+                self.params["base_size"], self.params["safety_margin"])
 
     def load_params(self, path: str):
         with open(path, "r") as file:
