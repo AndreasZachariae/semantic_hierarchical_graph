@@ -49,7 +49,7 @@ COPY ./Pipfile.lock ./Pipfile.lock
 RUN pipenv install --system --deploy --ignore-pipfile
 
 COPY ./config ./config
-COPY ./data ./data
+COPY ./data/graphs ./data/graphs
 COPY ./path_planner_suite ./path_planner_suite
 COPY ./ros2 ./ros2
 COPY ./semantic_hierarchical_graph ./semantic_hierarchical_graph
