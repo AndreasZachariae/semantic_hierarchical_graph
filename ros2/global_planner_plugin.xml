@@ -1,0 +1,5 @@
+<library path="shg_plugin">
+	<class name="shg/SHGPlanner" type="shg::SHGPlanner" base_class_type="nav2_core::GlobalPlanner">
+	  <description>This is an example plugin which produces straight path.</description>
+	</class>
+</library>
