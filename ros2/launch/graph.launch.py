@@ -20,7 +20,7 @@ def generate_launch_description():
     return LaunchDescription([
         Node(
             package='shg',
-            executable='graph_node',
+            executable='graph_node.py',
             name='graph_node',
             output='screen',
             parameters=[config],
