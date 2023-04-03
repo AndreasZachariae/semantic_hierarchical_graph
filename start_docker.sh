@@ -20,4 +20,5 @@ docker run \
     -v ./path_planner_suite:/home/docker/ros2_ws/src/semantic_hierarchical_graph/path_planner_suite:rw \
     -v ./ros2:/home/docker/ros2_ws/src/semantic_hierarchical_graph/ros2:rw \
     -v ./data/graphs:/home/docker/ros2_ws/src/semantic_hierarchical_graph/data/graphs:rw \
+    -v ./.vscode:/home/docker/.vscode:rw \
     shg/ros:foxy
