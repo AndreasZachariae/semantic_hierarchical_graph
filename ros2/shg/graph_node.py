@@ -11,7 +11,7 @@ import os
 class GraphNode(Node):
 
     def __init__(self):
-        super().__init__('graph_node')
+        super().__init__('graph_node') # type: ignore
 
         self.declare_parameter("graph_name", "graph")
         self.graph_name = self.get_parameter("graph_name").get_parameter_value().string_value

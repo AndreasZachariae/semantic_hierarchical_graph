@@ -91,6 +91,7 @@ namespace shg
       const geometry_msgs::msg::PoseStamped &goal)
   {
     nav_msgs::msg::Path global_path;
+    // node_->create_client()
 
     // Checking if the goal and start state is in the global frame
     if (start.header.frame_id != global_frame_)
@@ -120,11 +121,18 @@ namespace shg
     double x_increment = (goal.pose.position.x - start.pose.position.x) / total_number_of_loop;
     double y_increment = (goal.pose.position.y - start.pose.position.y) / total_number_of_loop;
 
-    for (int i = 0; i < total_number_of_loop; ++i)
+    std::vector<std::vector<double>> path;
+    path.push_back({-1, -0.5});
+    path.push_back({-0.5, -0.5});
+    path.push_back({-0.5, 0.5});
+    path.push_back({0.5, 0.5});
+    path.push_back({0.5, -0.5});
+
+    for (int i = 0; i < 5; ++i)
     {
       geometry_msgs::msg::PoseStamped pose;
-      pose.pose.position.x = start.pose.position.x + x_increment * i;
-      pose.pose.position.y = start.pose.position.y + y_increment * i;
+      pose.pose.position.x = path[i][0];
+      pose.pose.position.y = path[i][1];
       pose.pose.position.z = 0.0;
       pose.pose.orientation.x = 0.0;
       pose.pose.orientation.y = 0.0;
