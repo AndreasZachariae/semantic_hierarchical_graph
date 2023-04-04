@@ -50,6 +50,7 @@
 
 #include "nav2_core/global_planner.hpp"
 #include "nav_msgs/msg/path.hpp"
+#include "nav_msgs/srv/get_plan.hpp"
 #include "nav2_util/robot_utils.hpp"
 #include "nav2_util/lifecycle_node.hpp"
 #include "nav2_costmap_2d/costmap_2d_ros.hpp"
@@ -96,7 +97,10 @@ namespace shg
     // The global frame of the costmap
     std::string global_frame_, name_;
 
-    double interpolation_resolution_;
+    // The client to call shg planner service
+    rclcpp::Client<nav_msgs::srv::GetPlan>::SharedPtr client_;
+
+    nav_msgs::msg::Path global_path_;
   };
 
 } // namespace shg

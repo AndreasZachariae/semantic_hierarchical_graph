@@ -59,10 +59,16 @@ namespace shg
     costmap_ = costmap_ros->getCostmap();
     global_frame_ = costmap_ros->getGlobalFrameID();
 
-    // Parameter initialization
-    nav2_util::declare_parameter_if_not_declared(
-        node_, name_ + ".interpolation_resolution", rclcpp::ParameterValue(0.1));
-    node_->get_parameter(name_ + ".interpolation_resolution", interpolation_resolution_);
+    client_ = node_->create_client<nav_msgs::srv::GetPlan>("shg/plan_path");
+    while (!client_->wait_for_service(std::chrono::duration<int>(1)))
+    {
+      if (!rclcpp::ok())
+      {
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the service. Exiting.");
+        return;
+      }
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "service not available, waiting again...");
+    }
   }
 
   void SHGPlanner::cleanup()
@@ -90,62 +96,42 @@ namespace shg
       const geometry_msgs::msg::PoseStamped &start,
       const geometry_msgs::msg::PoseStamped &goal)
   {
-    nav_msgs::msg::Path global_path;
-    // node_->create_client()
-
+    if (node_->now() - global_path_.header.stamp > rclcpp::Duration(5, 0))
+    {
+      global_path_.poses.clear();
+    }
     // Checking if the goal and start state is in the global frame
     if (start.header.frame_id != global_frame_)
     {
       RCLCPP_ERROR(
-          node_->get_logger(), "Planner will only except start position from %s frame",
+          node_->get_logger(), "Planner will only accept start position from %s frame",
           global_frame_.c_str());
-      return global_path;
+      return global_path_;
     }
 
     if (goal.header.frame_id != global_frame_)
     {
       RCLCPP_INFO(
-          node_->get_logger(), "Planner will only except goal position from %s frame",
+          node_->get_logger(), "Planner will only accept goal position from %s frame",
           global_frame_.c_str());
-      return global_path;
+      return global_path_;
     }
 
-    global_path.poses.clear();
-    global_path.header.stamp = node_->now();
-    global_path.header.frame_id = global_frame_;
-    // calculating the number of loops for current value of interpolation_resolution_
-    int total_number_of_loop = std::hypot(
-                                   goal.pose.position.x - start.pose.position.x,
-                                   goal.pose.position.y - start.pose.position.y) /
-                               interpolation_resolution_;
-    double x_increment = (goal.pose.position.x - start.pose.position.x) / total_number_of_loop;
-    double y_increment = (goal.pose.position.y - start.pose.position.y) / total_number_of_loop;
+    auto request = std::make_shared<nav_msgs::srv::GetPlan::Request>();
+    request->start = start;
+    request->goal = goal;
+    request->tolerance = 0.1;
 
-    std::vector<std::vector<double>> path;
-    path.push_back({-1, -0.5});
-    path.push_back({-0.5, -0.5});
-    path.push_back({-0.5, 0.5});
-    path.push_back({0.5, 0.5});
-    path.push_back({0.5, -0.5});
+    auto result = client_->async_send_request(request, [this](rclcpp::Client<nav_msgs::srv::GetPlan>::SharedFuture future)
+                                              { RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Received response"); 
+                                                global_path_ = future.get()->plan; });
 
-    for (int i = 0; i < 5; ++i)
+    if (global_path_.poses.size() == 0)
     {
-      geometry_msgs::msg::PoseStamped pose;
-      pose.pose.position.x = path[i][0];
-      pose.pose.position.y = path[i][1];
-      pose.pose.position.z = 0.0;
-      pose.pose.orientation.x = 0.0;
-      pose.pose.orientation.y = 0.0;
-      pose.pose.orientation.z = 0.0;
-      pose.pose.orientation.w = 1.0;
-      pose.header.stamp = node_->now();
-      pose.header.frame_id = global_frame_;
-      global_path.poses.push_back(pose);
+      RCLCPP_ERROR(node_->get_logger(), "Path is empty");
     }
 
-    global_path.poses.push_back(goal);
-
-    return global_path;
+    return global_path_;
   }
 
 } // namespace shg
