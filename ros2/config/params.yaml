@@ -1,3 +1,4 @@
 graph_node:
   ros__parameters:
+    use_sim_time: True
     graph_name: "benchmarks"

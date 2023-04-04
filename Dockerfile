@@ -29,7 +29,10 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     qttools5-dev-tools \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN python3 -m pip install -U pip setuptools pipenv
+RUN python3 -m pip install -U \
+    pip \
+    setuptools \
+    pipenv
 
 ##############################################################################
 ##                                 Create User                              ##
@@ -53,6 +56,14 @@ RUN mkdir -p /home/$USER/ros2_ws/src
 ##############################################################################
 ##                                 User Dependecies                         ##
 ##############################################################################
+# For aws-hospital-simulation
+WORKDIR /home/$USER/ros2_ws/src/
+RUN git clone -b ros2 https://github.com/AndreasZachariae/aws-robomaker-hospital-world.git
+RUN python3 -m pip install -r aws-robomaker-hospital-world/requirements.txt
+RUN python3 aws-robomaker-hospital-world/fuel_utility.py download -m XRayMachine -m IVStand -m BloodPressureMonitor -m BPCart -m BMWCart -m CGMClassic -m StorageRack -m Chair -m InstrumentCart1 -m Scrubs -m PatientWheelChair -m WhiteChipChair -m TrolleyBed -m SurgicalTrolley -m PotatoChipChair -m VisitorKidSit -m FemaleVisitorSit -m AdjTable -m MopCart3 -m MaleVisitorSit -m Drawer -m OfficeChairBlack -m ElderLadyPatient -m ElderMalePatient -m InstrumentCart2 -m MetalCabinet -m BedTable -m BedsideTable -m AnesthesiaMachine -m TrolleyBedPatient -m Shower -m SurgicalTrolleyMed -m StorageRackCovered -m KitchenSink -m Toilet -m VendingMachine -m ParkingTrolleyMin -m PatientFSit -m MaleVisitorOnPhone -m FemaleVisitor -m MalePatientBed -m StorageRackCoverOpen -m ParkingTrolleyMax \
+    -d aws-robomaker-hospital-world/fuel_models --verbose
+
+# For semantic_hierarchical_graph
 WORKDIR /home/$USER/ros2_ws/src/semantic_hierarchical_graph
 
 COPY ./Pipfile ./Pipfile
@@ -66,7 +77,7 @@ COPY ./ros2 ./ros2
 COPY ./semantic_hierarchical_graph ./semantic_hierarchical_graph
 
 ENV TURTLEBOT3_MODEL=waffle
-ENV GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:/opt/ros/$ROS_DISTRO/share/turtlebot3_gazebo/models
+ENV GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:/opt/ros/$ROS_DISTRO/share/turtlebot3_gazebo/models:/home/$USER/ros2_ws/src/aws-robomaker-hospital-world/fuel_models:/home/$USER/ros2_ws/src/aws-robomaker-hospital-world/models
 
 ##############################################################################
 ##                                 Build ROS and run                        ##
