@@ -1,0 +1,25 @@
+image: ./aws1.pgm
+resolution: 0.100000
+origin: [-12.500000, -35.000000, 0.000000]
+negate: 0
+occupied_thresh: 0.65
+free_thresh: 0.196
+
+# MAP
+map_name: ./aws1.pgm
+grid_size: 0.1 # [m/px]
+
+# ROBOT
+base_size: [3, 3] # width x lenght in drive direction
+safety_margin: 1 # additional to base_size
+
+# SEGMENTATION
+distance_threshold: 8 # 3 * safety_distance
+
+# PATH PLANNING
+# safety_distance: round_up(base_size[0]/2 + safety_margin)
+# values on image with erosion
+min_contour_area: 1000 # 4 * (2*safety_distance)**2
+min_roadmap_area: 1000 # 2*safety_distance
+max_corridor_width: 20 # 5.5 * safety_distance
+max_distance_to_connect_points: 200

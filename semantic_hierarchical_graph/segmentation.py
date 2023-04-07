@@ -7,7 +7,11 @@ from semantic_hierarchical_graph.types.parameter import Parameter
 
 def marker_controlled_watershed(img: np.ndarray, params: dict) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     # convert to binary
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    try:
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    except cv2.error:
+        gray = slam_map_to_img(img)
+
     ret, thresh = cv2.threshold(gray, 0, 1, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
     # noise removal
@@ -144,10 +148,15 @@ def show_imgs(img: np.ndarray, img_2: np.ndarray = None, name: str = None, save=
         plt.show()
 
 
+def slam_map_to_img(map):
+    img = np.where(map == (205, 205, 205), (0, 0, 0), map)
+    return img.astype("uint8")
+
+
 if __name__ == '__main__':
     # img = cv2.imread('data/benchmark_maps/hou2_clean.png')
-    img = cv2.imread('data/benchmark_maps/ryu.png')
-    params = Parameter("config/ryu_params.yaml").params
+    img = cv2.imread('data/graphs/simulation/floor/aws1.pgm')
+    params = Parameter("data/graphs/simulation/floor/aws1.yaml").params
     # params = Parameter("config/hou2_params.yaml").params
 
     ws, ws_erosion, dist_transform = marker_controlled_watershed(img, params)
