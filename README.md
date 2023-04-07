@@ -207,7 +207,8 @@ Semantics
 ROS node environment model
 
 - [x] Wrap in python ros node
-- [ ] Create service for planning
+- [x] Create service for planning
+- [ ] Improve launch files with arguments as intended
 
 Visualization
 
