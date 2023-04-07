@@ -34,7 +34,7 @@ class SHGPlanner():
         for floor_nr, floor_name in enumerate(floor_names):
             floor_path = os.path.join(self.graph_path, params["hierarchy_level"][-3], floor_name)
             print("Creating floor: " + floor_name)
-            floor = Floor(floor_name, G, Position(0, 0, floor_nr), floor_path + ".png", floor_path + ".yaml")
+            floor = Floor(floor_name, G, Position(0, 0, floor_nr), floor_path + ".pgm", floor_path + ".yaml")
             G.add_child_by_node(floor)
 
             floor.create_rooms()
@@ -120,31 +120,33 @@ class SHGPlanner():
 
 
 if __name__ == '__main__':
-    shg_planner = SHGPlanner("data/graphs/benchmarks", "graph.pickle", False)
+    # shg_planner = SHGPlanner("data/graphs/benchmarks", "graph.pickle", False)
+    shg_planner = SHGPlanner("data/graphs/simulation", "graph.pickle", False)
 
-    path_dict, distance = shg_planner.plan(["ryu", "room_8", "(1418, 90)"], ["hou2", "room_17", "(186, 505)"])
-    ryu_path = shg_planner.get_path_on_floor(["ryu"], only_names=True)
-    hou2_path = shg_planner.get_path_on_floor(["hou2"], only_names=True)
+    # path_dict, distance = shg_planner.plan(["ryu", "room_8", "(1418, 90)"], ["hou2", "room_17", "(186, 505)"])
+    path_dict, distance = shg_planner.plan(["aws1", "room_7", "(99, 21)"], ["aws1", "room_31", "(219, 445)"])
+    ryu_path = shg_planner.get_path_on_floor(["aws1"], only_names=True)
+    # hou2_path = shg_planner.get_path_on_floor(["hou2"], only_names=True)
     print(len(ryu_path))
-    print(len(hou2_path))
+    # print(len(hou2_path))
 
     shg_planner.draw_path(save=False, name="path.png")
 
     G = shg_planner.graph
-    floor_ryu = G._get_child("ryu")
-    floor_hou2 = G._get_child("hou2")
+    floor_ryu = G._get_child("aws1")
+    # floor_hou2 = G._get_child("hou2")
     ryu_room_8 = floor_ryu._get_child("room_8")
     ryu_room_17 = floor_ryu._get_child("room_17")
-    hou2_room_17 = floor_hou2._get_child("room_17")
-    hou2_room_13 = floor_hou2._get_child("room_13")
+    # hou2_room_17 = floor_hou2._get_child("room_17")
+    # hou2_room_13 = floor_hou2._get_child("room_13")
 
     vis.draw_child_graph(G, path_dict, is_leaf=False)
     vis.draw_child_graph(floor_ryu, path_dict)
-    vis.draw_child_graph(floor_hou2, path_dict)
+    # vis.draw_child_graph(floor_hou2, path_dict)
     vis.draw_child_graph(ryu_room_8, path_dict)
-    vis.draw_child_graph(hou2_room_17, path_dict)
+    # vis.draw_child_graph(hou2_room_17, path_dict)
     vis.draw_child_graph_3d(G, path_dict, is_leaf=False)
     vis.draw_child_graph_3d(floor_ryu, path_dict)
-    vis.draw_child_graph_3d(floor_hou2, path_dict)
+    # vis.draw_child_graph_3d(floor_hou2, path_dict)
     vis.draw_child_graph_3d(ryu_room_17, path_dict)
-    vis.draw_child_graph_3d(hou2_room_13, path_dict)
+    # vis.draw_child_graph_3d(hou2_room_13, path_dict)
