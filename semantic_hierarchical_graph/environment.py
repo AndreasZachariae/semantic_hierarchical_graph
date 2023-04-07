@@ -1,7 +1,7 @@
 import itertools
 from typing import List, Union
 import matplotlib.pyplot as plt
-from shapely import snap
+from shapely import MultiLineString, snap
 from shapely.plotting import plot_polygon, plot_line
 from shapely.geometry import Point, Polygon, LineString, MultiPolygon
 from shapely.ops import nearest_points, transform, split
@@ -125,10 +125,16 @@ class Environment():
         new_lines = []
         remove_lines = []
         for line in self.path:
-            if len(line.coords) > 2:
+            if isinstance(line, MultiLineString):
                 remove_lines.append(line)
-                for i in range(len(line.coords) - 1):
-                    new_lines.append(LineString([line.coords[i], line.coords[i + 1]]))
+                for line2 in line.geoms:
+                    for i in range(len(line2.coords) - 1):
+                        new_lines.append(LineString([line2.coords[i], line2.coords[i + 1]]))
+            else:
+                if len(line.coords) > 2:
+                    remove_lines.append(line)
+                    for i in range(len(line.coords) - 1):
+                        new_lines.append(LineString([line.coords[i], line.coords[i + 1]]))
         self.path = list((set(self.path) - set(remove_lines)) | set(new_lines))
 
     def snap_together(self):
@@ -187,14 +193,14 @@ class Environment():
             already_cut[line] = list(results.geoms)
 
     def clear_bridge_edges(self, bridge_edges: List):
-        walls = self.scene[0]
-        for edge in bridge_edges:
-            if len(edge) == 1:
-                print("single edge point in room ", self.room_id, edge)
-                walls = walls.difference(Point(edge[0]).buffer(4))
-            else:
-                walls = walls.difference(LineString(edge).buffer(4, cap_style="flat"))
-        self.scene[0] = walls
+        for i, wall in enumerate(self.scene):
+            for edge in bridge_edges:
+                if len(edge) == 1:
+                    print("single edge point in room ", self.room_id, edge)
+                    wall = wall.difference(Point(edge[0]).buffer(4))
+                else:
+                    wall = wall.difference(LineString(edge).buffer(4, cap_style="flat"))
+            self.scene[i] = wall
 
     def plot(self):
         fig, ax = plt.subplots(figsize=(10, 10))
