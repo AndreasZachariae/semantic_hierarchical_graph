@@ -1,10 +1,14 @@
+from collections import deque
 import os
 from typing import Dict, List, Tuple
 
-from semantic_hierarchical_graph import segmentation, visualization as vis
-from semantic_hierarchical_graph.floor import Floor
+from shapely import Point
+
+from semantic_hierarchical_graph import roadmap_creation, segmentation, visualization as vis
+from semantic_hierarchical_graph.floor import Floor, Room
 from semantic_hierarchical_graph.graph import SHGraph
 from semantic_hierarchical_graph.path import SHPath
+from semantic_hierarchical_graph.types.exceptions import SHGGeometryError, SHGPlannerError
 from semantic_hierarchical_graph.types.parameter import Parameter
 from semantic_hierarchical_graph.types.position import Position
 
@@ -56,29 +60,100 @@ class SHGPlanner():
         pass
 
     def plan(self, start, goal) -> Tuple[Dict, float]:
-        # TODO: plan from arbitary point and add point to graph
-        self.path, self.distance = self.graph.plan_recursive(start, goal)
+        print("Plan from " + str(start) + " to " + str(goal))
+        start_pos = Position.from_iter(start[-1])
+        goal_pos = Position.from_iter(goal[-1])
+        start[-1] = start_pos.to_name()
+        goal[-1] = goal_pos.to_name()
+        start_room = self.graph.get_child_by_hierarchy(start[:-1])
+        goal_room = self.graph.get_child_by_hierarchy(goal[:-1])
+        try:
+            if start_pos.to_name() not in start_room.get_childs("name"):
+                self._add_path_to_roadmap(start_room, start_pos.to_name(), start_pos, type="start")
+            if goal_pos.to_name() not in goal_room.get_childs("name"):
+                self._add_path_to_roadmap(goal_room, goal_pos.to_name(), goal_pos, type="goal")
+
+            self.path, self.distance = self.graph.plan_recursive(start, goal)
+        except SHGPlannerError as e:
+            print("Error while planning with SHGPlanner: ")
+            print(e)
+        finally:
+            self._remove_aux_nodes(start_room)
+            self._remove_aux_nodes(goal_room)
+
+        # TODO: Fix back and forth between same nodes because connection is not deleted
+        # TODO: Give orientation of next connection
+        # TODO: Make safety margin x2 bigger
+
         SHPath.save_path(self.path, self.graph_path + "/path.json")
 
         return self.path, self.distance
 
-    def _get_path_on_floor(self, hierarchy_to_floor, only_names, path) -> List:
+    def _add_path_to_roadmap(self, room_node, node_name, node_pos, type):
+        if room_node.env._in_collision(Point(node_pos.xy)):
+            raise SHGPlannerError(
+                f"Point {node_pos} is not in the drivable area (boundary + safety margin) of the room")
+
+        connections, closest_path = roadmap_creation.connect_point_to_path(node_pos.xy, room_node.env, room_node.params)
+
+        if len(connections) == 0:
+            raise SHGPlannerError(f"No connection from point {node_pos.xy} to roadmap found")
+
+        nodes = deque(maxlen=2)
+        nodes.append(room_node.add_child_by_name(node_name,
+                                                 Position.from_iter(connections[0].coords[0]),
+                                                 True, type="aux_node"))
+
+        for connection in connections:
+            pos = Position.from_iter(connection.coords[1])
+            nodes.append(room_node.add_child_by_name(pos.to_name(), pos, True, type="aux_node"))
+            room_node.add_connection_by_nodes(nodes[0], nodes[1],
+                                              nodes[0].pos.distance(nodes[1].pos))
+
+        if len(closest_path.coords) != 2:
+            raise SHGGeometryError("Path has not 2 points as expected")
+
+        path_1_pos = Position.from_iter(closest_path.coords[0])
+        path_2_pos = Position.from_iter(closest_path.coords[1])
+        path_1_node = room_node._get_child(path_1_pos.to_name())
+        path_2_node = room_node._get_child(path_2_pos.to_name())
+        # TODO: In some cases the edge is not in the graph. Could be a logic error. Need to fix!
+        room_node.add_connection_by_nodes(path_1_node, nodes[1], path_1_pos.distance(nodes[1].pos))
+        room_node.add_connection_by_nodes(nodes[1], path_2_node, path_2_pos.distance(nodes[1].pos))
+
+    def _remove_aux_nodes(self, room_node):
+        to_remove = []
+        for node in room_node.get_childs():
+            if node.type == "aux_node":
+                to_remove.append(node)
+        for node in to_remove:
+            room_node.child_graph.remove_node(node)
+
+        print(f"Removed {len(to_remove)} nodes for cleanup")
+
+    def _get_path_on_floor(self, hierarchy_to_floor, key, path) -> List:
         leaf_path = []
         for node, dict in path.items():
             if len(hierarchy_to_floor) > 0 and node.unique_name != hierarchy_to_floor[0]:
                 continue
             if node.is_leaf and not "bridge" in node.unique_name:
-                leaf_path.append(node.unique_name if only_names else node)
+                if key == "name":
+                    leaf_path.append(node.unique_name)
+                elif key == "position":
+                    leaf_path.append(node.pos)
+                elif key == "node":
+                    leaf_path.append(node)
             else:
-                leaf_path.extend(self._get_path_on_floor(hierarchy_to_floor[1:], only_names, dict))
+                leaf_path.extend(self._get_path_on_floor(hierarchy_to_floor[1:], key, dict))
         return leaf_path
 
-    def get_path_on_floor(self, hierarchy_to_floor, only_names) -> List:
+    def get_path_on_floor(self, hierarchy_to_floor, key) -> List:
+        """Returns the path on a specific floor as a list of nodes, positions or names."""
         if self.path is None:
             print("No path found yet. Call plan() first.")
             return []
 
-        path_list = self._get_path_on_floor(hierarchy_to_floor, only_names, self.path)
+        path_list = self._get_path_on_floor(hierarchy_to_floor, key, self.path)
 
         # TODO: remove duplicates in node list
         # result = []
@@ -103,7 +178,7 @@ class SHGPlanner():
                 except AttributeError:
                     continue
 
-            path_list = self._get_path_on_floor(floor.hierarchy, False, self.path)
+            path_list = self._get_path_on_floor(floor.hierarchy, "node", self.path)
             for i in range(len(path_list) - 1):
                 pt1 = np.round(path_list[i].pos.xy).astype("int32")
                 pt2 = np.round(path_list[i + 1].pos.xy).astype("int32")
@@ -125,8 +200,8 @@ if __name__ == '__main__':
 
     # path_dict, distance = shg_planner.plan(["ryu", "room_8", "(1418, 90)"], ["hou2", "room_17", "(186, 505)"])
     path_dict, distance = shg_planner.plan(["aws1", "room_7", "(99, 21)"], ["aws1", "room_31", "(219, 445)"])
-    ryu_path = shg_planner.get_path_on_floor(["aws1"], only_names=True)
-    # hou2_path = shg_planner.get_path_on_floor(["hou2"], only_names=True)
+    ryu_path = shg_planner.get_path_on_floor(["aws1"], key="name")
+    # hou2_path = shg_planner.get_path_on_floor(["hou2"], key="name")
     print(len(ryu_path))
     # print(len(hou2_path))
 
