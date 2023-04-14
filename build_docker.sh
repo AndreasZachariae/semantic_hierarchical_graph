@@ -1,4 +1,12 @@
 #!/bin/sh
+uid=$(eval "id -u")
+gid=$(eval "id -g")
+docker build \
+    --build-arg UID="$uid" \
+    --build-arg GID="$gid" \
+    -t shg/ros:foxy . && \
+
+echo "Run Container" && \
 xhost + local:root && \
 docker run \
     --name semantic_hierarchical_graph \

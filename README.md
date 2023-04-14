@@ -144,6 +144,16 @@ A* | ILIR
 
 <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">Creative Commons Attribution-NonCommercial 4.0 International License</a>.
 
+## How to start with ROS2
+
+```bash
+source start_docker.sh
+ros2 launch shg aws_hospital_simulation.launch.py
+
+docker exec -it semantic_hierarchical_graph bash
+ros2 launch shg graph.launch.py
+```
+
 ## TODO
 
 Improvements
