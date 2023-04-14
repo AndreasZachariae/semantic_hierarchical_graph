@@ -11,7 +11,7 @@ grid_size: 0.1 # [m/px]
 
 # ROBOT
 base_size: [3, 3] # width x lenght in drive direction
-safety_margin: 1 # additional to base_size
+safety_margin: 2 # additional to base_size
 
 # SEGMENTATION
 distance_threshold: 8 # 3 * safety_distance

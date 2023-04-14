@@ -199,7 +199,8 @@ if __name__ == '__main__':
     shg_planner = SHGPlanner("data/graphs/simulation", "graph.pickle", False)
 
     # path_dict, distance = shg_planner.plan(["ryu", "room_8", "(1418, 90)"], ["hou2", "room_17", "(186, 505)"])
-    path_dict, distance = shg_planner.plan(["aws1", "room_7", "(99, 21)"], ["aws1", "room_31", "(219, 445)"])
+    # path_dict, distance = shg_planner.plan(["aws1", "room_7", (136, 194)], ["aws1", 'room_7', (94, 200)])
+    path_dict, distance = shg_planner.plan(["aws1", "room_7", (136, 194)], ["aws1", 'room_7', (87, 185)])
     ryu_path = shg_planner.get_path_on_floor(["aws1"], key="name")
     # hou2_path = shg_planner.get_path_on_floor(["hou2"], key="name")
     print(len(ryu_path))
@@ -210,7 +211,7 @@ if __name__ == '__main__':
     G = shg_planner.graph
     floor_ryu = G._get_child("aws1")
     # floor_hou2 = G._get_child("hou2")
-    ryu_room_8 = floor_ryu._get_child("room_8")
+    ryu_room_8 = floor_ryu._get_child("room_7")
     ryu_room_17 = floor_ryu._get_child("room_17")
     # hou2_room_17 = floor_hou2._get_child("room_17")
     # hou2_room_13 = floor_hou2._get_child("room_13")
