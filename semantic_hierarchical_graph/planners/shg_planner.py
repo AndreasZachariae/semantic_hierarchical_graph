@@ -92,11 +92,11 @@ class SHGPlanner():
     def _add_path_to_roadmap(self, room_node, node_name, node_pos, type):
         if room_node.env._in_collision(Point(node_pos.xy)):
             raise SHGPlannerError(
-                f"Point {node_pos} is not in the drivable area (boundary + safety margin) of the room")
+                f"Point {node_pos.xy} is not in the drivable area (boundary + safety margin) of the room")
 
         connections, closest_path = roadmap_creation.connect_point_to_path(node_pos.xy, room_node.env, room_node.params)
 
-        if len(connections) == 0:
+        if len(connections) == 0 or closest_path is None:
             raise SHGPlannerError(f"No connection from point {node_pos.xy} to roadmap found")
 
         nodes = deque(maxlen=2)
@@ -196,11 +196,11 @@ class SHGPlanner():
 
 if __name__ == '__main__':
     # shg_planner = SHGPlanner("data/graphs/benchmarks", "graph.pickle", False)
-    shg_planner = SHGPlanner("data/graphs/simulation", "graph.pickle", False)
+    shg_planner = SHGPlanner("data/graphs/simulation", "graph.pickle", True)
 
     # path_dict, distance = shg_planner.plan(["ryu", "room_8", "(1418, 90)"], ["hou2", "room_17", "(186, 505)"])
     # path_dict, distance = shg_planner.plan(["aws1", "room_7", (136, 194)], ["aws1", 'room_7', (94, 200)])
-    path_dict, distance = shg_planner.plan(["aws1", "room_7", (136, 194)], ["aws1", 'room_7', (87, 185)])
+    path_dict, distance = shg_planner.plan(["aws1", "room_7", (145, 191)], ["aws1", 'room_7', (108, 194)])
     ryu_path = shg_planner.get_path_on_floor(["aws1"], key="name")
     # hou2_path = shg_planner.get_path_on_floor(["hou2"], key="name")
     print(len(ryu_path))
@@ -212,7 +212,7 @@ if __name__ == '__main__':
     floor_ryu = G._get_child("aws1")
     # floor_hou2 = G._get_child("hou2")
     ryu_room_8 = floor_ryu._get_child("room_7")
-    ryu_room_17 = floor_ryu._get_child("room_17")
+    # ryu_room_17 = floor_ryu._get_child("room_17")
     # hou2_room_17 = floor_hou2._get_child("room_17")
     # hou2_room_13 = floor_hou2._get_child("room_13")
 
@@ -221,8 +221,8 @@ if __name__ == '__main__':
     # vis.draw_child_graph(floor_hou2, path_dict)
     vis.draw_child_graph(ryu_room_8, path_dict)
     # vis.draw_child_graph(hou2_room_17, path_dict)
-    vis.draw_child_graph_3d(G, path_dict, is_leaf=False)
-    vis.draw_child_graph_3d(floor_ryu, path_dict)
+    # vis.draw_child_graph_3d(G, path_dict, is_leaf=False)
+    # vis.draw_child_graph_3d(floor_ryu, path_dict)
     # vis.draw_child_graph_3d(floor_hou2, path_dict)
-    vis.draw_child_graph_3d(ryu_room_17, path_dict)
+    # vis.draw_child_graph_3d(ryu_room_17, path_dict)
     # vis.draw_child_graph_3d(hou2_room_13, path_dict)
