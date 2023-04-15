@@ -117,7 +117,6 @@ class SHGPlanner():
         path_2_pos = Position.from_iter(closest_path.coords[1])
         path_1_node = room_node._get_child(path_1_pos.to_name())
         path_2_node = room_node._get_child(path_2_pos.to_name())
-        # TODO: In some cases the edge is not in the graph. Could be a logic error. Need to fix!
         room_node.add_connection_by_nodes(path_1_node, nodes[1], path_1_pos.distance(nodes[1].pos))
         room_node.add_connection_by_nodes(nodes[1], path_2_node, path_2_pos.distance(nodes[1].pos))
 

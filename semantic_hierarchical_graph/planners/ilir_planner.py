@@ -91,7 +91,6 @@ class ILIRPlanner(PlannerInterface):
         path_2_pos = Position.from_iter(closest_path.coords[1])
         path_1_node = self.room._get_child(path_1_pos.to_name())
         path_2_node = self.room._get_child(path_2_pos.to_name())
-        # TODO: In some cases the edge is not in the graph. Could be a logic error. Need to fix!
         self.room.child_graph.remove_edge(path_1_node, path_2_node)
         self.room.env.path.remove(closest_path)
         self.room.add_connection_by_nodes(path_1_node, nodes[1], path_1_pos.distance(nodes[1].pos))

@@ -168,7 +168,7 @@ Improvements
 - [x] Add shortest distance between each nodes on 1+ level as distance on edge
 - [x] Special case for start and goal point (networkx all_simple_paths, all_shortest_paths)
 - [x] Special case if two rooms are connected with two different doors. Find cases plan all paths and decided after with shortest distance
-- [ ] Check if all paths in one room are one connected component. Sometimes there are separated paths due to rounding errors
+- [x] Check if all paths in one room are one connected component. Sometimes there are separated paths due to rounding errors
 - [x] Fix error with min distance. Shortest path per room has dependencies to bridge nodes also for paths in next room
 - [x] Update planners with new versions from Björn
 
@@ -199,7 +199,7 @@ Integrate with SH-Graph
 
 - [x] create graph from paths
 - [x] integrate room graph into sh-graph
-- [ ] Make SHGPlanner able to plan from arbitrary positions and connect to roadmap
+- [x] Make SHGPlanner able to plan from arbitrary positions and connect to roadmap
 
 Evaluation
 
