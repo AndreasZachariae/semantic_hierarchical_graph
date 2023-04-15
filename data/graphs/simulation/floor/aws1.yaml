@@ -14,7 +14,7 @@ base_size: [3, 3] # width x lenght in drive direction
 safety_margin: 2 # additional to base_size
 
 # SEGMENTATION
-distance_threshold: 8 # 3 * safety_distance
+distance_threshold: 9 # 3 * safety_distance
 
 # PATH PLANNING
 # safety_distance: round_up(base_size[0]/2 + safety_margin)
