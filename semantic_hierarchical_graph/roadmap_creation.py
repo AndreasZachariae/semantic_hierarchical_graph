@@ -136,7 +136,7 @@ def connect_paths(env: Environment, bridge_nodes: Dict[Tuple, List], bridge_edge
     # Remove all bridge edges from walls
     [env.clear_bridge_edges(edge_points) for edge_points in bridge_edges.values()]
 
-    # Connect bridge points between each other
+    # Connect bridge points between each other if room has no roadmap
     if not env.path:
         print("No path, connect only bridge points in room", env.room_id)
         for p1, p2 in itertools.combinations(bridge_points, 2):
@@ -153,7 +153,7 @@ def connect_paths(env: Environment, bridge_nodes: Dict[Tuple, List], bridge_edge
             bridge_points_not_connected.update(bridge_points)
             return bridge_points_not_connected
 
-    # Merge rectangles and connect bridge points to path
+    # Merge rectangles to roadmap and connect bridge points to path
     else:
         print("Connecting paths in room", env.room_id)
         result, dangles, cuts, invalids = polygonize_full(env.path)
@@ -170,13 +170,24 @@ def connect_paths(env: Environment, bridge_nodes: Dict[Tuple, List], bridge_edge
             print("unknown shape returned from polygon union")
             raise SHGGeometryError()
 
+        # First try to connect all points with a straight line
+        bridge_points_not_connected_directly = []
         for point in bridge_points:
+            connection, _ = env.find_shortest_connection(point)
+            if connection is not None:
+                env.add_path(connection)
+            else:
+                bridge_points_not_connected_directly.append(point)
+
+        # Second try to connect remaining points with a planner
+        for point in bridge_points_not_connected_directly:
             connections, _ = connect_point_to_path(point, env, params)
             if len(connections) > 0:
                 for connection in connections:
                     env.add_path(connection)
             else:
                 bridge_points_not_connected.add(point)
+
     # print(len(env.path), "paths in room", env.room_id)
     # env.plot()
     return bridge_points_not_connected
