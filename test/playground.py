@@ -1,15 +1,39 @@
 import itertools
+from matplotlib import pyplot as plt
 from shapely.plotting import plot_polygon, plot_line
+from shapely.ops import split
 import numpy as np
 import cv2
-from shapely import Polygon, LineString
+from shapely import Point, Polygon, LineString, snap
 from semantic_hierarchical_graph.environment import Environment
+
+
+def cut(line, point):
+    # Cuts a line in two at a point
+    distance = line.project(point)
+    if distance <= 0.0 or distance >= line.length:
+        return [LineString(line)]
+    coords = list(line.coords)
+    for i, p in enumerate(coords):
+        pd = line.project(Point(p))
+        if pd == distance:
+            return [
+                LineString(coords[:i+1]),
+                LineString(coords[i:])]
+        if pd > distance:
+            cp = line.interpolate(distance)
+            return [
+                LineString(coords[:i] + [(cp.x, cp.y)]),
+                LineString([(cp.x, cp.y)] + coords[i:])]
+
 
 if __name__ == '__main__':
     # Test combinations iterator
     seq = ["a", "b", "c"]
+    print("Combinations:")
     for tuple in itertools.combinations(seq, 2):
         print(tuple)
+    print("Permutations:")
     for tuple in itertools.permutations(seq, 2):
         print(tuple)
 
@@ -43,3 +67,28 @@ if __name__ == '__main__':
     print(poly)
     print(poly.area+w+h-1)
     print(w*h)
+
+    # Test shapely snap
+    line = LineString([(170, 157), (204, 160)])
+    point = Point(179.6, 157.8)
+
+    # p2 = snap(point, line, 1)
+    p2 = line.interpolate(line.project(point))
+    print(p2 == point)
+    results = split(line, p2)
+    print(results.wkt)
+
+    print(line.contains(p2))
+    print(line.distance(p2))
+    print(line.within(p2))
+    print(line.touches(p2))
+
+    print(line.project(point))
+    result = cut(line, point)
+    print(result)
+
+    fig, ax = plt.subplots()
+    plot_line(line)
+    plot_line(point)
+    plot_line(p2)
+    plt.show()
