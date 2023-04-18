@@ -16,4 +16,5 @@
     "python.envFile": "${workspaceFolder}/.env",
     "autoDocstring.docstringFormat": "numpy",
     "autoDocstring.startOnNewLine": true,
+    "cmake.configureOnOpen": false,
 }
