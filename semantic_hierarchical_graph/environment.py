@@ -1,10 +1,10 @@
 import itertools
 from typing import List, Union
 import matplotlib.pyplot as plt
-from shapely import snap
+from shapely import MultiLineString
 from shapely.plotting import plot_polygon, plot_line
 from shapely.geometry import Point, Polygon, LineString, MultiPolygon
-from shapely.ops import nearest_points, transform, split
+from shapely.ops import nearest_points, transform
 from semantic_hierarchical_graph.types.exceptions import SHGGeometryError
 from semantic_hierarchical_graph.types.vector import Vector
 
@@ -83,7 +83,7 @@ class Environment():
         connection = self.get_valid_connection(pos, closest_point)
         if connection is not None:
             return connection, closest_path
-        return None, None
+        return None, closest_path
 
     def _reverse_geom(self, geom):
         def _reverse(x, y, z=None):
@@ -120,40 +120,38 @@ class Environment():
 
     def split_multipoint_lines(self):
         """ Split multipoint lines in two point segments"""
-        # TODO: Fix paths not connecting due to rounding errors
-        # self.snap_together()
         new_lines = []
         remove_lines = []
         for line in self.path:
-            if len(line.coords) > 2:
+            if isinstance(line, MultiLineString):
                 remove_lines.append(line)
-                for i in range(len(line.coords) - 1):
-                    new_lines.append(LineString([line.coords[i], line.coords[i + 1]]))
+                for line2 in line.geoms:
+                    for i in range(len(line2.coords) - 1):
+                        new_lines.append(LineString([line2.coords[i], line2.coords[i + 1]]))
+            else:
+                if len(line.coords) > 2:
+                    remove_lines.append(line)
+                    for i in range(len(line.coords) - 1):
+                        new_lines.append(LineString([line.coords[i], line.coords[i + 1]]))
         self.path = list((set(self.path) - set(remove_lines)) | set(new_lines))
 
-    def snap_together(self):
-        """ Snap together all paths that are separated due to rounding errors"""
-        new_paths = []
-        for line, reference in itertools.permutations(self.path, 2):
-            new_line = snap(line, reference, tolerance=0.5)
-            new_paths.append(new_line)
-        self.path = new_paths
-
     def split_path_at_intersections(self):
-        """ Split all paths at intersections"""
+        """ Split all paths at intersections.
+        Assuming that all paths are two-point lines."""
         already_cut = dict()
         for line1, line2 in itertools.combinations(self.path, 2):
+            # Check if lines cross each other in X shape
             if line1.intersects(line2):
                 point = line1.intersection(line2)
                 if not point.geom_type == "Point":
                     if len(point.coords) > 2 or len(line1.coords) > 2 or len(line2.coords) > 2:
                         raise SHGGeometryError(
                             "Intersection is not a POINT or a LINE with max two points but a", point.geom_type)
-                    if line1.distance(Point(line2.coords[0])) < 1e-8:
+                    if line1.distance(Point(line2.coords[0])) < 0.01:
                         p2 = Point(line2.coords[0])
                     else:
                         p2 = Point(line2.coords[-1])
-                    if line2.distance(Point(line1.coords[0])) < 1e-8:
+                    if line2.distance(Point(line1.coords[0])) < 0.01:
                         p1 = Point(line1.coords[0])
                     else:
                         p1 = Point(line1.coords[-1])
@@ -166,6 +164,16 @@ class Environment():
                 self._split_path(line1, point, already_cut)
                 self._split_path(line2, point, already_cut)
 
+            # Check if lines touch each other in T shape
+            else:
+                for point1 in line1.coords:
+                    if point1 not in line2.coords and line2.distance(Point(point1)) < 0.01:
+                        self._split_path(line2, Point(point1), already_cut)
+
+                for point2 in line2.coords:
+                    if point2 not in line1.coords and line1.distance(Point(point2)) < 0.01:
+                        self._split_path(line1, Point(point2), already_cut)
+
         add_lines = {cut for cuts in already_cut.values() for cut in cuts}
 
         self.path = list((set(self.path) - set(already_cut.keys())) | add_lines)
@@ -175,26 +183,44 @@ class Environment():
             return
         if line in already_cut:
             # print("Already cut")
-            for cut in already_cut[line]:
+            for cut_line in already_cut[line]:
                 # Account for dec precision error
-                if cut.distance(point) < 1e-8:
-                    cut_results = split(cut, point)
-                    already_cut[line].remove(cut)
-                    already_cut[line].extend(cut_results.geoms)
+                if cut_line.distance(point) < 0.01:
+                    cut_results = self.cut(cut_line, point)
+                    already_cut[line].remove(cut_line)
+                    already_cut[line].extend(cut_results)
                     break
         else:
-            results = split(line, point)
-            already_cut[line] = list(results.geoms)
+            results = self.cut(line, point)
+            already_cut[line] = results
+
+    def cut(self, line, point):
+        # Cuts a line in two at a point
+        distance = line.project(point)
+        if distance <= 0.0 or distance >= line.length:
+            return [LineString(line)]
+        coords = list(line.coords)
+        for i, p in enumerate(coords):
+            pd = line.project(Point(p))
+            if pd == distance:
+                return [
+                    LineString(coords[:i+1]),
+                    LineString(coords[i:])]
+            if pd > distance:
+                cp = line.interpolate(distance)
+                return [
+                    LineString(coords[:i] + [(cp.x, cp.y)]),
+                    LineString([(cp.x, cp.y)] + coords[i:])]
 
     def clear_bridge_edges(self, bridge_edges: List):
-        walls = self.scene[0]
-        for edge in bridge_edges:
-            if len(edge) == 1:
-                print("single edge point in room ", self.room_id, edge)
-                walls = walls.difference(Point(edge[0]).buffer(4))
-            else:
-                walls = walls.difference(LineString(edge).buffer(4, cap_style="flat"))
-        self.scene[0] = walls
+        for i, wall in enumerate(self.scene):
+            for edge in bridge_edges:
+                if len(edge) == 1:
+                    print("single edge point in room ", self.room_id, edge)
+                    wall = wall.difference(Point(edge[0]).buffer(4))
+                else:
+                    wall = wall.difference(LineString(edge).buffer(4, cap_style="flat"))
+            self.scene[i] = wall
 
     def plot(self):
         fig, ax = plt.subplots(figsize=(10, 10))

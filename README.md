@@ -144,6 +144,16 @@ A* | ILIR
 
 <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">Creative Commons Attribution-NonCommercial 4.0 International License</a>.
 
+## How to start with ROS2
+
+```bash
+source start_docker.sh
+ros2 launch shg aws_hospital_simulation.launch.py
+
+docker exec -it semantic_hierarchical_graph bash
+ros2 launch shg graph.launch.py
+```
+
 ## TODO
 
 Improvements
@@ -158,7 +168,7 @@ Improvements
 - [x] Add shortest distance between each nodes on 1+ level as distance on edge
 - [x] Special case for start and goal point (networkx all_simple_paths, all_shortest_paths)
 - [x] Special case if two rooms are connected with two different doors. Find cases plan all paths and decided after with shortest distance
-- [ ] Check if all paths in one room are one connected component. Sometimes there are separated paths due to rounding errors
+- [x] Check if all paths in one room are one connected component. Sometimes there are separated paths due to rounding errors
 - [x] Fix error with min distance. Shortest path per room has dependencies to bridge nodes also for paths in next room
 - [x] Update planners with new versions from Björn
 
@@ -189,7 +199,7 @@ Integrate with SH-Graph
 
 - [x] create graph from paths
 - [x] integrate room graph into sh-graph
-- [ ] Make SHGPlanner able to plan from arbitrary positions and connect to roadmap
+- [x] Make SHGPlanner able to plan from arbitrary positions and connect to roadmap
 
 Evaluation
 
@@ -207,7 +217,8 @@ Semantics
 ROS node environment model
 
 - [x] Wrap in python ros node
-- [ ] Create service for planning
+- [x] Create service for planning
+- [ ] Improve launch files with arguments as intended
 
 Visualization
 

@@ -28,6 +28,7 @@ class ILIRPlanner(PlannerInterface):
     def _copy_graph(self):
         # TODO: This is a hack to make sure that the graph is not modified by the planner
         #       This takes very long and slows down the planning
+        # Possible solution: Remove all nodes with type="aux_node" from the graph after planning
         self.original_path = deepcopy(self.room.env.path)
         self.original_graph = deepcopy(self.room.child_graph)
         self.original_leaf_graph = deepcopy(self.room._get_root_node().leaf_graph)
@@ -90,7 +91,6 @@ class ILIRPlanner(PlannerInterface):
         path_2_pos = Position.from_iter(closest_path.coords[1])
         path_1_node = self.room._get_child(path_1_pos.to_name())
         path_2_node = self.room._get_child(path_2_pos.to_name())
-        # TODO: In some cases the edge is not in the graph. Could be a logic error. Need to fix!
         self.room.child_graph.remove_edge(path_1_node, path_2_node)
         self.room.env.path.remove(closest_path)
         self.room.add_connection_by_nodes(path_1_node, nodes[1], path_1_pos.distance(nodes[1].pos))

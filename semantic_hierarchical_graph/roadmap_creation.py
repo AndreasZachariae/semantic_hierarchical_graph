@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import numpy as np
 import cv2
 from shapely.ops import nearest_points, unary_union, polygonize_full
-from shapely import Polygon, LineString, MultiPolygon, GeometryCollection, Point
+from shapely import MultiLineString, Polygon, LineString, MultiPolygon, GeometryCollection, Point
 import largestinteriorrectangle as lir
 from semantic_hierarchical_graph.environment import Environment
 import semantic_hierarchical_graph.planners.astar_planner as astar_planner
@@ -136,7 +136,7 @@ def connect_paths(env: Environment, bridge_nodes: Dict[Tuple, List], bridge_edge
     # Remove all bridge edges from walls
     [env.clear_bridge_edges(edge_points) for edge_points in bridge_edges.values()]
 
-    # Connect bridge points between each other
+    # Connect bridge points between each other if room has no roadmap
     if not env.path:
         print("No path, connect only bridge points in room", env.room_id)
         for p1, p2 in itertools.combinations(bridge_points, 2):
@@ -153,7 +153,7 @@ def connect_paths(env: Environment, bridge_nodes: Dict[Tuple, List], bridge_edge
             bridge_points_not_connected.update(bridge_points)
             return bridge_points_not_connected
 
-    # Merge rectangles and connect bridge points to path
+    # Merge rectangles to roadmap and connect bridge points to path
     else:
         print("Connecting paths in room", env.room_id)
         result, dangles, cuts, invalids = polygonize_full(env.path)
@@ -170,13 +170,24 @@ def connect_paths(env: Environment, bridge_nodes: Dict[Tuple, List], bridge_edge
             print("unknown shape returned from polygon union")
             raise SHGGeometryError()
 
+        # First try to connect all points with a straight line
+        bridge_points_not_connected_directly = []
         for point in bridge_points:
+            connection, _ = env.find_shortest_connection(point)
+            if connection is not None:
+                env.add_path(connection)
+            else:
+                bridge_points_not_connected_directly.append(point)
+
+        # Second try to connect remaining points with a planner
+        for point in bridge_points_not_connected_directly:
             connections, _ = connect_point_to_path(point, env, params)
             if len(connections) > 0:
                 for connection in connections:
                     env.add_path(connection)
             else:
                 bridge_points_not_connected.add(point)
+
     # print(len(env.path), "paths in room", env.room_id)
     # env.plot()
     return bridge_points_not_connected
@@ -241,7 +252,13 @@ def _get_goal_points(env: Environment):
 
 
 def _draw_path(img: np.ndarray, env: Environment, color: Tuple, thickness: int) -> np.ndarray:
-    [cv2.polylines(img, [line.coords._coords.astype("int32")], False,  color, thickness) for line in env.path]
+    for line in env.path:
+        if isinstance(line, MultiLineString):
+            for string in line.geoms:
+                cv2.polylines(img, [string.coords._coords.astype("int32")], False,  color, thickness)
+        else:
+            cv2.polylines(img, [line.coords._coords.astype("int32")], False,  color, thickness)
+
     return img
 
 
@@ -264,10 +281,12 @@ def _draw_all_paths(img: np.ndarray, envs: Dict[int, Environment],  color: Tuple
 
 if __name__ == '__main__':
 
-    img = cv2.imread('data/benchmark_maps/hou2_clean.png')
+    # img = cv2.imread('data/benchmark_maps/hou2_clean.png')
     # img = cv2.imread('data/benchmark_maps/ryu.png')
     # params = Parameter("config/ryu_params.yaml").params
-    params = Parameter("config/hou2_params.yaml").params
+    # params = Parameter("config/hou2_params.yaml").params
+    img = cv2.imread('data/graphs/simulation/floor/aws1.pgm')
+    params = Parameter("data/graphs/simulation/floor/aws1.yaml").params
 
     ws, ws_erosion, dist_transform = segmentation.marker_controlled_watershed(img, params)
     bridge_nodes, bridge_edges = segmentation.find_bridge_nodes(ws_erosion, dist_transform)
@@ -275,7 +294,7 @@ if __name__ == '__main__':
     _create_paths(segment_envs, bridge_nodes, bridge_edges, params)
     _plot_all_envs(segment_envs)
 
-    ws2 = segmentation.draw(ws, bridge_nodes, (22))
+    ws2 = segmentation.draw(ws, bridge_nodes, (44))
     # ws3 = segmentation.draw(ws2, largest_rectangles, (21))
-    ws4 = _draw_all_paths(ws2, segment_envs, (25,))
+    ws4 = _draw_all_paths(ws2, segment_envs, (44,))
     segmentation.show_imgs(ws4, name="map_benchmark_ryu_result", save=False)

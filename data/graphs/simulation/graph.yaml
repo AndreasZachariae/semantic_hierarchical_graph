@@ -1,0 +1,3 @@
+graph_name: "simulation"
+hierarchy_level: ["floor", "room", "location"]
+connections: []

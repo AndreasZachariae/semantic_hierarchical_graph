@@ -96,7 +96,7 @@ namespace shg
       const geometry_msgs::msg::PoseStamped &start,
       const geometry_msgs::msg::PoseStamped &goal)
   {
-    if (node_->now() - global_path_.header.stamp > rclcpp::Duration(5, 0))
+    if (node_->now() - global_path_.header.stamp > rclcpp::Duration(30, 0))
     {
       global_path_.poses.clear();
     }
@@ -129,6 +129,13 @@ namespace shg
     if (global_path_.poses.size() == 0)
     {
       RCLCPP_ERROR(node_->get_logger(), "Path is empty");
+    }
+    else
+    {
+      for (auto &pose : global_path_.poses)
+      {
+        RCLCPP_INFO(node_->get_logger(), "x: %f, y: %f", pose.pose.position.x, pose.pose.position.y);
+      }
     }
 
     return global_path_;

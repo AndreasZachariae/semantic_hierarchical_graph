@@ -58,10 +58,11 @@ RUN mkdir -p /home/$USER/ros2_ws/src
 ##############################################################################
 # For aws-hospital-simulation
 WORKDIR /home/$USER/ros2_ws/src/
-RUN git clone -b ros2 https://github.com/AndreasZachariae/aws-robomaker-hospital-world.git
-RUN python3 -m pip install -r aws-robomaker-hospital-world/requirements.txt
-RUN python3 aws-robomaker-hospital-world/fuel_utility.py download -m XRayMachine -m IVStand -m BloodPressureMonitor -m BPCart -m BMWCart -m CGMClassic -m StorageRack -m Chair -m InstrumentCart1 -m Scrubs -m PatientWheelChair -m WhiteChipChair -m TrolleyBed -m SurgicalTrolley -m PotatoChipChair -m VisitorKidSit -m FemaleVisitorSit -m AdjTable -m MopCart3 -m MaleVisitorSit -m Drawer -m OfficeChairBlack -m ElderLadyPatient -m ElderMalePatient -m InstrumentCart2 -m MetalCabinet -m BedTable -m BedsideTable -m AnesthesiaMachine -m TrolleyBedPatient -m Shower -m SurgicalTrolleyMed -m StorageRackCovered -m KitchenSink -m Toilet -m VendingMachine -m ParkingTrolleyMin -m PatientFSit -m MaleVisitorOnPhone -m FemaleVisitor -m MalePatientBed -m StorageRackCoverOpen -m ParkingTrolleyMax \
-    -d aws-robomaker-hospital-world/fuel_models --verbose
+# RUN git clone -b ros2 https://github.com/AndreasZachariae/aws-robomaker-hospital-world.git
+COPY ./aws-robomaker-hospital-world ./aws-robomaker-hospital-world
+# RUN python3 -m pip install -r aws-robomaker-hospital-world/requirements.txt
+# RUN python3 aws-robomaker-hospital-world/fuel_utility.py download -m XRayMachine -m IVStand -m BloodPressureMonitor -m BPCart -m BMWCart -m CGMClassic -m StorageRack -m Chair -m InstrumentCart1 -m Scrubs -m PatientWheelChair -m WhiteChipChair -m TrolleyBed -m SurgicalTrolley -m PotatoChipChair -m VisitorKidSit -m FemaleVisitorSit -m AdjTable -m MopCart3 -m MaleVisitorSit -m Drawer -m OfficeChairBlack -m ElderLadyPatient -m ElderMalePatient -m InstrumentCart2 -m MetalCabinet -m BedTable -m BedsideTable -m AnesthesiaMachine -m TrolleyBedPatient -m Shower -m SurgicalTrolleyMed -m StorageRackCovered -m KitchenSink -m Toilet -m VendingMachine -m ParkingTrolleyMin -m PatientFSit -m MaleVisitorOnPhone -m FemaleVisitor -m MalePatientBed -m StorageRackCoverOpen -m ParkingTrolleyMax \
+#     -d aws-robomaker-hospital-world/fuel_models --verbose
 
 # For semantic_hierarchical_graph
 WORKDIR /home/$USER/ros2_ws/src/semantic_hierarchical_graph

@@ -1,4 +1,5 @@
 graph_node:
   ros__parameters:
     use_sim_time: True
-    graph_name: "benchmarks"
+    graph_name: "simulation"
+    initial_floor: "aws1"

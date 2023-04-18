@@ -5,6 +5,7 @@
 ```bash
 source start_docker.sh
 ros2 launch shg tb3_simulation_launch.py
+ros2 launch shg aws_hospital_simulation.launch.py
 ```
 
 ## Change planners of Nav2

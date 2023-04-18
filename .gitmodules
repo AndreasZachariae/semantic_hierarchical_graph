@@ -1,0 +1,3 @@
+[submodule "aws-robomaker-hospital-world"]
+	path = aws-robomaker-hospital-world
+	url = https://github.com/AndreasZachariae/aws-robomaker-hospital-world.git
