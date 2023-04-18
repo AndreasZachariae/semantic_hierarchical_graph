@@ -1,8 +1,7 @@
 from collections import deque
 import os
 from typing import Dict, List, Tuple
-
-from shapely import Point
+from shapely import LineString, Point
 
 from semantic_hierarchical_graph import roadmap_creation, segmentation, visualization as vis
 from semantic_hierarchical_graph.floor import Floor, Room
@@ -19,6 +18,8 @@ class SHGPlanner():
         self.graph: SHGraph = self._init_graph(graph_name, force_create)
         self.path: Dict = {}
         self.distance: float = 0.0
+        self.tmp_edge_removed = []
+        self.tmp_path_added = []
 
     def _init_graph(self, graph_name: str, force_create: bool) -> SHGraph:
         if not force_create and os.path.isfile(self.graph_path + "/" + graph_name):
@@ -65,31 +66,50 @@ class SHGPlanner():
         goal_pos = Position.from_iter(goal[-1])
         start[-1] = start_pos.to_name()
         goal[-1] = goal_pos.to_name()
-        start_room = self.graph.get_child_by_hierarchy(start[:-1])
-        goal_room = self.graph.get_child_by_hierarchy(goal[:-1])
+        start_room: Room = self.graph.get_child_by_hierarchy(start[:-1])  # type: ignore
+        goal_room: Room = self.graph.get_child_by_hierarchy(goal[:-1])  # type: ignore
         try:
+            distance_to_roadmap = 0.0
             if start_pos.to_name() not in start_room.get_childs("name"):
-                self._add_path_to_roadmap(start_room, start_pos.to_name(), start_pos, type="start")
+                distance_to_roadmap += self._add_path_to_roadmap(start_room,
+                                                                 start_pos.to_name(), start_pos, type="start")
             if goal_pos.to_name() not in goal_room.get_childs("name"):
-                self._add_path_to_roadmap(goal_room, goal_pos.to_name(), goal_pos, type="goal")
+                distance_to_roadmap += self._add_path_to_roadmap(goal_room, goal_pos.to_name(), goal_pos, type="goal")
+
+            if start_room == goal_room:
+                path, distance = self._check_for_direct_connection(distance_to_roadmap, start_room, start_pos, goal_pos)
+                if path is not None:
+                    return path, distance
 
             self.path, self.distance = self.graph.plan_recursive(start, goal)
+            vis.draw_child_graph(start_room, self.path)
         except SHGPlannerError as e:
             print("Error while planning with SHGPlanner: ")
             print(e)
         finally:
-            self._remove_aux_nodes(start_room)
-            self._remove_aux_nodes(goal_room)
+            self._revert_tmp_graph(start_room)
+            self._revert_tmp_graph(goal_room)
+            self.tmp_edge_removed = []
+            self.tmp_path_added = []
 
-        # TODO: Fix back and forth between same nodes because connection is not deleted
         # TODO: Give orientation of next connection
-        # TODO: Make safety margin x2 bigger
 
         SHPath.save_path(self.path, self.graph_path + "/path.json")
 
         return self.path, self.distance
 
-    def _add_path_to_roadmap(self, room_node, node_name, node_pos, type):
+    def _check_for_direct_connection(self, distance_to_roadmap: float, start_room: Room, start_pos: Position, goal_pos: Position):
+        if distance_to_roadmap > start_pos.distance(goal_pos):
+            connection = start_room.env.get_valid_connection(Point(start_pos.xy), Point(goal_pos.xy))
+            if connection is not None:
+                print("Start point is closer to goal than to roadmap")
+                self.path = {start_room.parent_node: {start_room:
+                                                      {start_room._get_child(start_pos.to_name()): {}, goal_pos.to_name(): {}}}}
+                return self.path, start_pos.distance(goal_pos)
+
+        return None, 0
+
+    def _add_path_to_roadmap(self, room_node: Room, node_name, node_pos, type) -> float:
         if room_node.env._in_collision(Point(node_pos.xy)):
             raise SHGPlannerError(
                 f"Point {node_pos.xy} is not in the drivable area (boundary + safety margin) of the room")
@@ -103,12 +123,13 @@ class SHGPlanner():
         nodes.append(room_node.add_child_by_name(node_name,
                                                  Position.from_iter(connections[0].coords[0]),
                                                  True, type="aux_node"))
-
+        distance = 0.0
         for connection in connections:
             pos = Position.from_iter(connection.coords[1])
             nodes.append(room_node.add_child_by_name(pos.to_name(), pos, True, type="aux_node"))
-            room_node.add_connection_by_nodes(nodes[0], nodes[1],
-                                              nodes[0].pos.distance(nodes[1].pos))
+            d = nodes[0].pos.distance(nodes[1].pos)
+            distance += d
+            room_node.add_connection_by_nodes(nodes[0], nodes[1], d)
 
         if len(closest_path.coords) != 2:
             raise SHGGeometryError("Path has not 2 points as expected")
@@ -117,16 +138,44 @@ class SHGPlanner():
         path_2_pos = Position.from_iter(closest_path.coords[1])
         path_1_node = room_node._get_child(path_1_pos.to_name())
         path_2_node = room_node._get_child(path_2_pos.to_name())
+        if room_node.child_graph.has_edge(path_1_node, path_2_node):
+            edge_data = room_node.child_graph.get_edge_data(path_1_node, path_2_node)
+            print(f"Removing edge {edge_data} from roadmap")
+            room_node.child_graph.remove_edge(path_1_node, path_2_node)
+            room_node.env.path.remove(closest_path)
+            self.tmp_edge_removed.append((path_1_node, path_2_node, edge_data, closest_path))
         room_node.add_connection_by_nodes(path_1_node, nodes[1], path_1_pos.distance(nodes[1].pos))
+        print(f"Added edge {path_1_node.unique_name, nodes[1].unique_name} to roadmap")
         room_node.add_connection_by_nodes(nodes[1], path_2_node, path_2_pos.distance(nodes[1].pos))
+        print(f"Added edge {nodes[1].unique_name, path_2_node.unique_name} to roadmap")
+        path1 = LineString([path_1_pos.xy, nodes[1].pos.xy])
+        path2 = LineString([nodes[1].pos.xy, path_2_pos.xy])
+        self.tmp_path_added.append(path1)
+        self.tmp_path_added.append(path2)
+        room_node.env.add_path(path1)
+        room_node.env.add_path(path2)
 
-    def _remove_aux_nodes(self, room_node):
+        return distance
+
+    def _revert_tmp_graph(self, room_node):
         to_remove = []
         for node in room_node.get_childs():
             if node.type == "aux_node":
                 to_remove.append(node)
         for node in to_remove:
             room_node.child_graph.remove_node(node)
+
+        for edge in list(self.tmp_edge_removed):
+            if edge[0] in room_node.child_graph.nodes and edge[1] in room_node.child_graph.nodes:
+                room_node.child_graph.add_edge(edge[0], edge[1], **edge[2])
+                room_node.env.add_path(edge[3])
+                print(f"Added edge {edge[2]} to roadmap")
+                self.tmp_edge_removed.remove(edge)
+
+        for path in list(self.tmp_path_added):
+            if path in room_node.env.path:
+                room_node.env.path.remove(path)
+                self.tmp_path_added.remove(path)
 
         print(f"Removed {len(to_remove)} nodes for cleanup")
 
@@ -181,7 +230,7 @@ class SHGPlanner():
             for i in range(len(path_list) - 1):
                 pt1 = np.round(path_list[i].pos.xy).astype("int32")
                 pt2 = np.round(path_list[i + 1].pos.xy).astype("int32")
-                cv2.line(floor_img, pt1, pt2, (25), 2)
+                cv2.line(floor_img, pt1, pt2, (45), 2)
 
             fig.add_subplot(num_floors, 1, n+1)  # type: ignore
             plt.imshow(floor_img)
@@ -195,11 +244,11 @@ class SHGPlanner():
 
 if __name__ == '__main__':
     # shg_planner = SHGPlanner("data/graphs/benchmarks", "graph.pickle", False)
-    shg_planner = SHGPlanner("data/graphs/simulation", "graph.pickle", True)
+    shg_planner = SHGPlanner("data/graphs/simulation", "graph.pickle", False)
 
     # path_dict, distance = shg_planner.plan(["ryu", "room_8", "(1418, 90)"], ["hou2", "room_17", "(186, 505)"])
     # path_dict, distance = shg_planner.plan(["aws1", "room_7", (136, 194)], ["aws1", 'room_7', (94, 200)])
-    path_dict, distance = shg_planner.plan(["aws1", "room_7", (145, 191)], ["aws1", 'room_7', (108, 194)])
+    path_dict, distance = shg_planner.plan(["aws1", "room_7", (143, 196)], ["aws1", 'room_7', (145, 199)])
     ryu_path = shg_planner.get_path_on_floor(["aws1"], key="name")
     # hou2_path = shg_planner.get_path_on_floor(["hou2"], key="name")
     print(len(ryu_path))
