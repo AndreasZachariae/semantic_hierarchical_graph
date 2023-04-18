@@ -77,9 +77,10 @@ class SHGPlanner():
                 distance_to_roadmap += self._add_path_to_roadmap(goal_room, goal_pos.to_name(), goal_pos, type="goal")
 
             if start_room == goal_room:
-                path, distance = self._check_for_direct_connection(distance_to_roadmap, start_room, start_pos, goal_pos)
-                if path is not None:
-                    return path, distance
+                self.path, distance = self._check_for_direct_connection(
+                    distance_to_roadmap, start_room, start_pos, goal_pos)
+                if self.path is not None:
+                    return self.path, distance
 
             self.path, self.distance = self.graph.plan_recursive(start, goal)
             vis.draw_child_graph(start_room, self.path)
@@ -98,14 +99,15 @@ class SHGPlanner():
 
         return self.path, self.distance
 
-    def _check_for_direct_connection(self, distance_to_roadmap: float, start_room: Room, start_pos: Position, goal_pos: Position):
+    def _check_for_direct_connection(self, distance_to_roadmap: float, start_room: Room, start_pos: Position, goal_pos: Position) -> Tuple:
         if distance_to_roadmap > start_pos.distance(goal_pos):
             connection = start_room.env.get_valid_connection(Point(start_pos.xy), Point(goal_pos.xy))
             if connection is not None:
                 print("Start point is closer to goal than to roadmap")
-                self.path = {start_room.parent_node: {start_room:
-                                                      {start_room._get_child(start_pos.to_name()): {}, goal_pos.to_name(): {}}}}
-                return self.path, start_pos.distance(goal_pos)
+                path = {start_room.parent_node: {start_room:
+                                                 {start_room._get_child(start_pos.to_name()): {},
+                                                  start_room._get_child(goal_pos.to_name()): {}}}}
+                return path, start_pos.distance(goal_pos)
 
         return None, 0
 
