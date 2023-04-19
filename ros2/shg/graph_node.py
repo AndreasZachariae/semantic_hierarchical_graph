@@ -122,7 +122,6 @@ class GraphNode(Node):
         response.plan.header.frame_id = "map"
         response.plan.header.stamp = self.get_clock().now().to_msg()
         response.plan.poses.append(request.goal)  # type: ignore
-        print(request.goal.pose.position.x, request.goal.pose.position.y)
         planning_time = time() - start_time
         self.get_logger().info("Planning time: " + str(round(planning_time, 6)))
         return response

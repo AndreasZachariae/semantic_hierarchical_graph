@@ -143,14 +143,14 @@ class SHGPlanner():
         path_2_node = room_node._get_child(path_2_pos.to_name())
         if room_node.child_graph.has_edge(path_1_node, path_2_node):
             edge_data = room_node.child_graph.get_edge_data(path_1_node, path_2_node)
-            print(f"Removing edge {edge_data} from roadmap")
+            # print(f"Removing edge {edge_data} from roadmap")
             room_node.child_graph.remove_edge(path_1_node, path_2_node)
             room_node.env.path.remove(closest_path)
             self.tmp_edge_removed.append((path_1_node, path_2_node, edge_data, closest_path))
         room_node.add_connection_by_nodes(path_1_node, nodes[1], path_1_pos.distance(nodes[1].pos))
-        print(f"Added edge {path_1_node.unique_name, nodes[1].unique_name} to roadmap")
+        # print(f"Added edge {path_1_node.unique_name, nodes[1].unique_name} to roadmap")
         room_node.add_connection_by_nodes(nodes[1], path_2_node, path_2_pos.distance(nodes[1].pos))
-        print(f"Added edge {nodes[1].unique_name, path_2_node.unique_name} to roadmap")
+        # print(f"Added edge {nodes[1].unique_name, path_2_node.unique_name} to roadmap")
         path1 = LineString([path_1_pos.xy, nodes[1].pos.xy])
         path2 = LineString([nodes[1].pos.xy, path_2_pos.xy])
         self.tmp_path_added.append(path1)
@@ -218,7 +218,7 @@ class SHGPlanner():
         # result = []
         # [result.append(node) for node in path_list if node not in result]
 
-        [print(node.xy, node.rz) for node in path_list]
+        # [print(node.xy, node.rz) for node in path_list]
 
         return path_list
 
