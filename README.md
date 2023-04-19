@@ -219,6 +219,9 @@ ROS node environment model
 - [x] Wrap in python ros node
 - [x] Create service for planning
 - [ ] Improve launch files with arguments as intended
+- [ ] Interpolate between graph points 
+- [x] Consider Orientation in each point
+- [ ] Fix connection from room7 to corridor
 
 Visualization
 
