@@ -37,7 +37,10 @@ class Vector:
     def angle(self, other):
         if self.norm() == 0 or other.norm() == 0:
             return 0
-        return np.arccos(self.dot(other) / (self.norm() * other.norm()))
+        return np.arctan2(self.x * other.y - self.y * other.x, self.x * other.x + self.y * other.y)
+    
+    def angle_to_grid(self):
+        return self.angle(Vector(1, 0))
 
     def __mul__(self, scalar):
         return Vector(self.x * scalar, self.y * scalar)

@@ -21,6 +21,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     ros-$ROS_DISTRO-turtlebot3-* \
     ros-$ROS_DISTRO-rviz2 \
     ros-$ROS_DISTRO-gazebo-* \
+    ros-$ROS_DISTRO-tf-transformations \
+    ros-$ROS_DISTRO-rqt* \
     qtbase5-dev \
     libqt5svg5-dev \
     libzmq3-dev \
@@ -32,7 +34,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 RUN python3 -m pip install -U \
     pip \
     setuptools \
-    pipenv
+    pipenv \
+    transforms3d
 
 ##############################################################################
 ##                                 Create User                              ##

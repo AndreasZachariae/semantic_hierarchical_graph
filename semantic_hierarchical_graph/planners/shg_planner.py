@@ -10,6 +10,7 @@ from semantic_hierarchical_graph.path import SHPath
 from semantic_hierarchical_graph.types.exceptions import SHGGeometryError, SHGPlannerError
 from semantic_hierarchical_graph.types.parameter import Parameter
 from semantic_hierarchical_graph.types.position import Position
+from semantic_hierarchical_graph.types.vector import Vector
 
 
 class SHGPlanner():
@@ -204,12 +205,22 @@ class SHGPlanner():
             return []
 
         path_list = self._get_path_on_floor(hierarchy_to_floor, key, self.path)
+        path_list = list(dict.fromkeys(path_list)) # remove duplicates
+
+        for i in range(len(path_list)-1):
+            if path_list[i].rz is None:
+                angle = Vector.from_two_points(path_list[i].xy, path_list[i+1].xy).angle_to_grid()
+                path_list[i].rz = angle
+                # print(path_list[i].xy, path_list[i+1].xy, angle)
+
 
         # TODO: remove duplicates in node list
         # result = []
         # [result.append(node) for node in path_list if node not in result]
 
-        return list(dict.fromkeys(path_list))
+        [print(node.xy, node.rz) for node in path_list]
+
+        return path_list
 
     def draw_path(self, save=False, name="path.png"):
         import cv2
@@ -249,10 +260,10 @@ if __name__ == '__main__':
     shg_planner = SHGPlanner("data/graphs/simulation", "graph.pickle", False)
 
     # path_dict, distance = shg_planner.plan(["ryu", "room_8", "(1418, 90)"], ["hou2", "room_17", "(186, 505)"])
-    # path_dict, distance = shg_planner.plan(["aws1", "room_7", (136, 194)], ["aws1", 'room_7', (94, 200)])
-    path_dict, distance = shg_planner.plan(["aws1", "room_7", (143, 196)], ["aws1", 'room_7', (145, 199)])
-    ryu_path = shg_planner.get_path_on_floor(["aws1"], key="name")
-    # hou2_path = shg_planner.get_path_on_floor(["hou2"], key="name")
+    # path_dict, distance = shg_planner.plan(["aws1", "room_7", (136, 194)], ["aws1", 'room_7', (156, 144)])
+    path_dict, distance = shg_planner.plan(["aws1", "room_7", (143, 196)], ["aws1", 'room_20', (180, 240)])
+    ryu_path = shg_planner.get_path_on_floor(["aws1"], key="position")
+    # hou2_path = shg_planner.get_path_on_floor(["hou2"], key="position")
     print(len(ryu_path))
     # print(len(hou2_path))
 

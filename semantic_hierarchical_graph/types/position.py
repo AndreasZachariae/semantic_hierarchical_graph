@@ -1,18 +1,22 @@
-from typing import Tuple, Union, List
+from typing import Optional, Tuple, Union, List
 from semantic_hierarchical_graph.types.exceptions import SHGIndexError
 
 
 class Position():
-    def __init__(self, x: float, y: float, z: float) -> None:
+    def __init__(self, x: float, y: float, z: float, rz: Optional[float] = None) -> None:
         self.x = x
         self.y = y
         self.z = z
+        self.rz = rz
 
     @classmethod
     def from_iter(cls, pos: Union[Tuple, List]) -> 'Position':
         if len(pos) == 2:
-            pos = (pos[0], pos[1], 0.0)
-        return cls(pos[0], pos[1], pos[2])
+            return cls(pos[0], pos[1], 0.0)
+        elif len(pos) == 3:
+            return cls(pos[0], pos[1], pos[2])
+        else:
+            return cls(pos[0], pos[1], pos[2], pos[3])
 
     @classmethod
     def convert_to_grid(cls, pos: Union[Tuple, List, 'Position'], grid_size: float) -> 'Position':
@@ -28,9 +32,6 @@ class Position():
 
     @property
     def xyz(self) -> Tuple:
-        return (self.x, self.y, self.z)
-
-    def get_tuple(self) -> Tuple:
         return (self.x, self.y, self.z)
 
     def to_name(self) -> str:
@@ -55,3 +56,14 @@ class Position():
             return self.z
         else:
             raise SHGIndexError('Position index out of range')
+        
+    def __eq__(self, other):
+        """Overrides the default implementation"""
+        if isinstance(other, Position):
+            return self.x == other.x and self.y == other.y and self.z == other.z
+        else:
+            return NotImplemented
+        
+    def __hash__(self):
+        """Overrides the default implementation"""
+        return hash(tuple(sorted(self.__dict__.items())))

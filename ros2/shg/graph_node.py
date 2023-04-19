@@ -9,6 +9,7 @@ from nav_msgs.srv import GetPlan, GetMap
 from nav_msgs.msg import OccupancyGrid
 from map_msgs.srv import SaveMap
 from geometry_msgs.msg import PoseStamped, Pose, Point, PointStamped
+import tf_transformations
 
 from semantic_hierarchical_graph.planners.shg_planner import SHGPlanner
 from semantic_hierarchical_graph.types.exceptions import SHGPlannerError
@@ -52,8 +53,8 @@ class GraphNode(Node):
         future = self.map_client.call_async(GetMap.Request())
         rclpy.spin_until_future_complete(self, future)
 
-        initil_map: OccupancyGrid = future.result().map  # type: ignore
-        return initil_map
+        initial_map: OccupancyGrid = future.result().map  # type: ignore
+        return initial_map
 
     def goal_floor_callback(self, request: SaveMap.Request, response: SaveMap.Response) -> SaveMap.Response:
         self.goal_floor_name = request.filename
@@ -83,17 +84,10 @@ class GraphNode(Node):
         return hierarchy
 
     def transform_pixel_pos_to_map(self, position: Position):
-        # This function transforms from pixel position to map position.
-        # Here is the transformation from map position to pixel position:
-        # x = pose.position.x - self.current_map.info.origin.position.x
-        # y = pose.position.y - self.current_map.info.origin.position.y
-        # x = int(x / self.current_map.info.resolution)
-        # y = self.current_map.info.height - int(y / self.current_map.info.resolution)
-
         x = position.x * self.current_map.info.resolution + self.current_map.info.origin.position.x
         y = self.current_map.info.height - position.y
         y = y * self.current_map.info.resolution + self.current_map.info.origin.position.y
-        return x, y
+        return x, y, position.rz
 
     def plan_path_callback(self, request: GetPlan.Request, response: GetPlan.Response) -> GetPlan.Response:
         start_time = time()
@@ -108,25 +102,25 @@ class GraphNode(Node):
         path_dict, distance = self.shg_planner.plan(start_hierarchy, goal_hierarchy)
         path = self.shg_planner.get_path_on_floor([self.current_floor_name], key="position")
 
-        # path = [[-1.0, -0.5], [-0.5, -0.5], [-0.5, 0.5], [0.5, 0.5], [0.5, -0.5]]
         for pos in path:
-            x, y = self.transform_pixel_pos_to_map(pos)
-            print(x, y)
+            if pos == path[-1]:
+                continue
+            x, y, rz = self.transform_pixel_pos_to_map(pos)
+            q = tf_transformations.quaternion_about_axis(rz, (0, 0, 1))
             pose = PoseStamped()
             pose.pose.position.x = x
             pose.pose.position.y = y
             pose.pose.position.z = 0.0
-            pose.pose.orientation.x = 0.0
-            pose.pose.orientation.y = 0.0
-            pose.pose.orientation.z = 0.0
-            pose.pose.orientation.w = 1.0
+            pose.pose.orientation.x = q[0]
+            pose.pose.orientation.y = q[1]
+            pose.pose.orientation.z = q[2]
+            pose.pose.orientation.w = q[3]
             pose.header.stamp = self.get_clock().now().to_msg()
             pose.header.frame_id = "map"
             response.plan.poses.append(pose)  # type: ignore
 
         response.plan.header.frame_id = "map"
         response.plan.header.stamp = self.get_clock().now().to_msg()
-        # response.plan.poses.append(request.start)
         response.plan.poses.append(request.goal)  # type: ignore
         print(request.goal.pose.position.x, request.goal.pose.position.y)
         planning_time = time() - start_time
