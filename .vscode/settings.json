@@ -2,11 +2,7 @@
     "editor.formatOnSave": true,
     "python.analysis.typeCheckingMode": "basic",
     "python.analysis.indexing": true,
-    "python.formatting.provider": "autopep8",
-    "python.formatting.autopep8Args": [
-        "--max-line-length",
-        "120"
-    ],
+    "python.formatting.provider": "none",
     "python.analysis.extraPaths": [
         "/opt/ros/foxy/lib/python3.8/site-packages/"
     ],
@@ -17,4 +13,12 @@
     "autoDocstring.docstringFormat": "numpy",
     "autoDocstring.startOnNewLine": true,
     "cmake.configureOnOpen": false,
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.autopep8",
+        "editor.formatOnSave": true,
+    },
+    "autopep8.args": [
+        "--max-line-length",
+        "120"
+    ],
 }
