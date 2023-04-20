@@ -3,3 +3,4 @@ graph_node:
     use_sim_time: True
     graph_name: "simulation"
     initial_floor: "aws1"
+    interpolation_resolution: 0.2 # Distance between each Pose in [m]

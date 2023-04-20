@@ -23,6 +23,8 @@ class GraphNode(Node):
 
         self.graph_name = self.declare_parameter("graph_name", "graph").get_parameter_value().string_value
         self.initial_floor = self.declare_parameter("initial_floor", "ryu").get_parameter_value().string_value
+        self.interpolation_resolution = self.declare_parameter(
+            "interpolation_resolution", 1).get_parameter_value().double_value
         src_prefix = os.path.join(get_package_prefix('shg'), '..', '..', 'src', 'semantic_hierarchical_graph')
 
         self.get_logger().info("Graph name: " + str(self.graph_name) + ", initial floor: " + str(self.initial_floor))
@@ -100,7 +102,9 @@ class GraphNode(Node):
         goal_hierarchy = self.transform_map_pos_to_graph_hierarchy(goal_pose)
 
         path_dict, distance = self.shg_planner.plan(start_hierarchy, goal_hierarchy)
-        path = self.shg_planner.get_path_on_floor([self.current_floor_name], key="position")
+        interpolation_pixel = self.interpolation_resolution / self.current_map.info.resolution
+        path = self.shg_planner.get_path_on_floor(
+            [self.current_floor_name], key="position", interpolation_resolution=interpolation_pixel)
 
         for pos in path:
             if pos == path[-1]:

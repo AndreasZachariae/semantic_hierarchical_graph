@@ -1,7 +1,9 @@
 from collections import deque
 import os
 from typing import Dict, List, Tuple
+import numpy as np
 from shapely import LineString, Point
+import math
 
 from semantic_hierarchical_graph import roadmap_creation, segmentation, visualization as vis
 from semantic_hierarchical_graph.floor import Floor, Room
@@ -84,7 +86,7 @@ class SHGPlanner():
                     return self.path, distance
 
             self.path, self.distance = self.graph.plan_recursive(start, goal)
-            vis.draw_child_graph(start_room, self.path)
+            # vis.draw_child_graph(start_room, self.path)
         except SHGPlannerError as e:
             print("Error while planning with SHGPlanner: ")
             print(e)
@@ -198,14 +200,14 @@ class SHGPlanner():
                 leaf_path.extend(self._get_path_on_floor(hierarchy_to_floor[1:], key, dict))
         return leaf_path
 
-    def get_path_on_floor(self, hierarchy_to_floor, key) -> List:
+    def get_path_on_floor(self, hierarchy_to_floor, key, interpolation_resolution=None) -> List:
         """Returns the path on a specific floor as a list of nodes, positions or names."""
         if self.path is None:
             print("No path found yet. Call plan() first.")
             return []
 
         path_list = self._get_path_on_floor(hierarchy_to_floor, key, self.path)
-        path_list = list(dict.fromkeys(path_list)) # remove duplicates
+        path_list = list(dict.fromkeys(path_list))  # remove duplicates
 
         for i in range(len(path_list)-1):
             if path_list[i].rz is None:
@@ -213,6 +215,9 @@ class SHGPlanner():
                 path_list[i].rz = angle
                 # print(path_list[i].xy, path_list[i+1].xy, angle)
 
+        if interpolation_resolution is not None:
+            print("Interpolating path with resolution", interpolation_resolution)
+            path_list = self._interpolate_path(path_list, interpolation_resolution)
 
         # TODO: remove duplicates in node list
         # result = []
@@ -221,6 +226,19 @@ class SHGPlanner():
         # [print(node.xy, node.rz) for node in path_list]
 
         return path_list
+
+    def _interpolate_path(self, path_list, resolution):
+        interpolated_path = []
+        for i in range(len(path_list) - 1):
+            interpolated_path.append(path_list[i])
+            d = path_list[i].distance(path_list[i+1])
+            n = math.ceil(d / resolution)
+            interpolated_xy = np.linspace(path_list[i].xy, path_list[i+1].xy, n, endpoint=False)
+            for j in range(n):
+                interpolated_path.append(Position(interpolated_xy[j][0], interpolated_xy[j][1], 0, path_list[i].rz))
+
+        interpolated_path.append(path_list[-1])
+        return interpolated_path
 
     def draw_path(self, save=False, name="path.png"):
         import cv2
@@ -262,8 +280,8 @@ if __name__ == '__main__':
     # path_dict, distance = shg_planner.plan(["ryu", "room_8", "(1418, 90)"], ["hou2", "room_17", "(186, 505)"])
     # path_dict, distance = shg_planner.plan(["aws1", "room_7", (136, 194)], ["aws1", 'room_7', (156, 144)])
     path_dict, distance = shg_planner.plan(["aws1", "room_7", (143, 196)], ["aws1", 'room_20', (180, 240)])
-    ryu_path = shg_planner.get_path_on_floor(["aws1"], key="position")
-    # hou2_path = shg_planner.get_path_on_floor(["hou2"], key="position")
+    ryu_path = shg_planner.get_path_on_floor(["aws1"], key="position", interpolation_resolution=10)
+    # hou2_path = shg_planner.get_path_on_floor(["hou2"], key="position", interpolation_resolution=10)
     print(len(ryu_path))
     # print(len(hou2_path))
 
