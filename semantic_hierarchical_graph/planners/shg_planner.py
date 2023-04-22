@@ -96,8 +96,6 @@ class SHGPlanner():
             self.tmp_edge_removed = []
             self.tmp_path_added = []
 
-        # TODO: Give orientation of next connection
-
         SHPath.save_path(self.path, self.graph_path + "/path.json")
 
         return self.path, self.distance
@@ -174,7 +172,7 @@ class SHGPlanner():
             if edge[0] in room_node.child_graph.nodes and edge[1] in room_node.child_graph.nodes:
                 room_node.child_graph.add_edge(edge[0], edge[1], **edge[2])
                 room_node.env.add_path(edge[3])
-                print(f"Added edge {edge[2]} to roadmap")
+                # print(f"Added edge {edge[2]} to roadmap")
                 self.tmp_edge_removed.remove(edge)
 
         for path in list(self.tmp_path_added):
@@ -182,7 +180,7 @@ class SHGPlanner():
                 room_node.env.path.remove(path)
                 self.tmp_path_added.remove(path)
 
-        print(f"Removed {len(to_remove)} nodes for cleanup")
+        # print(f"Removed {len(to_remove)} nodes for cleanup")
 
     def _get_path_on_floor(self, hierarchy_to_floor, key, path) -> List:
         leaf_path = []
@@ -206,7 +204,7 @@ class SHGPlanner():
             print("No path found yet. Call plan() first.")
             return []
 
-        path_list = self._get_path_on_floor(hierarchy_to_floor, key, self.path)
+        path_list: List[Position] = self._get_path_on_floor(hierarchy_to_floor, key, self.path)
         path_list = list(dict.fromkeys(path_list))  # remove duplicates
 
         for i in range(len(path_list)-1):
@@ -216,12 +214,8 @@ class SHGPlanner():
                 # print(path_list[i].xy, path_list[i+1].xy, angle)
 
         if interpolation_resolution is not None:
-            print("Interpolating path with resolution", interpolation_resolution)
+            print("Interpolating path with resolution", interpolation_resolution, "px")
             path_list = self._interpolate_path(path_list, interpolation_resolution)
-
-        # TODO: remove duplicates in node list
-        # result = []
-        # [result.append(node) for node in path_list if node not in result]
 
         # [print(node.xy, node.rz) for node in path_list]
 
@@ -282,7 +276,7 @@ if __name__ == '__main__':
     path_dict, distance = shg_planner.plan(["aws1", "room_7", (143, 196)], ["aws1", 'room_20', (180, 240)])
     ryu_path = shg_planner.get_path_on_floor(["aws1"], key="position", interpolation_resolution=10)
     # hou2_path = shg_planner.get_path_on_floor(["hou2"], key="position", interpolation_resolution=10)
-    print(len(ryu_path))
+    print("Final path length:", distance, "n:", len(ryu_path))
     # print(len(hou2_path))
 
     shg_planner.draw_path(save=False, name="path.png")

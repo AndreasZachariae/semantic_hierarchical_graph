@@ -24,9 +24,6 @@ def marker_controlled_watershed(img: np.ndarray, params: dict) -> Tuple[np.ndarr
 
     # Finding sure foreground area
     dist_transform = cv2.distanceTransform(opening, cv2.DIST_L2, 5)
-    # TODO: find a better threshold value
-    # currently: 3 * base_size[0] = 30
-    # alternative: 3 * safety_distance = 30
     ret, sure_fg = cv2.threshold(dist_transform, params["distance_threshold"], 255, 0)
 
     # Finding unknown region

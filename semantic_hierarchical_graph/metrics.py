@@ -59,9 +59,6 @@ class Metrics():
         # room_img = cv2.cvtColor(room.mask, cv2.COLOR_GRAY2RGB)
         # segmentation.show_imgs(room_img)
 
-        # TODO: Deal with multiple possible solutions
-        #       Check for correct distances on bridge connections
-
     def _calc_single_path_metrics(self, room: Room, points: List, planner) -> Tuple[Dict, np.ndarray]:
         room_mask: np.ndarray = room.mask.copy()
         path_metrics: Dict[str, Any] = {}

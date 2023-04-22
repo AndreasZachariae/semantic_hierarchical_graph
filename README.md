@@ -16,7 +16,7 @@ The main achievements of this work are:
 3. Plan in the hierarchy graph COMPLETE and OPTIMAL with Djikstra.
 4. Plan on gridmap level COMPLETE but NOT optimal with ILIR (Iterative largest interior rectangles), instead choose paths which avoid public crowded spaces by design.
     - Introduce new metric for disturbance of public space
-5. (TODO) Integrate planner in ROS2 Foxy Navigation stack as plugin
+5. Integrate planner in ROS2 Foxy Navigation stack as plugin
 6. (TODO) Include semantic information about the environment in path planning.
     - Define no-go zones or reduced speed zones
     - Add important locations (pick-up points, elevator, info, toilet, ...)
@@ -95,11 +95,11 @@ python -m timeit -r 10 -s 'from semantic_hierarchical_graph.main import main; G 
 
 2. (TODO) Preprocess map, filter noise, rotated to be orthogonal with grid
     ![Alt text](docs/ryu.png)
-3. Segmentation of floor map into rooms with marker-controlled watershed algorithm (TODO: Link opencv). Detect doors as bridge points with most clearance to walls.
+3. Segmentation of floor map into rooms with marker-controlled watershed algorithm ([opencv](https://docs.opencv.org/4.x/d3/db4/tutorial_py_watershed.html)). Detect doors as bridge points with most clearance to walls.
     ![Alt text](docs/ruy_segmentation.png)
 4. Transform each room and its obstacles into a shapely environment tho perform geometric collision checks. A safety margin is added with erosion.
     ![Alt text](docs/ruy_shapely.png)
-5. Plan collision free roadmap for predefined navigaton to avoid public crowded spaces by design. Iterativly merge the largest interior ractangles found by the LIR algorithm (TODO: link) for each room. The resulting polygon is the no-go zone to avoid driving straight through the room. Detect if room is a corridor and collapse polygon to a line in the middle. All bridge points are connected with A* algorithm to the polygon to ensure completeness. This connection is smoothed with algorithm from Bechtold and Glavina to reduce the number of nodes.
+5. Plan collision free roadmap for predefined navigaton to avoid public crowded spaces by design. Iterativly merge the largest interior ractangles found by the LIR algorithm ([github](https://github.com/lukasalexanderweber/lir)) for each room. The resulting polygon is the no-go zone to avoid driving straight through the room. Detect if room is a corridor and collapse polygon to a line in the middle. All bridge points are connected with A* algorithm to the polygon to ensure completeness. This connection is smoothed with algorithm from Bechtold and Glavina to reduce the number of nodes.
     ![Alt text](docs/ryu_roadmap.png)
 
 6. (TODO) Transform buildings and floor into hierarchical graph
@@ -113,7 +113,7 @@ python -m timeit -r 10 -s 'from semantic_hierarchical_graph.main import main; G 
     path_dict, distance = G.plan_recursive(["ryu", "room_16", "(88, 358)"], ["ryu", "room_12", "(1526, 480)"])
     ```
     ![Alt text](docs/ryu_plan_path.png)
-10. (TODO) Send global path to the ROS2 navigation plugin to be executed by a mobile robot. Local path, dynamic obstacle avoidance and smoothing is done by the controller server of the navigation stack.
+10. Send global path to the ROS2 navigation plugin to be executed by a mobile robot. Local path, dynamic obstacle avoidance and smoothing is done by the controller server of the navigation stack.
 
 ## Evaluation against other path planners
 
@@ -163,7 +163,7 @@ Improvements
 - [x] clear bridge edges in the beginning with dist_transform or ws_erosion
 - [x] Detect if the whole room is a corridor (With corridor width thresholds) and don't collapse rectangles in other rooms -> Add is_corridor flag to rooms
 - [x] Adjust planning in graph for multiple possible paths. Plan all paths and compare lenghts for shortest
-- [ ] Make sure correct hierarchy distances are in the graph edges
+- [x] Make sure correct hierarchy distances are in the graph edges
 - [x] Do not generate multiple rectangles. Only keep largest merged one and connect bridge points with A*
 - [x] Add shortest distance between each nodes on 1+ level as distance on edge
 - [x] Special case for start and goal point (networkx all_simple_paths, all_shortest_paths)
@@ -200,6 +200,7 @@ Integrate with SH-Graph
 - [x] create graph from paths
 - [x] integrate room graph into sh-graph
 - [x] Make SHGPlanner able to plan from arbitrary positions and connect to roadmap
+- [ ] Move map transformation into Position class
 
 Evaluation
 
@@ -208,6 +209,7 @@ Evaluation
 - [ ] Evaluation per floor. Compare against all other planners planning on complete floor map vs hierarchical ILIR
 - [x] Automate process to generate only metric diagramms
 - [ ] Evaluate against roadmap of prm or rrt
+- [ ] Make ILIR revert graph faster like in SHGPlanner
 
 Semantics
 
@@ -219,9 +221,11 @@ ROS node environment model
 - [x] Wrap in python ros node
 - [x] Create service for planning
 - [ ] Improve launch files with arguments as intended
-- [ ] Interpolate between graph points 
+- [x] Interpolate between graph points 
 - [x] Consider Orientation in each point
-- [ ] Fix connection from room7 to corridor
+- [x] Fix connection from room7 to corridor
+- [ ] Plan around dynamic obstacles (Maybe just configure Local Planner)
+- [ ] Simulate floor change
 
 Visualization
 

@@ -28,6 +28,7 @@ class ILIRPlanner(PlannerInterface):
     def _copy_graph(self):
         # TODO: This is a hack to make sure that the graph is not modified by the planner
         #       This takes very long and slows down the planning
+        # TODO: Same as in SHGPlanner
         # Possible solution: Remove all nodes with type="aux_node" from the graph after planning
         self.original_path = deepcopy(self.room.env.path)
         self.original_graph = deepcopy(self.room.child_graph)
