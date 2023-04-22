@@ -222,7 +222,8 @@ class SHNode(Generic[T]):
             print("ERROR No path found between {} and {}".format(start_name, goal_name))
             return SHPath(start_name, goal_name, self, np.inf)
             # raise SHGPlannerError("No path found between {} and {}".format(start_name, goal_name))
-
+        if debug:
+            print(multiple_paths.num_paths, "paths found between {} and {}".format(start_name, goal_name))
         return multiple_paths.reduce_to_different_goals()
 
     def _get_bridge_node_name(self, node: T, bridge_node: T, hierarchy_level: int) -> List[str]:

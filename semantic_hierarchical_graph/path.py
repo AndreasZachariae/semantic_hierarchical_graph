@@ -32,12 +32,19 @@ class SHMultiPaths():
         if any([isinstance(path, SHMultiPaths) for path in self.paths]):
             return self
 
+        # Only reduce paths with same goal if they are on the leaf/position level
+        if not self.paths[0].parent._get_child(self.paths[0].start).is_leaf:  # type: ignore
+            if self.num_paths == 1:
+                return self.paths[0]
+            return self
+
         start_pairs = [(p.start, p.goal) for p in self.paths]  # type: ignore
         unique_starts = set(start_pairs)
 
         different_paths = []
         for pair in unique_starts:
             same = [path for path, starts in zip(self.paths, start_pairs) if starts == pair]
+            # [print(x) for x in same]
             different_paths.append(min(same, key=lambda x: x.distance))
 
         # if this is omitted, all different possible paths on same graph are considered
@@ -157,3 +164,6 @@ class SHPath():
             path_names = path
         with open(file_path, 'w') as outfile:
             json.dump(path_names, outfile, indent=4, sort_keys=False)
+
+    def __str__(self):
+        return f"Path from {self.start} to {self.goal} with distance {self.distance}"
