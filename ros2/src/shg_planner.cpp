@@ -92,14 +92,44 @@ namespace shg
         name_.c_str());
   }
 
+  void SHGPlanner::callPythonPlanner(const geometry_msgs::msg::PoseStamped &start,
+                                     const geometry_msgs::msg::PoseStamped &goal)
+  {
+    auto node = rclcpp::Node::make_shared("minimal_client");
+    RCLCPP_INFO(node->get_logger(), "Calling python planner");
+    auto client = node->create_client<nav_msgs::srv::GetPlan>("shg/plan_path");
+    while (!client->wait_for_service(std::chrono::seconds(1)))
+    {
+      if (!rclcpp::ok())
+      {
+        RCLCPP_ERROR(node->get_logger(), "client interrupted while waiting for service to appear.");
+        return;
+      }
+      RCLCPP_INFO(node->get_logger(), "waiting for service to appear...");
+    }
+    auto request = std::make_shared<nav_msgs::srv::GetPlan::Request>();
+    request->start = start;
+    request->goal = goal;
+    request->tolerance = 0.1;
+
+    auto result_future = client->async_send_request(request);
+    if (rclcpp::spin_until_future_complete(node, result_future) !=
+        rclcpp::FutureReturnCode::SUCCESS)
+    {
+      RCLCPP_ERROR(node->get_logger(), "service call failed :(");
+      return;
+    }
+    global_path_ = result_future.get()->plan;
+  }
+
   nav_msgs::msg::Path SHGPlanner::createPlan(
       const geometry_msgs::msg::PoseStamped &start,
       const geometry_msgs::msg::PoseStamped &goal)
   {
-    if (node_->now() - global_path_.header.stamp > rclcpp::Duration(30, 0))
-    {
-      global_path_.poses.clear();
-    }
+    // if (node_->now() - global_path_.header.stamp > rclcpp::Duration(10, 0))
+    // {
+    //   global_path_.poses.clear();
+    // }
     // Checking if the goal and start state is in the global frame
     if (start.header.frame_id != global_frame_)
     {
@@ -117,14 +147,18 @@ namespace shg
       return global_path_;
     }
 
-    auto request = std::make_shared<nav_msgs::srv::GetPlan::Request>();
-    request->start = start;
-    request->goal = goal;
-    request->tolerance = 0.1;
+    std::thread t(&SHGPlanner::callPythonPlanner, this, start, goal);
 
-    auto result = client_->async_send_request(request, [this](rclcpp::Client<nav_msgs::srv::GetPlan>::SharedFuture future)
-                                              { RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Received response"); 
-                                                global_path_ = future.get()->plan; });
+    // auto request = std::make_shared<nav_msgs::srv::GetPlan::Request>();
+    // request->start = start;
+    // request->goal = goal;
+    // request->tolerance = 0.1;
+
+    // auto result = client_->async_send_request(request, [this](rclcpp::Client<nav_msgs::srv::GetPlan>::SharedFuture future)
+    //                                           { RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Received response");
+    //                                             global_path_ = future.get()->plan; });
+
+    t.join();
 
     if (global_path_.poses.size() == 0)
     {
@@ -132,6 +166,7 @@ namespace shg
     }
     else
     {
+      RCLCPP_INFO(node_->get_logger(), "Nodes: " + std::to_string(global_path_.poses.size()));
       for (auto &pose : global_path_.poses)
       {
         RCLCPP_INFO(node_->get_logger(), "x: %f, y: %f", pose.pose.position.x, pose.pose.position.y);

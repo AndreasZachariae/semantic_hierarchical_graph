@@ -79,6 +79,10 @@ namespace shg
     // plugin deactivate
     void deactivate() override;
 
+    void callPythonPlanner(
+        const geometry_msgs::msg::PoseStamped &start,
+        const geometry_msgs::msg::PoseStamped &goal);
+
     // This method creates path for given start and goal pose.
     nav_msgs::msg::Path createPlan(
         const geometry_msgs::msg::PoseStamped &start,
