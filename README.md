@@ -224,9 +224,10 @@ ROS node environment model
 - [x] Interpolate between graph points 
 - [x] Consider Orientation in each point
 - [x] Fix connection from room7 to corridor
-- [ ] Improve decoupled service call to python planner
+- [x] Improve decoupled service call to python planner
 - [ ] Plan around dynamic obstacles (Maybe just configure Local Planner)
 - [ ] Simulate floor change
+- [ ] Fix cleanup revert to original graph, Erros: Found paths 513000
 
 Visualization
 
