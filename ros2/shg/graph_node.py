@@ -107,26 +107,30 @@ class GraphNode(Node):
             [self.current_floor_name], key="position", interpolation_resolution=interpolation_pixel)
 
         for pos in path:
-            if pos == path[-1]:
-                continue
-            x, y, rz = self.transform_pixel_pos_to_map(pos)
-            q = tf_transformations.quaternion_about_axis(rz, (0, 0, 1))
             pose = PoseStamped()
+
+            x, y, rz = self.transform_pixel_pos_to_map(pos)
             pose.pose.position.x = x
             pose.pose.position.y = y
             pose.pose.position.z = 0.0
-            pose.pose.orientation.x = q[0]
-            pose.pose.orientation.y = q[1]
-            pose.pose.orientation.z = q[2]
-            pose.pose.orientation.w = q[3]
+
+            if pos == path[-1]:
+                pose.pose.orientation = request.goal.pose.orientation
+            else:
+                q = tf_transformations.quaternion_about_axis(rz, (0, 0, 1))
+                pose.pose.orientation.x = q[0]
+                pose.pose.orientation.y = q[1]
+                pose.pose.orientation.z = q[2]
+                pose.pose.orientation.w = q[3]
+
             pose.header.stamp = self.get_clock().now().to_msg()
             pose.header.frame_id = "map"
             response.plan.poses.append(pose)  # type: ignore
 
         response.plan.header.frame_id = "map"
         response.plan.header.stamp = self.get_clock().now().to_msg()
-        response.plan.poses.append(request.goal)  # type: ignore
         planning_time = time() - start_time
+        self.get_logger().info("Path length: " + str(round(distance, 2)) + ", nodes:" + str(len(response.plan.poses)))
         self.get_logger().info("Planning time: " + str(round(planning_time, 6)))
         return response
 

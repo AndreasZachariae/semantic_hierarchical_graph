@@ -264,7 +264,6 @@ planner_server:
     planner_plugins: ["GridBased"]
     GridBased:
       plugin: "shg/SHGPlanner"
-      interpolation_resolution: 0.1
 
 planner_server_rclcpp_node:
   ros__parameters:
