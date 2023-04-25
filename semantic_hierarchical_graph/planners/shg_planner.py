@@ -65,6 +65,7 @@ class SHGPlanner():
 
     def plan(self, start, goal) -> Tuple[Dict, float]:
         print("Plan from " + str(start) + " to " + str(goal))
+        self.path = {}
         start_pos = Position.from_iter(start[-1])
         goal_pos = Position.from_iter(goal[-1])
         start[-1] = start_pos.to_name()
@@ -80,12 +81,11 @@ class SHGPlanner():
                 distance_to_roadmap += self._add_path_to_roadmap(goal_room, goal_pos.to_name(), goal_pos, type="goal")
 
             if start_room == goal_room:
-                self.path, distance = self._check_for_direct_connection(
-                    distance_to_roadmap, start_room, start_pos, goal_pos)
-                if self.path is not None:
-                    return self.path, distance
+                if distance_to_roadmap > start_pos.distance(goal_pos):
+                    self.path, self.distance = self._check_for_direct_connection(start_room, start_pos, goal_pos)
 
-            self.path, self.distance = self.graph.plan_recursive(start, goal)
+            if not self.path:
+                self.path, self.distance = self.graph.plan_recursive(start, goal)
             # vis.draw_child_graph(start_room, self.path)
         except SHGPlannerError as e:
             print("Error while planning with SHGPlanner: ")
@@ -96,21 +96,20 @@ class SHGPlanner():
             self.tmp_edge_removed = []
             self.tmp_path_added = []
 
-        SHPath.save_path(self.path, self.graph_path + "/path.json")
+        # SHPath.save_path(self.path, self.graph_path + "/path.json")
 
         return self.path, self.distance
 
-    def _check_for_direct_connection(self, distance_to_roadmap: float, start_room: Room, start_pos: Position, goal_pos: Position) -> Tuple:
-        if distance_to_roadmap > start_pos.distance(goal_pos):
-            connection = start_room.env.get_valid_connection(Point(start_pos.xy), Point(goal_pos.xy))
-            if connection is not None:
-                print("Start point is closer to goal than to roadmap")
-                path = {start_room.parent_node: {start_room:
-                                                 {start_room._get_child(start_pos.to_name()): {},
-                                                  start_room._get_child(goal_pos.to_name()): {}}}}
-                return path, start_pos.distance(goal_pos)
+    def _check_for_direct_connection(self, start_room: Room, start_pos: Position, goal_pos: Position) -> Tuple:
+        connection = start_room.env.get_valid_connection(Point(start_pos.xy), Point(goal_pos.xy))
+        if connection is not None:
+            print("Start point is closer to goal than to roadmap")
+            path = {start_room.parent_node: {start_room:
+                                             {start_room._get_child(start_pos.to_name()): {},
+                                                 start_room._get_child(goal_pos.to_name()): {}}}}
+            return path, start_pos.distance(goal_pos)
 
-        return None, 0
+        return {}, 0
 
     def _add_path_to_roadmap(self, room_node: Room, node_name, node_pos, type) -> float:
         if room_node.env._in_collision(Point(node_pos.xy)):
@@ -214,7 +213,6 @@ class SHGPlanner():
                 # print(path_list[i].xy, path_list[i+1].xy, angle)
 
         if interpolation_resolution is not None:
-            print("Interpolating path with resolution", interpolation_resolution, "px")
             path_list = self._interpolate_path(path_list, interpolation_resolution)
 
         # [print(node.xy, node.rz) for node in path_list]
@@ -273,7 +271,9 @@ if __name__ == '__main__':
 
     # path_dict, distance = shg_planner.plan(["ryu", "room_8", "(1418, 90)"], ["hou2", "room_17", "(186, 505)"])
     # path_dict, distance = shg_planner.plan(["aws1", "room_7", (136, 194)], ["aws1", 'room_7', (156, 144)])
-    path_dict, distance = shg_planner.plan(["aws1", "room_7", (143, 196)], ["aws1", 'room_20', (180, 240)])
+    # path_dict, distance = shg_planner.plan(["aws1", "room_7", (143, 196)], ["aws1", 'room_20', (180, 240)])
+    path_dict, distance = shg_planner.plan(['aws1', 'room_7', (138, 189)], [
+                                           'aws1', 'room_20', (174, 216)])  # (174, 217)
     ryu_path = shg_planner.get_path_on_floor(["aws1"], key="position", interpolation_resolution=10)
     # hou2_path = shg_planner.get_path_on_floor(["hou2"], key="position", interpolation_resolution=10)
     print("Final path length:", distance, "n:", len(ryu_path))

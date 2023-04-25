@@ -92,6 +92,8 @@ class SHMultiPaths():
         valid_paths = [path for path in path_list if path[1] != np.inf]
         print(f"Found paths: {len(path_list)}, valid: {len(valid_paths)}, shortest: {shortest_path[1]}")
 
+        SHMultiPaths.possibilities = []
+
         return shortest_path[0], shortest_path[1]
 
 
