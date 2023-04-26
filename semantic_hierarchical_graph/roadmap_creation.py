@@ -206,7 +206,8 @@ def connect_point_to_path(point: Tuple[float, float], env: Environment, params: 
             print("No connection found for point", point)
             return [], None
 
-        connections = [LineString([path[i-1].pos.xy, path[i].pos.xy]) for i in range(1, len(path))]  # type: ignore
+        connections = [LineString([path[i].pos.xy, path[i+1].pos.xy]) for i in range(0, len(path)-1)]  # type: ignore
+        connections.append(LineString([path[-1].pos.xy, point]))
         return connections, closest_path
 
     return [connection], closest_path

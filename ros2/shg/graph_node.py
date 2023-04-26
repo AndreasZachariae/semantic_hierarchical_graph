@@ -103,10 +103,6 @@ class GraphNode(Node):
 
         path_dict, distance = self.shg_planner.plan(start_hierarchy, goal_hierarchy)
 
-        if not path_dict:
-            self.get_logger().info("No path found")
-            return response
-
         self.get_logger().info("Interpolating path with resolution " + str(round(self.interpolation_resolution, 2)) + "m")
         interpolation_pixel = self.interpolation_resolution / self.current_map.info.resolution
         path = self.shg_planner.get_path_on_floor(
