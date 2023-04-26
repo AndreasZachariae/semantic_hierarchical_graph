@@ -227,7 +227,7 @@ ROS node environment model
 - [x] Improve decoupled service call to python planner
 - [ ] Plan around dynamic obstacles (Maybe just configure Local Planner)
 - [ ] Simulate floor change
-- [ ] Fix cleanup revert to original graph, Erros: Found paths 513000
+- [x] Fix cleanup revert to original graph, Erros: Found paths 513000
 
 Visualization
 
