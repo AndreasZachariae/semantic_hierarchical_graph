@@ -199,7 +199,7 @@ class SHGPlanner():
 
     def get_path_on_floor(self, hierarchy_to_floor, key, interpolation_resolution=None) -> List:
         """Returns the path on a specific floor as a list of nodes, positions or names."""
-        if self.path is None:
+        if not self.path:
             print("No path found yet. Call plan() first.")
             return []
 

@@ -13,6 +13,9 @@ class PathNode():
         self.pos_abs: Position = pos
         self.unique_name: str = pos.to_name()
 
+    def __str__(self):
+        return self.unique_name
+
 
 class PlannerInterface():
     def __init__(self, room, config: Dict):
