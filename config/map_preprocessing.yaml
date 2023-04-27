@@ -1,0 +1,23 @@
+
+# dilation outline
+iter: 1
+kernel_size: 3
+
+# get orientations
+rho:
+theta:
+threshold:
+minLineLenght:
+maxLineGap:
+
+
+# find clusters
+lengths_divisor:
+eps:
+min_samples:
+
+
+# the following paragraph is only because the class parameter wants this parameters and I don't want to change this class
+# ROBOT
+base_size: [10, 20] # width x lenght in drive direction
+safety_margin: 5 # additional to base_size

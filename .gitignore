@@ -1,5 +1,9 @@
 # Custom
 data/*.png
+data/benchmark_maps/online_ressources
+data/benchmark_maps/removed_test_pictures_for_hyperparameter_tuning_due_to_uncertain_labels
+data/benchmark_maps/unscaled_too_little
+parameter_tuning
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
