@@ -126,10 +126,6 @@ namespace shg
       const geometry_msgs::msg::PoseStamped &start,
       const geometry_msgs::msg::PoseStamped &goal)
   {
-    // if (node_->now() - global_path_.header.stamp > rclcpp::Duration(10, 0))
-    // {
-    //   global_path_.poses.clear();
-    // }
     // Checking if the goal and start state is in the global frame
     if (start.header.frame_id != global_frame_)
     {
@@ -163,6 +159,11 @@ namespace shg
     if (global_path_.poses.size() == 0)
     {
       RCLCPP_ERROR(node_->get_logger(), "Path is empty");
+      if (node_->now() - buffered_path_.header.stamp < rclcpp::Duration(5, 0))
+      {
+        RCLCPP_ERROR(node_->get_logger(), "Using buffered path");
+        return buffered_path_;
+      }
     }
     else
     {
@@ -173,6 +174,7 @@ namespace shg
       }
     }
 
+    buffered_path_ = global_path_;
     return global_path_;
   }
 

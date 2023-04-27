@@ -46,6 +46,10 @@ class GraphNode(Node):
         self.current_floor_name = self.initial_floor
         self.goal_floor_name = None
 
+        self.shg_planner.update_map((self.current_map.info.origin.position.x, self.current_map.info.origin.position.y),
+                                    self.current_map.info.resolution,
+                                    (self.current_map.info.height, self.current_map.info.width))
+
         self.get_logger().info("Started graph_node")
 
     def get_initial_map(self):

@@ -105,6 +105,7 @@ namespace shg
     rclcpp::Client<nav_msgs::srv::GetPlan>::SharedPtr client_;
 
     nav_msgs::msg::Path global_path_;
+    nav_msgs::msg::Path buffered_path_;
   };
 
 } // namespace shg

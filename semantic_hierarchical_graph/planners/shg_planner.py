@@ -24,6 +24,10 @@ class SHGPlanner():
         self.tmp_edge_removed = []
         self.tmp_path_added = []
 
+        self.map_origin: Tuple[float, float]
+        self.map_resolution: float
+        self.map_size: Tuple[int, int]
+
     def _init_graph(self, graph_name: str, force_create: bool) -> SHGraph:
         if not force_create and os.path.isfile(self.graph_path + "/" + graph_name):
             return self._load_graph(graph_name)
@@ -58,6 +62,11 @@ class SHGPlanner():
         for connection in graph.params["connections"]:
             graph.add_connection_recursive(connection[0], connection[1], distance=10.0, name="elevator")
             print(connection)
+
+    def update_map(self, origin: Tuple[float, float], resolution: float, map_shape: Tuple[int, int]):
+        self.map_origin = origin
+        self.map_resolution = resolution
+        self.map_shape = map_shape
 
     def add_location(self, hierarchy, location):
         # TODO: add location to graph and save graph
