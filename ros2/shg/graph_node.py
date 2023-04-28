@@ -31,12 +31,6 @@ class GraphNode(Node):
 
         self.shg_planner = SHGPlanner(src_prefix + "/data/graphs/" + self.graph_name, "graph.pickle", False)
 
-        # path_dict, distance = shg_planner.plan(["ryu", "room_8", "(1418, 90)"], ["hou2", "room_17", "(186, 505)"])
-        # ryu_path = shg_planner.get_path_on_floor(["ryu"], key="name")
-        # hou2_path = shg_planner.get_path_on_floor(["hou2"], key="name")
-        # print(len(ryu_path))
-        # print(len(hou2_path))
-
         self.plan_srv = self.create_service(GetPlan, 'shg/plan_path', self.plan_path_callback)
         self.map_client = self.create_client(GetMap, 'map_server/map')
         self.point_sub = self.create_subscription(PointStamped, 'clicked_point', self.clicked_point_callback, 10)
@@ -46,9 +40,10 @@ class GraphNode(Node):
         self.current_floor_name = self.initial_floor
         self.goal_floor_name = None
 
-        self.shg_planner.update_map((self.current_map.info.origin.position.x, self.current_map.info.origin.position.y),
-                                    self.current_map.info.resolution,
-                                    (self.current_map.info.height, self.current_map.info.width))
+        self.shg_planner.update_floor((self.current_map.info.origin.position.x, self.current_map.info.origin.position.y),
+                                      self.current_map.info.resolution,
+                                      (self.current_map.info.height, self.current_map.info.width),
+                                      self.current_floor_name)
 
         self.get_logger().info("Started graph_node")
 
@@ -69,58 +64,37 @@ class GraphNode(Node):
 
     def clicked_point_callback(self, msg: PointStamped):
         self.get_logger().info("Clicked point: " + str(msg.point))
-        pose = Pose()
-        pose.position = msg.point
-        pose.orientation.w = 1.0
-        graph_hierarchy = self.transform_map_pos_to_graph_hierarchy(pose)  # msg.pose
-        self.get_logger().info("Graph hierarchy: " + str(graph_hierarchy))
-
-    def transform_map_pos_to_graph_hierarchy(self, pose: Pose):
-        x = pose.position.x - self.current_map.info.origin.position.x
-        y = pose.position.y - self.current_map.info.origin.position.y
-        x = int(x / self.current_map.info.resolution)
-        y = self.current_map.info.height - int(y / self.current_map.info.resolution)
+        x, y = Position.from_map_frame((msg.point.x, msg.point.y),
+                                       (self.current_map.info.origin.position.x, self.current_map.info.origin.position.y),
+                                       self.current_map.info.resolution,
+                                       (self.current_map.info.height, self.current_map.info.width)).xy
+        print(x, y)
         room = self.shg_planner.graph._get_child(self.current_floor_name).watershed[y, x]
-
-        if room == 0 or room == 1 or room == -1:
-            raise SHGPlannerError("Point is not in a valid room")
-
         room_str = "room_"+str(room)
-        hierarchy = [self.current_floor_name, room_str, (x, y)]
-        return hierarchy
-
-    def transform_pixel_pos_to_map(self, position: Position):
-        x = position.x * self.current_map.info.resolution + self.current_map.info.origin.position.x
-        y = self.current_map.info.height - position.y
-        y = y * self.current_map.info.resolution + self.current_map.info.origin.position.y
-        return x, y, position.rz
+        self.get_logger().info("Graph hierarchy: " + str([self.current_floor_name, room_str, (x, y)]))
 
     def plan_path_callback(self, request: GetPlan.Request, response: GetPlan.Response) -> GetPlan.Response:
         start_time = time()
-        start_pose = request.start.pose
-        goal_pose = request.goal.pose
-        self.get_logger().info("Plan from (" + str(round(start_pose.position.x, 2)) + ", " + str(round(start_pose.position.y, 2)) +
-                               ") to (" + str(round(goal_pose.position.x, 2)) + ", " + str(round(goal_pose.position.y, 2)) + ")")
+        start_pose = (request.start.pose.position.x, request.start.pose.position.y)
+        goal_pose = (request.goal.pose.position.x, request.goal.pose.position.y)
+        self.get_logger().info("Plan from (" + str(round(start_pose[0], 2)) + ", " + str(round(start_pose[1], 2)) +
+                               ") to (" + str(round(goal_pose[0], 2)) + ", " + str(round(goal_pose[1], 2)) + ")")
 
-        start_hierarchy = self.transform_map_pos_to_graph_hierarchy(start_pose)
-        goal_hierarchy = self.transform_map_pos_to_graph_hierarchy(goal_pose)
+        # TODO: Use correct floors for hierarchical planning
+        start_floor = self.current_floor_name
+        goal_floor = self.current_floor_name
 
-        path_dict, distance = self.shg_planner.plan(start_hierarchy, goal_hierarchy)
+        path_list, distance = self.shg_planner.plan_in_map_frame(start_pose, start_floor,
+                                                                 goal_pose, goal_floor,
+                                                                 self.interpolation_resolution)
 
-        self.get_logger().info("Interpolating path with resolution " + str(round(self.interpolation_resolution, 2)) + "m")
-        interpolation_pixel = self.interpolation_resolution / self.current_map.info.resolution
-        path = self.shg_planner.get_path_on_floor(
-            [self.current_floor_name], key="position", interpolation_resolution=interpolation_pixel)
-
-        for pos in path:
+        for x, y, rz in path_list:
             pose = PoseStamped()
-
-            x, y, rz = self.transform_pixel_pos_to_map(pos)
             pose.pose.position.x = x
             pose.pose.position.y = y
             pose.pose.position.z = 0.0
 
-            if pos == path[-1]:
+            if tuple([x, y, rz]) == path_list[-1]:
                 pose.pose.orientation = request.goal.pose.orientation
             else:
                 q = tf_transformations.quaternion_about_axis(rz, (0, 0, 1))

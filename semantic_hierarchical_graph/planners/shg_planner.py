@@ -24,9 +24,10 @@ class SHGPlanner():
         self.tmp_edge_removed = []
         self.tmp_path_added = []
 
-        self.map_origin: Tuple[float, float]
-        self.map_resolution: float
-        self.map_size: Tuple[int, int]
+        self.current_map_origin: Tuple[float, float]
+        self.current_map_resolution: float
+        self.current_map_shape: Tuple[int, int]
+        self.current_floor_name: str
 
     def _init_graph(self, graph_name: str, force_create: bool) -> SHGraph:
         if not force_create and os.path.isfile(self.graph_path + "/" + graph_name):
@@ -63,45 +64,90 @@ class SHGPlanner():
             graph.add_connection_recursive(connection[0], connection[1], distance=10.0, name="elevator")
             print(connection)
 
-    def update_map(self, origin: Tuple[float, float], resolution: float, map_shape: Tuple[int, int]):
-        self.map_origin = origin
-        self.map_resolution = resolution
-        self.map_shape = map_shape
+    def update_floor(self, origin: Tuple[float, float], resolution: float, map_shape: Tuple[int, int], current_floor: str):
+        self.current_map_origin = origin
+        self.current_map_resolution = resolution
+        self.current_map_shape = map_shape
+        self.current_floor_name = current_floor
 
     def add_location(self, hierarchy, location):
         # TODO: add location to graph and save graph
         pass
 
-    def plan(self, start, goal) -> Tuple[Dict, float]:
-        print("Plan from " + str(start) + " to " + str(goal))
-        self.path = {}
-        start_pos = Position.from_iter(start[-1])
-        goal_pos = Position.from_iter(goal[-1])
-        start[-1] = start_pos.to_name()
-        goal[-1] = goal_pos.to_name()
-        start_room: Room = self.graph.get_child_by_hierarchy(start[:-1])  # type: ignore
-        goal_room: Room = self.graph.get_child_by_hierarchy(goal[:-1])  # type: ignore
-        try:
-            distance_to_roadmap = 0.0
-            if start_pos.to_name() not in start_room.get_childs("name"):
-                distance_to_roadmap += self._add_path_to_roadmap(start_room,
-                                                                 start_pos.to_name(), start_pos, type="start")
-            if goal_pos.to_name() not in goal_room.get_childs("name"):
-                distance_to_roadmap += self._add_path_to_roadmap(goal_room, goal_pos.to_name(), goal_pos, type="goal")
+    def _get_hierarchy(self, pos: Position, floor: str) -> List:
+        if not isinstance(pos, Position):
+            pos = Position.from_iter(pos)
 
-            if start_room == goal_room:
-                if distance_to_roadmap > start_pos.distance(goal_pos):
-                    self.path, self.distance = self._check_for_direct_connection(start_room, start_pos, goal_pos)
+        floor_node: Floor = self.graph._get_child(floor)
+        room_id = int(floor_node.watershed[pos.y, pos.x])  # type: ignore
+
+        if room_id == 0 or room_id == 1 or room_id == -1:
+            raise SHGPlannerError("Position is not in a valid room")
+
+        room_node: Room = self.graph.get_child_by_hierarchy([floor, "room_" + str(room_id)])  # type: ignore
+
+        return [floor_node, room_node, pos]
+
+    def plan_in_map_frame(self, start_pose: Tuple, start_floor: str, goal_pose: Tuple, goal_floor: str, interpolation_resolution: float) -> Tuple[List, float]:
+        """
+        Plan a path in the map frame
+        :param start_pose: start pose as ROS2 PoseStamped
+        :param goal_pose: goal pose as ROS2 PoseStamped
+        :return: path as list of coordiantes in map frame
+        """
+        start = Position.from_map_frame(start_pose, self.current_map_origin,
+                                        self.current_map_resolution, self.current_map_shape)
+        goal = Position.from_map_frame(goal_pose, self.current_map_origin,
+                                       self.current_map_resolution, self.current_map_shape)
+
+        path, distance = self._plan([start_floor, None, start], [goal_floor, None, goal])
+
+        path_list = self.get_path_on_floor([self.current_floor_name], "position",
+                                           interpolation_resolution / self.current_map_resolution)
+
+        path_list = [p.to_map_frame(self.current_map_origin, self.current_map_resolution,
+                                    self.current_map_shape) for p in path_list]
+
+        return path_list, distance
+
+    def _plan(self, start: List, goal: List) -> Tuple[Dict, float]:
+        """Expects hierarchy in type [str, str, Position/Tuple]"""
+        self.path = {}
+        try:
+            start = self._get_hierarchy(start[2], start[0])
+            goal = self._get_hierarchy(goal[2], goal[0])
+        except SHGPlannerError as e:
+            print(e)
+            return {}, 0.0
+
+        try:
+            print("Plan from " + str(start[2].to_name()) + " to " + str(goal[2].to_name()))
+
+            distance_to_roadmap = 0.0
+            if start[2].to_name() not in start[1].get_childs("name"):
+                distance_to_roadmap += self._add_path_to_roadmap(start[1],
+                                                                 start[2].to_name(), start[2], type="start")
+            if goal[2].to_name() not in goal[1].get_childs("name"):
+                distance_to_roadmap += self._add_path_to_roadmap(
+                    goal[1], goal[2].to_name(), goal[2], type="goal")
+
+            if start[1] == goal[1]:
+                if distance_to_roadmap > start[2].distance(goal[2]):
+                    self.path, self.distance = self._check_for_direct_connection(
+                        start[1], start[2], goal[2])
 
             if not self.path:
-                self.path, self.distance = self.graph.plan_recursive(start, goal)
+                self.path, self.distance = self.graph.plan_recursive(
+                    [start[0].unique_name, start[1].unique_name, start[2].to_name()],
+                    [goal[0].unique_name, goal[1].unique_name, goal[2].to_name()])
+
             # vis.draw_child_graph(start_room, self.path)
         except SHGPlannerError as e:
             print("Error while planning with SHGPlanner: ")
             print(e)
         finally:
-            self._revert_tmp_graph(start_room)
-            self._revert_tmp_graph(goal_room)
+            self._revert_tmp_graph(start[1])
+            self._revert_tmp_graph(goal[1])
             self.tmp_edge_removed = []
             self.tmp_path_added = []
 
@@ -278,11 +324,10 @@ if __name__ == '__main__':
     # shg_planner = SHGPlanner("data/graphs/benchmarks", "graph.pickle", False)
     shg_planner = SHGPlanner("data/graphs/simulation", "graph.pickle", False)
 
-    # path_dict, distance = shg_planner.plan(["ryu", "room_8", "(1418, 90)"], ["hou2", "room_17", "(186, 505)"])
-    # path_dict, distance = shg_planner.plan(["aws1", "room_7", (136, 194)], ["aws1", 'room_7', (156, 144)])
-    # path_dict, distance = shg_planner.plan(["aws1", "room_7", (143, 196)], ["aws1", 'room_20', (180, 240)])
-    path_dict, distance = shg_planner.plan(['aws1', 'room_7', (138, 189)], [
-                                           'aws1', 'room_20', (174, 216)])  # (174, 217)
+    # path_dict, distance = shg_planner._plan(["ryu", "room_8", "(1418, 90)"], ["hou2", "room_17", "(186, 505)"])
+    # path_dict, distance = shg_planner._plan(["aws1", "room_7", (136, 194)], ["aws1", 'room_7', (156, 144)])
+    # path_dict, distance = shg_planner._plan(["aws1", "room_7", (143, 196)], ["aws1", 'room_20', (180, 240)])
+    path_dict, distance = shg_planner._plan(['aws1', 'room_7', (138, 189)], ['aws1', 'room_20', (174, 216)])
     ryu_path = shg_planner.get_path_on_floor(["aws1"], key="position", interpolation_resolution=10)
     # hou2_path = shg_planner.get_path_on_floor(["hou2"], key="position", interpolation_resolution=10)
     print("Final path length:", distance, "n:", len(ryu_path))

@@ -19,12 +19,10 @@ class Position():
             return cls(pos[0], pos[1], pos[2], pos[3])
 
     @classmethod
-    def convert_to_grid(cls, pos: Union[Tuple, List, 'Position'], grid_size: float) -> 'Position':
-        # TODO: Convert meters from map frame to pixels in grid map
-        resolution = grid_size  # [m/px]
-        if not isinstance(pos, Position):
-            pos = Position.from_iter(pos)
-        return pos
+    def from_map_frame(cls, pose: Tuple, map_origin: Tuple, resolution: float, map_shape: Tuple[int, int]) -> 'Position':
+        x = int((pose[0] - map_origin[0]) / resolution)
+        y = map_shape[0] - int((pose[1] - map_origin[1]) / resolution)
+        return cls(x, y, 0.0)
 
     @property
     def xy(self) -> Tuple:
@@ -36,6 +34,11 @@ class Position():
 
     def to_name(self) -> str:
         return str((round(self.x), round(self.y)))
+
+    def to_map_frame(self, map_origin: Tuple, resolution: float, map_shape: Tuple[int, int]) -> Tuple:
+        x = self.x * resolution + map_origin[0]
+        y = (map_shape[0] - self.y) * resolution + map_origin[1]
+        return (x, y, self.rz)
 
     def distance(self, other_pos: Union[Tuple, List, 'Position']) -> float:
         if not isinstance(other_pos, Position):
@@ -56,14 +59,14 @@ class Position():
             return self.z
         else:
             raise SHGIndexError('Position index out of range')
-        
+
     def __eq__(self, other):
         """Overrides the default implementation"""
         if isinstance(other, Position):
             return self.x == other.x and self.y == other.y and self.z == other.z
         else:
             return NotImplemented
-        
+
     def __hash__(self):
         """Overrides the default implementation"""
         return hash(tuple(sorted(self.__dict__.items())))

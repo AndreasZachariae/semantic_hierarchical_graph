@@ -50,19 +50,10 @@ class PlannerInterface():
             path = self._convert_path_to_PathNode(path, graph)
         return path, graph
 
-    def plan_in_map_frame(self, start: Tuple, goal: Tuple, smoothing_enabled: bool):
-        start_pos, goal_pos = self._convert_map_frame_to_grid(start, goal, self.room.params["grid_size"])
-        self.plan(start_pos, goal_pos, smoothing_enabled)
-
     def _convert_to_start_goal_lists(self, start: Tuple, goal: Tuple) -> Tuple[List, List]:
         start_list = [round(start[0]), round(start[1])]
         goal_list = [round(goal[0]), round(goal[1])]
         return [start_list], [goal_list]
-
-    def _convert_map_frame_to_grid(self, start: Tuple, goal: Tuple, grid_size: float) -> Tuple[Tuple, Tuple]:
-        start_pos = Position.convert_to_grid(start, grid_size)
-        goal_pos = Position.convert_to_grid(goal, grid_size)
-        return start_pos.xy, goal_pos.xy
 
     def _convert_room_to_IPCollisionChecker(self, room):
         box = cv2.boundingRect(room.mask)
