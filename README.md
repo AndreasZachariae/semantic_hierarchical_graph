@@ -228,6 +228,7 @@ ROS node environment model
 - [ ] Plan around dynamic obstacles (Maybe just configure Local Planner)
 - [ ] Simulate floor change
 - [x] Fix cleanup revert to original graph, Erros: Found paths 513000
+- [ ] Use correct floors for hierarchical planning
 
 Visualization
 
