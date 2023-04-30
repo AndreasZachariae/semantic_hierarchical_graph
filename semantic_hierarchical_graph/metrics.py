@@ -49,7 +49,7 @@ class Metrics():
         self.metrics["num_paths"] = comb(len(bridge_points), 2)
 
         # AStarPlanner(room), ILIRPlanner(room), PRMPlanner(room), RRTPlanner(room)
-        for planner in [AStarPlanner(room), ILIRPlanner(room), PRMPlanner(room), RRTPlanner(room), ]:
+        for planner in [ILIRPlanner(room), AStarPlanner(room), PRMPlanner(room), RRTPlanner(room), ]:
             path_metrics, room_mask_with_paths = self._calc_single_path_metrics(room, bridge_points, planner)
             self.metrics[planner.name] = planner.config
             path_metrics["disturbance"] = self._calc_disturbance(room.mask, room_mask_with_paths)

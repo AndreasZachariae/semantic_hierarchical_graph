@@ -135,9 +135,9 @@ To measure the capability of the different planners to navigate in shared human-
 - **Distance std** The mean standard deviation of the distance from path to obstacle. A lower value shows a more consistent, less fluctuating path.
 
 Comparision of the disturbance of public space for the A* and ILIR planner.
-A* | ILIR
---|--
-![Alt text](docs/ryu_room2_disturbance_astar.png) | ![Alt text](docs/ryu_room2_disturbance.png)
+| A*                                                | ILIR                                        |
+| ------------------------------------------------- | ------------------------------------------- |
+| ![Alt text](docs/ryu_room2_disturbance_astar.png) | ![Alt text](docs/ryu_room2_disturbance.png) |
 
 
 ## License
@@ -200,7 +200,7 @@ Integrate with SH-Graph
 - [x] create graph from paths
 - [x] integrate room graph into sh-graph
 - [x] Make SHGPlanner able to plan from arbitrary positions and connect to roadmap
-- [ ] Move map transformation into Position class
+- [x] Move map transformation into Position class
 
 Evaluation
 
@@ -209,7 +209,7 @@ Evaluation
 - [ ] Evaluation per floor. Compare against all other planners planning on complete floor map vs hierarchical ILIR
 - [x] Automate process to generate only metric diagramms
 - [ ] Evaluate against roadmap of prm or rrt
-- [ ] Make ILIR revert graph faster like in SHGPlanner
+- [x] Make ILIR revert graph faster like in SHGPlanner
 
 Semantics
 
