@@ -12,9 +12,9 @@ class Position():
     @classmethod
     def from_iter(cls, pos: Union[Tuple, List]) -> 'Position':
         if len(pos) == 2:
-            return cls(pos[0], pos[1], 0.0)
+            return cls(pos[0], pos[1], 0.0, None)
         elif len(pos) == 3:
-            return cls(pos[0], pos[1], pos[2])
+            return cls(pos[0], pos[1], pos[2], None)
         else:
             return cls(pos[0], pos[1], pos[2], pos[3])
 

@@ -76,6 +76,8 @@ class Environment():
 
     def find_shortest_connection(self, pos):
         """ Find the shortest path from pos to any path that is not in collision """
+        if not self.path:
+            return None, None
         if not isinstance(pos, Point):
             pos = Point(pos[0], pos[1])
         closest_path = min(self.path, key=lambda x: x.distance(pos))

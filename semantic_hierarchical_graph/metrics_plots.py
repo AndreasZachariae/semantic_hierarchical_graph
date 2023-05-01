@@ -9,7 +9,8 @@ def load_json(path):
 
 
 def plot_metrics(metrics, path):
-    names = ["ILIR", "AStar", "PRM", "RRT"]
+    shg_planner = "SHG" if "SHG" in metrics else "ILIR"
+    names = [shg_planner, "AStar", "PRM", "RRT"]
     planners = [metrics[name] for name in names]
     success_rate = [planner["success_rate"] for planner in planners]
     planning_time = [planner["planning_time"]["mean"] for planner in planners]
