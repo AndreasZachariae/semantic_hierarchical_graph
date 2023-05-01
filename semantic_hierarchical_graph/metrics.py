@@ -84,7 +84,7 @@ class Metrics():
                 print(f"No path found from {point_1} to {point_2}")
                 continue
             path_metrics["success_rate"].append(1)
-            path_metrics["path_length"].append(self._calc_path_length(vis_graph, path))
+            path_metrics["path_length"].append(self._calc_path_length(path))
             turns, angles, smoothness = self._calc_smoothness(path)
             path_metrics["num_turns"].append(turns)
             path_metrics["cumulative_turning_angle"].append(angles)
@@ -132,7 +132,7 @@ class Metrics():
 
         return points
 
-    def _calc_path_length(self, graph, path) -> float:
+    def _calc_path_length(self, path) -> float:
         dist = 0
         for i in range(len(path) - 1):
             dist += path[i].pos.distance(path[i + 1].pos)

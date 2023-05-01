@@ -1,8 +1,7 @@
 from collections import deque
 from typing import Dict, List, Optional, Tuple
-from copy import deepcopy
-
 from shapely import LineString, Point
+
 from semantic_hierarchical_graph.planners.planner_interface import PlannerInterface
 from semantic_hierarchical_graph.types.exceptions import SHGGeometryError, SHGPlannerError
 from semantic_hierarchical_graph.graph import SHGraph
