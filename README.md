@@ -210,7 +210,7 @@ Evaluation
 - [x] Automate process to generate only metric diagramms
 - [ ] Evaluate against roadmap of prm or rrt
 - [x] Make ILIR revert graph faster like in SHGPlanner
-- [ ] Create LTC extrem test environment to show multiple hieraqrchy connections and campus, building, floor, room, .. level
+- [ ] Create LTC extrem test environment to show multiple hierarchy connections and campus, building, floor, room, .. level
 
 Semantics
 

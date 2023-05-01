@@ -1,26 +1,23 @@
 {
-    "LTC Campus": {
-        "Building F": {
-            "Floor 0": {
-                "Lab": {},
-                "Staircase": {},
-                "Floor 1_Staircase_bridge": {}
-            },
-            "Floor 1": {
-                "Floor 0_Staircase_bridge": {},
-                "Staircase": {},
-                "Corridor": {},
-                "Kitchen": {},
-                "Building A_Floor 1_Cantina_bridge": {}
-            },
-            "Building A_Floor 1_bridge": {}
+    "Building F": {
+        "Floor 0": {
+            "Lab": {},
+            "Building A_Floor 0_Entrance_bridge": {}
         },
-        "Building A": {
-            "Building F_Floor 1_bridge": {},
-            "Floor 1": {
-                "Building F_Floor 1_Kitchen_bridge": {},
-                "Cantina": {}
-            }
+        "Building A_Floor 0_bridge": {}
+    },
+    "Building A": {
+        "Building F_Floor 0_bridge": {},
+        "Floor 0": {
+            "Building F_Floor 0_Lab_bridge": {},
+            "Entrance": {},
+            "Staircase": {},
+            "Floor 1_Staircase_bridge": {}
+        },
+        "Floor 1": {
+            "Floor 0_Staircase_bridge": {},
+            "Staircase": {},
+            "Cantina": {}
         }
     }
 }
