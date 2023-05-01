@@ -20,19 +20,21 @@ class Floor(SHNode):
         self.map = cv2.imread(map_path)
         self.watershed: np.ndarray = np.array([])
         self.dist_transform: np.ndarray = np.array([])
+        self.ws_erosion: np.ndarray = np.array([])
         self.params: Dict[str, Any] = Parameter(params_path).params
         self.all_bridge_nodes: Dict[Tuple, List] = {}
         self.bridge_points_not_connected: Set = set()
+        self.bridge_edges = {}
 
     def create_rooms(self):
-        self.watershed, ws_erosion, self.dist_transform = segmentation.marker_controlled_watershed(
+        self.watershed, self.ws_erosion, self.dist_transform = segmentation.marker_controlled_watershed(
             self.map, self.params)
-        self.all_bridge_nodes, bridge_edges = segmentation.find_bridge_nodes(ws_erosion, self.dist_transform)
-        ws_tmp = ws_erosion.copy()
+        self.all_bridge_nodes, self.bridge_edges = segmentation.find_bridge_nodes(self.ws_erosion, self.dist_transform)
+        ws_tmp = self.ws_erosion.copy()
         for i in range(2, ws_tmp.max() + 1):
             room_bridge_nodes = {adj_rooms: points for adj_rooms, points in self.all_bridge_nodes.items()
                                  if i in adj_rooms}
-            room_bridge_edges = {adj_rooms: edges for adj_rooms, edges in bridge_edges.items()
+            room_bridge_edges = {adj_rooms: edges for adj_rooms, edges in self.bridge_edges.items()
                                  if i in adj_rooms}
             room_mask = np.where(self.watershed == i, 255, 0).astype("uint8")
             # room_mask = np.where(ws_erosion == i, 255, 0).astype("uint8")
