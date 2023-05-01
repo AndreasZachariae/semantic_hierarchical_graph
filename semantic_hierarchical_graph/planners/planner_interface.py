@@ -30,6 +30,11 @@ class PlannerInterface():
         start_list, goal_list = self._convert_to_start_goal_lists(start, goal)
         return self.plan_with_lists(start_list, goal_list, smoothing_enabled)
 
+    def plan_on_floor(self, floor_name: str, start: Tuple, goal: Tuple, smoothing_enabled: bool):
+        start_list, goal_list = self._convert_to_start_goal_lists(start, goal)
+        self.collision_checker = self._convert_floor_to_IPCollisionChecker(self.room.parent_node)
+        return self.plan_with_lists(start_list, goal_list, smoothing_enabled)
+
     def plan_with_lists(self, start_list: List, goal_list: List, smoothing_enabled: bool):
         try:
             path = self.planner.planPath(start_list, goal_list, self.config)
@@ -65,6 +70,13 @@ class PlannerInterface():
         IPlimits = [[round(point[0] - max_dist), round(point[0] + max_dist)],
                     [round(point[1] - max_dist), round(point[1] + max_dist)]]
         IPscene = {str(i): obstacle for i, obstacle in enumerate(scene)}
+        return CollisionChecker(IPscene, IPlimits)
+
+    def _convert_floor_to_IPCollisionChecker(self, floor):
+        # TODO: adapt to floor
+        IPlimits = [[round(floor.min_x), round(floor.max_x)],
+                    [round(floor.min_y), round(floor.max_y)]]
+        IPscene = {str(i): obstacle for i, obstacle in enumerate(floor.env.scene)}
         return CollisionChecker(IPscene, IPlimits)
 
     def _convert_path_to_PathNode(self, path, graph) -> List:

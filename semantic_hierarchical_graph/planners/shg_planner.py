@@ -4,6 +4,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 from shapely import LineString, Point
 import math
+import networkx as nx
 
 from semantic_hierarchical_graph import roadmap_creation, segmentation, visualization as vis
 from semantic_hierarchical_graph.floor import Floor, Room
@@ -23,6 +24,9 @@ class SHGPlanner():
         self.distance: float = 0.0
         self.tmp_edge_removed = []
         self.tmp_path_added = []
+
+        self.name = "SHG"
+        self.config = self.graph.params
 
         self.current_map_origin: Tuple[float, float]
         self.current_map_resolution: float
@@ -81,8 +85,16 @@ class SHGPlanner():
         floor_node: Floor = self.graph._get_child(floor)
         room_id = int(floor_node.watershed[pos.y, pos.x])  # type: ignore
 
-        if room_id == 0 or room_id == 1 or room_id == -1:
+        if room_id == 0 or room_id == 1:
             raise SHGPlannerError("Position is not in a valid room")
+
+        if room_id == -1:
+            rooms = [adj_rooms for adj_rooms, edges in floor_node.bridge_edges.items()
+                     for edge in edges if pos.xy in edge]
+            if not rooms:
+                raise SHGPlannerError("Position is not in a valid room")
+            # room_id = np.random.choice(rooms[0])
+            room_id = rooms[0][0]
 
         room_node: Room = self.graph.get_child_by_hierarchy([floor, "room_" + str(room_id)])  # type: ignore
 
@@ -109,6 +121,10 @@ class SHGPlanner():
                                     self.current_map_shape) for p in path_list]
 
         return path_list, distance
+
+    def plan_on_floor(self, floor_name: str, start_pose: Tuple, goal_pose: Tuple, smoothing: bool = True) -> Tuple[List, nx.Graph]:
+        path, distance = self._plan([floor_name, None, start_pose], [floor_name, None, goal_pose])
+        return self.get_path_on_floor([floor_name], "node"), self.graph._get_child(floor_name).child_graph
 
     def _plan(self, start: List, goal: List) -> Tuple[Dict, float]:
         """Expects hierarchy in type [str, str, Position/Tuple]"""
@@ -261,11 +277,12 @@ class SHGPlanner():
         path_list: List[Position] = self._get_path_on_floor(hierarchy_to_floor, key, self.path)
         path_list = list(dict.fromkeys(path_list))  # remove duplicates
 
-        for i in range(len(path_list)-1):
-            if path_list[i].rz is None:
-                angle = Vector.from_two_points(path_list[i].xy, path_list[i+1].xy).angle_to_grid()
-                path_list[i].rz = angle
-                # print(path_list[i].xy, path_list[i+1].xy, angle)
+        if key == "position":
+            for i in range(len(path_list)-1):
+                if path_list[i].rz is None:
+                    angle = Vector.from_two_points(path_list[i].xy, path_list[i+1].xy).angle_to_grid()
+                    path_list[i].rz = angle
+                    # print(path_list[i].xy, path_list[i+1].xy, angle)
 
         if interpolation_resolution is not None:
             path_list = self._interpolate_path(path_list, interpolation_resolution)
@@ -306,7 +323,7 @@ class SHGPlanner():
 
             path_list = self._get_path_on_floor(floor.hierarchy, "node", self.path)
             for i in range(len(path_list) - 1):
-                pt1 = np.round(path_list[i].pos.xy).astype("int32")
+                pt1 = np.round(path_list[i].pos.xy).astype("int32")  # type: ignore
                 pt2 = np.round(path_list[i + 1].pos.xy).astype("int32")
                 cv2.line(floor_img, pt1, pt2, (45), 2)
 
