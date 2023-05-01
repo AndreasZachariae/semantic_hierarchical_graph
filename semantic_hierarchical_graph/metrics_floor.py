@@ -7,6 +7,7 @@ from math import comb
 import numpy as np
 import cv2
 from shapely import Point
+import sys
 
 import semantic_hierarchical_graph.segmentation as segmentation
 from semantic_hierarchical_graph.types.vector import Vector
@@ -19,45 +20,46 @@ from semantic_hierarchical_graph.planners.rrt_planner import RRTPlanner
 from semantic_hierarchical_graph.planners.shg_planner import SHGPlanner
 from semantic_hierarchical_graph.metrics_plots import plot_metrics
 
+print("Recursion limit increased from", sys.getrecursionlimit(), "to", 2000)
+sys.setrecursionlimit(2000)
+
 
 class Metrics():
     def __init__(self, floor: Floor, graph_path: str) -> None:
         self.metrics: Dict[str, Any] = {}
         self.metrics.update(floor.params)
         self.metrics["floor_name"] = floor.unique_name
-        self.metrics["num_nodes"] = len(floor.child_graph)
+        self.metrics["num_rooms"] = len(floor.child_graph)
 
         bridge_points = [point for points in floor.all_bridge_nodes.values() for point in points]
         self.metrics["num_bridge_points"] = len(bridge_points)
 
         random_points = self._get_random_valid_points(floor, n=10)
-        # Room 2
-        # random_points = [(380, 72), (363, 63), (325, 43), (276, 129), (302, 170),
-        #                  (273, 45), (373, 193), (342, 161), (393, 43), (339, 76)]
-        # Room 11
-        # random_points = [(75, 275), (554, 341), (611, 287), (509, 283), (198, 296),
-        #                  (484, 300), (440, 303), (446, 314), (480, 265), (556, 296)]
-        # Hou2 room 9
-        # random_points = [(280, 433), (435, 230), (171, 276), (297, 456), (280, 448),
-        #                  (153, 222), (111, 224), (283, 399), (452, 264), (300, 366)]
-
         self.metrics["num_random_points"] = len(random_points)
         print("Random points:", random_points)
         bridge_points.extend(random_points)
         self.metrics["num_paths"] = comb(len(bridge_points), 2)
 
-        # AStarPlanner(room), ILIRPlanner(room), PRMPlanner(room), RRTPlanner(room)
-        for planner in [AStarPlanner(floor), SHGPlanner(graph_path)]:
+        prm_config = {"radius": 50, "numNodes": 3000, "smoothing_max_iterations": 100, "smoothing_max_k": 50}
+        rrt_config = {"numberOfGeneratedNodes": 3000, "testGoalAfterNumberOfNodes": 100,
+                      "smoothing_max_iterations": 100, "smoothing_max_k": 50}
+        astar_config = {"heuristic": 'euclidean', "w": 0.5, 'max_iterations': 1000000,
+                        "smoothing_max_iterations": 100, "smoothing_max_k": 50}
+
+        # PRMPlanner(floor, prm_config), RRTPlanner(floor, rrt_config), AStarPlanner(floor, astar_config), SHGPlanner(graph_path)
+        for planner in [AStarPlanner(floor, astar_config), RRTPlanner(floor, rrt_config), PRMPlanner(floor, prm_config), SHGPlanner(graph_path)]:
             path_metrics, room_mask_with_paths = self._calc_single_path_metrics(floor, bridge_points, planner)
             self.metrics[planner.name] = planner.config
             # TODO: Adapt to floor
             # path_metrics["disturbance"] = self._calc_disturbance(floor.mask, room_mask_with_paths)
+            segmentation.show_imgs(room_mask_with_paths,
+                                   name=f"{self.metrics['floor_name']}_{list(self.metrics.keys())[-1]}",
+                                   save=True)
             self.metrics[planner.name].update(path_metrics)
 
         # TODO: exclude bridge points not connected
         print("Bridge points not connected:", floor.bridge_points_not_connected)
         # room_img = cv2.cvtColor(room_mask_with_paths, cv2.COLOR_GRAY2RGB)
-        segmentation.show_imgs(room_mask_with_paths)  # type: ignore
 
     def _calc_single_path_metrics(self, floor: Floor, points: List, planner) -> Tuple[Dict, np.ndarray]:
         floor_mask: np.ndarray = floor.watershed.copy()
@@ -260,4 +262,4 @@ if __name__ == "__main__":
     # metrics.save_metrics("data/floor_hou2_metrics.json")
     metrics.save_metrics("data/tmp/floor_ryu_metrics.json")
 
-    # plot_metrics(metrics.metrics, "data/tmp/floor_ryu_metrics.png")
+    plot_metrics(metrics.metrics, "data/tmp/floor_ryu_metrics.png")
