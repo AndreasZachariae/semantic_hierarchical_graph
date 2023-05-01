@@ -4,6 +4,7 @@ import networkx as nx
 
 from path_planner_suite.IPEnvironment import CollisionChecker
 from path_planner_suite.IPSmoothing import IPSmoothing
+from semantic_hierarchical_graph.planners.floor_collision_checker import FloorCollisionChecker
 from semantic_hierarchical_graph.types.position import Position
 
 
@@ -22,7 +23,13 @@ class PlannerInterface():
         # Do not create a new instance of this Interface directly, use one of the subclasses
         self.room = room
         self.config = config
-        self.collision_checker = self._convert_room_to_IPCollisionChecker(room)
+        try:
+            self.collision_checker = self._convert_room_to_IPCollisionChecker(room)
+        except AttributeError:
+            # Assume planner is initialized with a floor insted of a room
+            self.collision_checker = FloorCollisionChecker(room)
+            print("Planner is not a room. Initialize a collision checker for floors.")
+
         self.planner: Any
         self.name: str
 
@@ -31,9 +38,7 @@ class PlannerInterface():
         return self.plan_with_lists(start_list, goal_list, smoothing_enabled)
 
     def plan_on_floor(self, floor_name: str, start: Tuple, goal: Tuple, smoothing_enabled: bool):
-        start_list, goal_list = self._convert_to_start_goal_lists(start, goal)
-        self.collision_checker = self._convert_floor_to_IPCollisionChecker(self.room.parent_node)
-        return self.plan_with_lists(start_list, goal_list, smoothing_enabled)
+        return self.plan(start, goal, smoothing_enabled)
 
     def plan_with_lists(self, start_list: List, goal_list: List, smoothing_enabled: bool):
         try:
@@ -70,13 +75,6 @@ class PlannerInterface():
         IPlimits = [[round(point[0] - max_dist), round(point[0] + max_dist)],
                     [round(point[1] - max_dist), round(point[1] + max_dist)]]
         IPscene = {str(i): obstacle for i, obstacle in enumerate(scene)}
-        return CollisionChecker(IPscene, IPlimits)
-
-    def _convert_floor_to_IPCollisionChecker(self, floor):
-        # TODO: adapt to floor
-        IPlimits = [[round(floor.min_x), round(floor.max_x)],
-                    [round(floor.min_y), round(floor.max_y)]]
-        IPscene = {str(i): obstacle for i, obstacle in enumerate(floor.env.scene)}
         return CollisionChecker(IPscene, IPlimits)
 
     def _convert_path_to_PathNode(self, path, graph) -> List:
