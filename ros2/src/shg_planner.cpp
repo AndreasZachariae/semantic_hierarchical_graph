@@ -167,11 +167,11 @@ namespace shg
     }
     else
     {
-      RCLCPP_INFO(node_->get_logger(), "Nodes: " + std::to_string(global_path_.poses.size()));
-      for (auto &pose : global_path_.poses)
-      {
-        RCLCPP_INFO(node_->get_logger(), "x: %f, y: %f", pose.pose.position.x, pose.pose.position.y);
-      }
+      RCLCPP_INFO(node_->get_logger(), "Path recieved with " + std::to_string(global_path_.poses.size()) + " nodes: ");
+      // for (auto &pose : global_path_.poses)
+      // {
+      //   RCLCPP_INFO(node_->get_logger(), "x: %f, y: %f", pose.pose.position.x, pose.pose.position.y);
+      // }
     }
 
     buffered_path_ = global_path_;
