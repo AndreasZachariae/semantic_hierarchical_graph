@@ -206,7 +206,7 @@ Evaluation
 
 - [ ] Make fair time comparison. Add time for roadmap generation to ilir planning time.
 - [x] Smooth all planners except ILIR
-- [ ] Evaluation per floor. Compare against all other planners planning on complete floor map vs hierarchical ILIR
+- [x] Evaluation per floor. Compare against all other planners planning on complete floor map vs hierarchical ILIR
 - [x] Automate process to generate only metric diagramms
 - [ ] Evaluate against roadmap of prm or rrt
 - [x] Make ILIR revert graph faster like in SHGPlanner
@@ -230,6 +230,8 @@ ROS node environment model
 - [ ] Simulate floor change
 - [x] Fix cleanup revert to original graph, Erros: Found paths 513000
 - [ ] Use correct floors for hierarchical planning
+- [ ] Fix orientation
+- [ ] Fix direction of path to roadmap added
 
 Visualization
 
