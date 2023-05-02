@@ -89,12 +89,13 @@ class SHGPlanner():
             raise SHGPlannerError("Position is not in a valid room")
 
         if room_id == -1:
-            rooms = [adj_rooms for adj_rooms, edges in floor_node.bridge_edges.items()
-                     for edge in edges if pos.xy in edge]
-            if not rooms:
+            try:
+                rooms = [adj_rooms for adj_rooms, edges in floor_node.bridge_edges.items()
+                         for edge in edges if pos.xy in edge]
+                # room_id = np.random.choice(rooms[0])
+                room_id = rooms[0][0]
+            except:
                 raise SHGPlannerError("Position is not in a valid room")
-            # room_id = np.random.choice(rooms[0])
-            room_id = rooms[0][0]
 
         room_node: Room = self.graph.get_child_by_hierarchy([floor, "room_" + str(room_id)])  # type: ignore
 
