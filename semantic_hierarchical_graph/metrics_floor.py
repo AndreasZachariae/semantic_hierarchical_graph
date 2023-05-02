@@ -40,14 +40,14 @@ class Metrics():
         bridge_points.extend(random_points)
         self.metrics["num_paths"] = comb(len(bridge_points), 2)
 
-        prm_config = {"radius": 50, "numNodes": 3000, "smoothing_max_iterations": 1000, "smoothing_max_k": 50}
+        prm_config = {"radius": 50, "numNodes": 3000, "smoothing_max_iterations": 200, "smoothing_max_k": 50}
         rrt_config = {"numberOfGeneratedNodes": 3000, "testGoalAfterNumberOfNodes": 100,
-                      "smoothing_max_iterations": 1000, "smoothing_max_k": 50}
+                      "smoothing_max_iterations": 200, "smoothing_max_k": 50}
         astar_config = {"heuristic": 'euclidean', "w": 0.5, 'max_iterations': 1000000,
-                        "smoothing_max_iterations": 1000, "smoothing_max_k": 50}
+                        "smoothing_max_iterations": 200, "smoothing_max_k": 50}
 
         # PRMPlanner(floor, prm_config), RRTPlanner(floor, rrt_config), AStarPlanner(floor, astar_config), SHGPlanner(graph_path)
-        for planner in [AStarPlanner(floor, astar_config), RRTPlanner(floor, rrt_config), PRMPlanner(floor, prm_config), SHGPlanner(graph_path)]:
+        for planner in [AStarPlanner(floor, astar_config), RRTPlanner(floor, rrt_config), PRMPlanner(floor, prm_config), SHGPlanner(graph_path), ]:
             path_metrics, room_mask_with_paths = self._calc_single_path_metrics(floor, bridge_points, planner)
             self.metrics[planner.name] = planner.config
             # TODO: Adapt to floor
@@ -66,6 +66,7 @@ class Metrics():
         path_metrics: Dict[str, Any] = {}
         path_metrics["success_rate"] = []
         path_metrics["planning_time"] = []
+        path_metrics["smoothing_time"] = []
         path_metrics["path_length"] = []
         path_metrics["num_turns"] = []
         path_metrics["cumulative_turning_angle"] = []
@@ -78,9 +79,10 @@ class Metrics():
         for point_1, point_2 in itertools.combinations(points, 2):
             print(f"Planning path {len(path_metrics['success_rate'])+1}/{self.metrics['num_paths']}")
             ts = time()
-            path, vis_graph = planner.plan_on_floor(floor.unique_name, point_1, point_2, True)
+            path, vis_graph, smoothing_time = planner.plan_on_floor(floor.unique_name, point_1, point_2, True)
             te = time()
             path_metrics["planning_time"].append(te - ts)
+            path_metrics["smoothing_time"].append(smoothing_time)
             if path is None or path == []:
                 path_metrics["success_rate"].append(0)
                 print(f"No path found from {point_1} to {point_2}")
@@ -262,4 +264,4 @@ if __name__ == "__main__":
     # metrics.save_metrics("data/floor_hou2_metrics.json")
     metrics.save_metrics("data/tmp/floor_ryu_metrics.json")
 
-    plot_metrics(metrics.metrics, "data/tmp/floor_ryu_metrics.png")
+    # plot_metrics(metrics.metrics, "data/tmp/floor_ryu_metrics.png")

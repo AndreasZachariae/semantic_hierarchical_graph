@@ -123,9 +123,9 @@ class SHGPlanner():
 
         return path_list, distance
 
-    def plan_on_floor(self, floor_name: str, start_pose: Tuple, goal_pose: Tuple, smoothing: bool = True) -> Tuple[List, nx.Graph]:
+    def plan_on_floor(self, floor_name: str, start_pose: Tuple, goal_pose: Tuple, smoothing: bool = True) -> Tuple[List, nx.Graph, float]:
         path, distance = self._plan([floor_name, None, start_pose], [floor_name, None, goal_pose])
-        return self.get_path_on_floor([floor_name], "node"), self.graph._get_child(floor_name).child_graph
+        return self.get_path_on_floor([floor_name], "node"), self.graph._get_child(floor_name).child_graph, 0.0
 
     def _plan(self, start: List, goal: List) -> Tuple[Dict, float]:
         """Expects hierarchy in type [str, str, Position/Tuple]"""

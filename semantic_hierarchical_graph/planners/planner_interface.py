@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Tuple
 import cv2
 import networkx as nx
+import time
 
 from path_planner_suite.IPEnvironment import CollisionChecker
 from path_planner_suite.IPSmoothing import IPSmoothing
@@ -50,15 +51,17 @@ class PlannerInterface():
             print(e)
             return None, self.planner.graph
 
+        ts = time.time()
         if smoothing_enabled:
             smoother = IPSmoothing(self.planner.graph, path, self.collision_checker)
             path, graph = smoother.smooth_solution(self.config["smoothing_max_iterations"],
                                                    self.config["smoothing_max_k"])
             print(len(path), "Size after smoothing")
+        te = time.time()
 
         if path is not None:
             path = self._convert_path_to_PathNode(path, graph)
-        return path, graph
+        return path, graph, te - ts
 
     def _convert_to_start_goal_lists(self, start: Tuple, goal: Tuple) -> Tuple[List, List]:
         start_list = [round(start[0]), round(start[1])]
