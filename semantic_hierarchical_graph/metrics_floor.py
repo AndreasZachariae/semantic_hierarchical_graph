@@ -19,6 +19,7 @@ from semantic_hierarchical_graph.planners.prm_planner import PRMPlanner
 from semantic_hierarchical_graph.planners.rrt_planner import RRTPlanner
 from semantic_hierarchical_graph.planners.shg_planner import SHGPlanner
 from semantic_hierarchical_graph.metrics_plots import plot_metrics
+import semantic_hierarchical_graph.utils as utils
 
 print("Recursion limit increased from", sys.getrecursionlimit(), "to", 2000)
 sys.setrecursionlimit(2000)
@@ -34,7 +35,10 @@ class Metrics():
         bridge_points = [point for points in floor.all_bridge_nodes.values() for point in points]
         self.metrics["num_bridge_points"] = len(bridge_points)
 
-        random_points = self._get_random_valid_points(floor, n=20)
+        random_points = [(1219, 253), (1090, 500), (674, 277), (487, 412), (621, 263), (484, 95), (508, 131), (100, 500), (1209, 483), (
+            1373, 177), (784, 54), (554, 189), (804, 149), (812, 57), (1510, 379), (350, 45), (258, 255), (511, 383), (535, 193), (1140, 261)]
+
+        # random_points = self._get_random_valid_points(floor, n=20)
         self.metrics["num_random_points"] = len(random_points)
         print("Random points:", random_points)
         bridge_points.extend(random_points)
@@ -48,14 +52,14 @@ class Metrics():
                         "smoothing_algorithm": "random", "smoothing_max_iterations": 100, "smoothing_max_k": 50}
 
         # PRMPlanner(floor, prm_config), RRTPlanner(floor, rrt_config), AStarPlanner(floor, astar_config), SHGPlanner(graph_path)
-        for planner in [AStarPlanner(floor, astar_config), RRTPlanner(floor, rrt_config), PRMPlanner(floor, prm_config), SHGPlanner(graph_path), ]:
+        for planner in [PRMPlanner(floor, prm_config)]:
             path_metrics, room_mask_with_paths = self._calc_single_path_metrics(floor, bridge_points, planner)
             self.metrics[planner.name] = planner.config
             # TODO: Adapt to floor
             # path_metrics["disturbance"] = self._calc_disturbance(floor.mask, room_mask_with_paths)
             segmentation.show_imgs(room_mask_with_paths,
                                    name=f"{self.metrics['floor_name']}_{list(self.metrics.keys())[-1]}",
-                                   save=True)
+                                   save=False)
             self.metrics[planner.name].update(path_metrics)
 
         # TODO: exclude bridge points not connected
@@ -102,9 +106,17 @@ class Metrics():
             # path_metrics["centroid_distance"].append(
             #     self._calc_centroid_distance(floor.centroid, floor.mask.copy(),  path))
 
-            self._draw_path(floor_mask, path, (0))
+            self._draw_path(floor_mask, path, 1, (22))
             # segmentation.show_imgs(floor_mask)
             # vis.draw_child_graph(room, path, vis_graph)
+
+            # print(f"Dict size: {utils.get_obj_size(path_metrics) / 1024 / 1024} MB")
+            # print(f"Path size: {utils.get_obj_size(path) / 1024 / 1024} MB")
+            # print(f"Floor size: {utils.get_obj_size(floor) / 1024 / 1024} MB")
+            # print(f"Graph size: {utils.get_obj_size(vis_graph) / 1024 / 1024} MB")
+            # print(f"Planner size: {utils.get_obj_size(planner) / 1024 / 1024} MB")
+            del path
+            del vis_graph
 
         return self._average_metrics(path_metrics), floor_mask
 
@@ -191,14 +203,14 @@ class Metrics():
     def _calc_obstacle_clearance(self, floor: Floor, path) -> Tuple[float, float, float]:
         dist_transform = floor.dist_transform  # type: ignore
         path_mask: np.ndarray = np.zeros(dist_transform.shape, dtype=np.uint8)
-        self._draw_path(path_mask, path, 1)
+        self._draw_path(path_mask, path, 1, 1)
         path_mask = np.where(path_mask == 1, True, False)
         path_distances = dist_transform[path_mask]
         # segmentation.show_imgs(path_mask)
         return np.mean(path_distances).item(), np.min(path_distances).item(), np.std(path_distances).item()
 
     def _calc_centroid_distance(self, centroid: Position, room_mask: np.ndarray, path) -> float:
-        self._draw_path(room_mask, path, 1)
+        self._draw_path(room_mask, path, 1, 1)
         path_points = np.argwhere(room_mask == 1)
         distances = [((centroid.x - point[1]) ** 2 + (centroid.y - point[0]) ** 2)**0.5 for point in path_points]
         return np.mean(distances).item()
@@ -229,11 +241,11 @@ class Metrics():
 
         return 1 - (largest_free_area / area)
 
-    def _draw_path(self, img: np.ndarray, path: List, color):
+    def _draw_path(self, img: np.ndarray, path: List, thickness, color):
         for i in range(len(path) - 1):
             pt1 = np.round(path[i].pos.xy).astype("int32")
             pt2 = np.round(path[i + 1].pos.xy).astype("int32")
-            cv2.line(img, pt1, pt2, color, 1, cv2.LINE_4)
+            cv2.line(img, pt1, pt2, color, thickness, cv2.LINE_4)
 
     def print_metrics(self) -> None:
         print(self.metrics)
