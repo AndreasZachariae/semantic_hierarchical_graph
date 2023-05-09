@@ -217,6 +217,7 @@ def _connect_point_with_rrt(point: Tuple[float, float], env: Environment, params
     config = dict()
     config["numberOfGeneratedNodes"] = 200
     config["testGoalAfterNumberOfNodes"] = 1
+    config["smoothing_algorithm"] = "bechtold_glavina"
     config["smoothing_max_iterations"] = 100
     config["smoothing_max_k"] = 50
     planner = rrt_planner.RRTPlanner.around_point(point, params["max_distance_to_connect_points"], env.scene, config)
@@ -233,6 +234,7 @@ def _connect_point_with_astar(point: Tuple[float, float], env: Environment, para
     config["heuristic"] = 'euclidean'
     config["w"] = 0.5
     config['max_iterations'] = 10000
+    config["smoothing_algorithm"] = "bechtold_glavina"
     config["smoothing_max_iterations"] = 100
     config["smoothing_max_k"] = 50
     planner = astar_planner.AStarPlanner.around_point(

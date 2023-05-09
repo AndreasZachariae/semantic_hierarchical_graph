@@ -40,11 +40,12 @@ class Metrics():
         bridge_points.extend(random_points)
         self.metrics["num_paths"] = comb(len(bridge_points), 2)
 
-        prm_config = {"radius": 50, "numNodes": 3000, "smoothing_max_iterations": 200, "smoothing_max_k": 50}
+        prm_config = {"radius": 50, "numNodes": 3000,
+                      "smoothing_algorithm": "random", "smoothing_max_iterations": 100, "smoothing_max_k": 50}
         rrt_config = {"numberOfGeneratedNodes": 3000, "testGoalAfterNumberOfNodes": 100,
-                      "smoothing_max_iterations": 200, "smoothing_max_k": 50}
+                      "smoothing_algorithm": "random", "smoothing_max_iterations": 100, "smoothing_max_k": 50}
         astar_config = {"heuristic": 'euclidean', "w": 0.5, 'max_iterations': 1000000,
-                        "smoothing_max_iterations": 200, "smoothing_max_k": 50}
+                        "smoothing_algorithm": "random", "smoothing_max_iterations": 100, "smoothing_max_k": 50}
 
         # PRMPlanner(floor, prm_config), RRTPlanner(floor, rrt_config), AStarPlanner(floor, astar_config), SHGPlanner(graph_path)
         for planner in [AStarPlanner(floor, astar_config), RRTPlanner(floor, rrt_config), PRMPlanner(floor, prm_config), SHGPlanner(graph_path), ]:

@@ -11,6 +11,7 @@ class AStarPlanner(PlannerInterface):
             config["heuristic"] = 'euclidean'
             config["w"] = 0.5
             config['max_iterations'] = 100000
+            config["smoothing_algorithm"] = "bechtold_glavina"
             config["smoothing_max_iterations"] = 100
             config["smoothing_max_k"] = 50
 

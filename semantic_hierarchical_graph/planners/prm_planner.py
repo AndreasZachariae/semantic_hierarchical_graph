@@ -10,6 +10,7 @@ class PRMPlanner(PlannerInterface):
             config = dict()
             config["radius"] = 50
             config["numNodes"] = 300
+            config["smoothing_algorithm"] = "bechtold_glavina"
             config["smoothing_max_iterations"] = 100
             config["smoothing_max_k"] = 50
 

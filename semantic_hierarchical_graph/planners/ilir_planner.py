@@ -15,6 +15,7 @@ class ILIRPlanner(PlannerInterface):
     def __init__(self, room: Room, config: Optional[Dict] = None):
         if config is None:
             config = dict()
+            config["smoothing_algorithm"] = "bechtold_glavina"
             config["smoothing_max_iterations"] = 100
             config["smoothing_max_k"] = 50
 
@@ -23,7 +24,7 @@ class ILIRPlanner(PlannerInterface):
         self.name = "ILIR"
         self.graph = self.room.child_graph
         self.planner = self
-        
+
         self.tmp_edge_removed = []
         self.tmp_path_added = []
 
@@ -42,10 +43,10 @@ class ILIRPlanner(PlannerInterface):
                 distance_to_roadmap += self._add_path_to_roadmap(start_pos.to_name(), start_pos, type="start")
             if goal_pos.to_name() not in self.room.get_childs("name"):
                 distance_to_roadmap += self._add_path_to_roadmap(goal_pos.to_name(), goal_pos, type="goal")
-                
+
             # if distance_to_roadmap > start_pos.distance(goal_pos):
             #     path, distance = self._check_for_direct_connection(start_pos, goal_pos)
-                
+
             if not path:
                 path = self.room.plan_in_graph(start_pos.to_name(), goal_pos.to_name())
         except SHGPlannerError as e:
@@ -57,9 +58,9 @@ class ILIRPlanner(PlannerInterface):
             self._revert_tmp_graph()
             self.tmp_edge_removed = []
             self.tmp_path_added = []
-            
+
         return path, vis_graph
-    
+
     def _check_for_direct_connection(self, start_pos: Position, goal_pos: Position) -> Tuple:
         connection = self.room.env.get_valid_connection(Point(start_pos.xy), Point(goal_pos.xy))
         if connection is not None:
@@ -104,7 +105,7 @@ class ILIRPlanner(PlannerInterface):
             self.room.child_graph.remove_edge(path_1_node, path_2_node)
             self.room.env.path.remove(closest_path)
             self.tmp_edge_removed.append((path_1_node, path_2_node, edge_data, closest_path))
-            
+
         self.room.add_connection_by_nodes(path_1_node, nodes[1], path_1_pos.distance(nodes[1].pos))
         self.room.add_connection_by_nodes(nodes[1], path_2_node, path_2_pos.distance(nodes[1].pos))
         path1 = LineString([path_1_pos.xy, nodes[1].pos.xy])
@@ -113,9 +114,9 @@ class ILIRPlanner(PlannerInterface):
         self.tmp_path_added.append(path2)
         self.room.env.add_path(path1)
         self.room.env.add_path(path2)
-        
+
         return distance
-    
+
     def _revert_tmp_graph(self):
         to_remove = []
         for node in self.room.get_childs():

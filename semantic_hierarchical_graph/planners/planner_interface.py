@@ -54,7 +54,8 @@ class PlannerInterface():
         ts = time.time()
         if smoothing_enabled:
             smoother = IPSmoothing(self.planner.graph, path, self.collision_checker)
-            path, graph = smoother.smooth_solution(self.config["smoothing_max_iterations"],
+            path, graph = smoother.smooth_solution(self.config["smoothing_algorithm"],
+                                                   self.config["smoothing_max_iterations"],
                                                    self.config["smoothing_max_k"])
             print(len(path), "Size after smoothing")
         te = time.time()

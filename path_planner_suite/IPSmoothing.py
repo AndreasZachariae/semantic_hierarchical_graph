@@ -25,7 +25,7 @@ class IPSmoothing:
         self.length_history = []
         self.debug = False
 
-    def smooth_solution(self, max_iterations, k_max, eps=0, variance_window=0, min_variance=0):
+    def smooth_solution(self, algorithm, max_iterations, k_max, eps=0, variance_window=0, min_variance=0):
         """
         Smooths the path solution over a range of iterations, breaking if the range count is exceeded, or if the path
         variance is smaller than a minimum value.
@@ -68,28 +68,41 @@ class IPSmoothing:
             if len(path) <= 2:
                 break
 
-            node_in_collision = []
-            # i = random.randint(1, len(path)-1)
-            node_generator = self.get_next_worst_node(path, pos)
-            for i in node_generator:
-                i = node_generator.send(node_in_collision)  # type: ignore
-                if i is None:
-                    continue
-                # print("worst", i, "/", len(path))
+            if algorithm == "bechtold_glavina":
+                node_generator = self.get_next_worst_node(path, pos)
+                node_in_collision = []
+                for i in node_generator:
+                    i = node_generator.send(node_in_collision)  # type: ignore
+                    if i is None:
+                        continue
+                    # print("worst", i, "/", len(path))
+                    k_max = min(k_max, len(path)-2)
+
+                    collision = self.decrease_k_until_connection(i, k_max, path, smooth_graph, pos)
+
+                    if collision is None:
+                        path = nx.shortest_path(smooth_graph, "start", "goal")
+                        break
+                    else:
+                        node_in_collision.append(i)
+
+                else:
+                    # All nodes are at lowest k in collision. Break outer iterations.
+                    # print("Break smoothing", n)
+                    break
+
+            elif algorithm == "random":
+                # print("n", n, "len", len(path))
+                i = random.randint(1, len(path)-1)
                 k_max = min(k_max, len(path)-2)
 
                 collision = self.decrease_k_until_connection(i, k_max, path, smooth_graph, pos)
 
                 if collision is None:
                     path = nx.shortest_path(smooth_graph, "start", "goal")
-                    break
-                else:
-                    node_in_collision.append(i)
 
             else:
-                # All nodes are at lowest k in collision. Break outer iterations.
-                # print("Break smoothing", n)
-                break
+                raise ValueError("Unknown algorithm")
 
             self.length_history.append(self.get_path_length(pos, path))
 
