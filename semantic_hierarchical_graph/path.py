@@ -72,6 +72,8 @@ class SHMultiPaths():
 
     def _get_single_comb(self, combination):
         num = combination[str(self.parent.hierarchy)]
+        if num >= self.num_paths:
+            return {}, np.inf
         return self.paths[num]._get_single_comb(combination)
 
     @staticmethod
