@@ -52,7 +52,7 @@ class Metrics():
                         "smoothing_algorithm": "random", "smoothing_max_iterations": 100, "smoothing_max_k": 50}
 
         # PRMPlanner(floor, prm_config), RRTPlanner(floor, rrt_config), AStarPlanner(floor, astar_config), SHGPlanner(graph_path)
-        for planner in [PRMPlanner(floor, prm_config)]:
+        for planner in [AStarPlanner(floor, astar_config)]:
             path_metrics, room_mask_with_paths = self._calc_single_path_metrics(floor, bridge_points, planner)
             self.metrics[planner.name] = planner.config
             # TODO: Adapt to floor
@@ -109,14 +109,6 @@ class Metrics():
             self._draw_path(floor_mask, path, 1, (22))
             # segmentation.show_imgs(floor_mask)
             # vis.draw_child_graph(room, path, vis_graph)
-
-            # print(f"Dict size: {utils.get_obj_size(path_metrics) / 1024 / 1024} MB")
-            # print(f"Path size: {utils.get_obj_size(path) / 1024 / 1024} MB")
-            # print(f"Floor size: {utils.get_obj_size(floor) / 1024 / 1024} MB")
-            # print(f"Graph size: {utils.get_obj_size(vis_graph) / 1024 / 1024} MB")
-            # print(f"Planner size: {utils.get_obj_size(planner) / 1024 / 1024} MB")
-            del path
-            del vis_graph
 
         return self._average_metrics(path_metrics), floor_mask
 

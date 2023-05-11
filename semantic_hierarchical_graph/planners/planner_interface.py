@@ -5,6 +5,7 @@ import time
 
 from path_planner_suite.IPEnvironment import CollisionChecker
 from path_planner_suite.IPSmoothing import IPSmoothing
+from path_planner_suite.IPPerfMonitor import IPPerfMonitor
 from semantic_hierarchical_graph.planners.floor_collision_checker import FloorCollisionChecker
 from semantic_hierarchical_graph.types.position import Position
 
@@ -50,6 +51,8 @@ class PlannerInterface():
             print(f"Error while planning with {self.name}: ")
             print(e)
             return None, self.planner.graph
+        finally:
+            IPPerfMonitor.clearData()
 
         ts = time.time()
         if smoothing_enabled:

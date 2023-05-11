@@ -111,3 +111,19 @@ def get_obj_size(obj):
         marked.update(new_refr.keys())
 
     return sz
+
+
+def find_memory_leaks():
+    import tracemalloc
+    tracemalloc.start()
+
+    path = [999999] * 1000000
+    del path
+    gc.collect()
+
+    snapshot = tracemalloc.take_snapshot()
+    top_stats = snapshot.statistics('lineno')
+
+    print("[ Top 10 ]")
+    for stat in top_stats[:10]:
+        print(stat)
