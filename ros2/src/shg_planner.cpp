@@ -47,6 +47,14 @@
 
 namespace shg
 {
+  int TIMEOUT_FOR_BUFFERED_PATH = 5;
+  int MAX_GOAL_DIFFERENCE_FOR_BUFFERED_PATH = 0.5;
+
+  bool isInGoalTolerance(double value1, double value2)
+  {
+    double difference = std::fabs(value1 - value2);
+    return difference <= MAX_GOAL_DIFFERENCE_FOR_BUFFERED_PATH;
+  }
 
   void SHGPlanner::configure(
       rclcpp_lifecycle::LifecycleNode::SharedPtr parent,
@@ -159,7 +167,7 @@ namespace shg
     if (global_path_.poses.size() == 0)
     {
       RCLCPP_ERROR(node_->get_logger(), "Path is empty");
-      if (node_->now() - buffered_path_.header.stamp < rclcpp::Duration(5, 0))
+      if (node_->now() - buffered_path_.header.stamp < rclcpp::Duration(5, 0) && isInGoalTolerance(goal.pose.position.x, buffered_path_.poses.back().pose.position.x) && isInGoalTolerance(goal.pose.position.y, buffered_path_.poses.back().pose.position.y))
       {
         RCLCPP_ERROR(node_->get_logger(), "Using buffered path");
         return buffered_path_;
