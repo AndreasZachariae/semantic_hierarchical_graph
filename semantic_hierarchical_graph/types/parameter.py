@@ -4,9 +4,9 @@ from semantic_hierarchical_graph.utils import round_up
 
 
 class Parameter():
-    def __init__(self, path: str, is_floor: bool = True):
+    def __init__(self, path: str, is_map: bool = True):
         self.params: dict[str, Any] = self.load_params(path)
-        if is_floor:
+        if is_map:
             self.params["safety_distance"] = self.get_safety_distance(
                 self.params["base_size"], self.params["safety_margin"])
 

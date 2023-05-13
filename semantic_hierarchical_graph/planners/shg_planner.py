@@ -43,15 +43,15 @@ class SHGPlanner():
         return SHGraph.load_graph(self.graph_path + "/" + graph_name)
 
     def _create_graph(self) -> SHGraph:
-        params = Parameter(self.graph_path + "/graph.yaml", is_floor=False).params
+        params = Parameter(self.graph_path + "/graph.yaml", is_map=False).params
         G = SHGraph(root_name=self.graph_path.split("/")[-1], root_pos=Position(0, 0, 0), params=params)
 
-        floor_names = {floor_file.split(".")[0] for floor_file in os.listdir(
-            self.graph_path + "/" + params["hierarchy_level"][-3])}
-        for floor_nr, floor_name in enumerate(floor_names):
-            floor_path = os.path.join(self.graph_path, params["hierarchy_level"][-3], floor_name)
+        for floor_nr, floor_config in enumerate(params["maps"]):
+            floor_path = os.path.join(self.graph_path, floor_config["yaml_path"])
+            floor_name = floor_config["hierarchy"][-1]
+            floor_map = floor_path.replace(".yaml", ".pgm")
             print("Creating floor: " + floor_name)
-            floor = Floor(floor_name, G, Position(0, 0, floor_nr), floor_path + ".pgm", floor_path + ".yaml")
+            floor = Floor(floor_name, G, Position(0, 0, floor_nr), floor_map, floor_path)
             G.add_child_by_node(floor)
 
             floor.create_rooms()

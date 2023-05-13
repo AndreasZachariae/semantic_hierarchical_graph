@@ -1,3 +1,7 @@
 graph_name: "simulation"
 hierarchy_level: ["floor", "room", "location"]
+initial_map: "aws1"
+maps:
+  - hierarchy: ["aws1"]
+    yaml_path: "./floor/aws1.yaml"
 connections: []

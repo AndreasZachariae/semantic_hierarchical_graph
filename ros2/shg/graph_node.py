@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 from time import time
+import yaml
 
 import rclpy
 from rclpy.node import Node
@@ -21,15 +22,20 @@ class GraphNode(Node):
     def __init__(self):
         super().__init__('graph_node')  # type: ignore
 
-        self.graph_name = self.declare_parameter("graph_name", "graph").get_parameter_value().string_value
-        self.initial_floor = self.declare_parameter("initial_floor", "ryu").get_parameter_value().string_value
         self.interpolation_resolution = self.declare_parameter(
             "interpolation_resolution", 1).get_parameter_value().double_value
-        src_prefix = os.path.join(get_package_prefix('shg'), '..', '..', 'src', 'semantic_hierarchical_graph')
+        graph_path = self.declare_parameter("graph_path", "graph").get_parameter_value().string_value
+        graph_path = os.path.join(get_package_prefix('shg'), '..', '..', 'src',
+                                  'semantic_hierarchical_graph', 'ros2', 'config', graph_path)
+        graph_config_path = os.path.join(graph_path, 'graph.yaml')
+        print(graph_config_path)
+        graph_config = yaml.load(open(graph_config_path), Loader=yaml.FullLoader)
+        self.graph_name = graph_config["graph_name"]
+        self.initial_map = graph_config["initial_map"]
 
-        self.get_logger().info("Graph name: " + str(self.graph_name) + ", initial floor: " + str(self.initial_floor))
+        self.get_logger().info("Graph name: " + str(self.graph_name) + ", initial floor: " + str(self.initial_map))
 
-        self.shg_planner = SHGPlanner(src_prefix + "/data/graphs/" + self.graph_name, "graph.pickle", False)
+        self.shg_planner = SHGPlanner(graph_path, "graph.pickle", False)
 
         self.plan_srv = self.create_service(GetPlan, 'shg/plan_path', self.plan_path_callback)
         self.map_client = self.create_client(GetMap, 'map_server/map')
@@ -37,7 +43,7 @@ class GraphNode(Node):
         self.goal_floor_srv = self.create_service(SaveMap, 'shg/goal_floor', self.goal_floor_callback)
 
         self.current_map = self.get_initial_map()
-        self.current_floor_name = self.initial_floor
+        self.current_floor_name = self.initial_map
         self.goal_floor_name = None
 
         self.shg_planner.update_floor((self.current_map.info.origin.position.x, self.current_map.info.origin.position.y),
