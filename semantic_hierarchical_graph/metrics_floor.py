@@ -44,7 +44,7 @@ class Metrics():
         bridge_points.extend(random_points)
         self.metrics["num_paths"] = comb(len(bridge_points), 2)
 
-        prm_config = {"radius": 50, "numNodes": 3000,
+        prm_config = {"radius": 100, "numNodes": 3000,
                       "smoothing_algorithm": "random", "smoothing_max_iterations": 100, "smoothing_max_k": 50}
         rrt_config = {"numberOfGeneratedNodes": 3000, "testGoalAfterNumberOfNodes": 100,
                       "smoothing_algorithm": "random", "smoothing_max_iterations": 100, "smoothing_max_k": 50}
