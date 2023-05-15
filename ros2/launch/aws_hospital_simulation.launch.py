@@ -32,7 +32,7 @@ def generate_launch_description():
     planner_src_dir = os.path.join(get_package_prefix('shg'), '..', '..', 'src', 'semantic_hierarchical_graph', 'ros2')
     launch_dir = os.path.join(bringup_dir, 'launch')
     aws_hospital_dir = get_package_share_directory('aws_robomaker_hospital_world')
-    world_path = os.path.join(aws_hospital_dir, 'worlds', 'hospital.world')
+    world_path = os.path.join(aws_hospital_dir, 'worlds', 'hospital_two_floors.world')
 
     # Create the launch configuration variables
     slam = LaunchConfiguration('slam')

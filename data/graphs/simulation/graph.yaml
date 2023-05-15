@@ -1,7 +1,10 @@
 graph_name: "simulation"
 hierarchy_level: ["floor", "room", "location"]
 initial_map: "aws1"
+floor_height: 3.01
 maps:
   - hierarchy: ["aws1"]
     yaml_path: "./floor/aws1.yaml"
+  - hierarchy: ["aws2"]
+    yaml_path: "./floor/aws2.yaml"
 connections: []
