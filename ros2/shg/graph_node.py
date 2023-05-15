@@ -1,16 +1,29 @@
 #!/usr/bin/env python3
 import os
-from time import time
+from time import time, sleep
 import yaml
 
 import rclpy
 from rclpy.node import Node
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
 from ament_index_python.packages import get_package_prefix
+import tf_transformations
 from nav_msgs.srv import GetPlan, GetMap
+from nav2_msgs.srv import LoadMap
 from nav_msgs.msg import OccupancyGrid
 from map_msgs.srv import SaveMap
 from geometry_msgs.msg import PoseStamped, Pose, Point, PointStamped
-import tf_transformations
+
+# Services for map change
+from std_msgs.msg import Empty
+from gazebo_msgs.srv import SetEntityState
+from geometry_msgs.msg import PoseWithCovarianceStamped
+from nav2_msgs.srv import ClearEntireCostmap
+from tf2_ros import TransformException
+from tf2_ros.buffer import Buffer
+from tf2_ros.transform_listener import TransformListener
+
 
 from semantic_hierarchical_graph.planners.shg_planner import SHGPlanner
 from semantic_hierarchical_graph.types.exceptions import SHGPlannerError
@@ -32,6 +45,10 @@ class GraphNode(Node):
         graph_config = yaml.load(open(graph_config_path), Loader=yaml.FullLoader)
         self.graph_name = graph_config["graph_name"]
         self.initial_map = graph_config["initial_map"]
+        self.floor_height = graph_config["floor_height"]
+        self.map_paths = {map_config["hierarchy"][-1]:
+                          os.path.join(graph_path, map_config["yaml_path"])
+                          for map_config in graph_config["maps"]}
 
         self.get_logger().info("Graph name: " + str(self.graph_name) + ", initial floor: " + str(self.initial_map))
 
@@ -51,6 +68,32 @@ class GraphNode(Node):
                                       (self.current_map.info.height, self.current_map.info.width),
                                       self.current_floor_name)
 
+        # Services to change map and spawn simulation robot on new floor
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
+
+        self.change_map_srv = self.create_service(LoadMap, 'shg/change_map', self.change_map_callback)
+        self.gazebo_calls_group = MutuallyExclusiveCallbackGroup()
+        self.initial_pose_publisher = self.create_publisher(
+            PoseWithCovarianceStamped, "/initialpose", 10, callback_group=self.gazebo_calls_group)
+        self.clear_local_costmap_client = self.create_client(
+            ClearEntireCostmap, "/local_costmap/clear_entirely_local_costmap", callback_group=self.gazebo_calls_group)
+        self.clear_global_costmap_client = self.create_client(
+            ClearEntireCostmap, "/global_costmap/clear_entirely_global_costmap", callback_group=self.gazebo_calls_group)
+        self.set_entity_state_client = self.create_client(
+            SetEntityState, "/gazebo/set_entity_state", callback_group=self.gazebo_calls_group)
+        self.load_map_client = self.create_client(
+            LoadMap, "/map_server/load_map", callback_group=self.gazebo_calls_group)
+
+        while not (self.set_entity_state_client.wait_for_service(timeout_sec=1.0) and
+                   self.load_map_client.wait_for_service(timeout_sec=1.0) and
+                   self.clear_local_costmap_client.wait_for_service(timeout_sec=1.0) and
+                   self.clear_global_costmap_client.wait_for_service(timeout_sec=1.0)):
+            self.get_logger().info('Necessary gazebo services not available, waiting again...')
+
+        # ros2 service call /gazebo/get_entity_state gazebo_msgs/srv/GetEntityState "{name: turtlebot3_waffle}"
+        # ros2 service call /gazebo/set_entity_state gazebo_msgs/srv/SetEntityState "{state: {name: turtlebot3_waffle, pose: {position: {x: 3, y: 2}}}}"
+
         self.get_logger().info("Started graph_node")
 
     def get_initial_map(self):
@@ -66,6 +109,64 @@ class GraphNode(Node):
     def goal_floor_callback(self, request: SaveMap.Request, response: SaveMap.Response) -> SaveMap.Response:
         self.goal_floor_name = request.filename
         self.get_logger().info("Goal floor: " + str(self.goal_floor_name))
+        return response
+
+    def change_map_callback(self, request: LoadMap.Request, response: LoadMap.Response) -> LoadMap.Response:
+        map_name = request.map_url
+        if map_name not in self.map_paths:
+            self.get_logger().error("Map name not available, choose from: " + str(self.map_paths.keys()))
+            return response
+        self.get_logger().info("Changing map to: " + str(map_name))
+
+        # Get current position
+        try:
+            t = self.tf_buffer.lookup_transform(
+                "map",
+                "base_footprint",
+                rclpy.time.Time())
+        except TransformException as ex:
+            self.get_logger().error(
+                f'Could not transform {"map"} to {"base_footprint"}: {ex}')
+            return response
+
+        # Teleport robot to new floor
+        new_position = SetEntityState.Request()
+        new_position.state.name = "turtlebot3_waffle"
+        new_position.state.pose.position.x = t.transform.translation.x
+        new_position.state.pose.position.y = t.transform.translation.y
+        new_position.state.pose.position.z = t.transform.translation.z + self.floor_height
+        new_position.state.pose.orientation = t.transform.rotation
+
+        res = self.set_entity_state_client.call(new_position)
+        if not res.success:
+            self.get_logger().error("Could not set new position")
+            return response
+        self.get_logger().info("New position set")
+
+        # Load new map
+        req = LoadMap.Request()
+        req.map_url = self.map_paths[map_name]
+        res = self.load_map_client.call(req)
+        if not res:
+            self.get_logger().error("Could not load map")
+            return response
+        self.get_logger().info("Map loaded")
+
+        sleep(2)
+
+        # Clear costmaps
+        req = ClearEntireCostmap.Request()
+        req.request = Empty()
+        res = self.clear_local_costmap_client.call(req)
+        if not res:
+            self.get_logger().error("Could not clear local costmap")
+            return response
+        res = self.clear_global_costmap_client.call(req)
+        if not res:
+            self.get_logger().error("Could not clear global costmap")
+            return response
+        self.get_logger().info("Costmaps cleared")
+
         return response
 
     def clicked_point_callback(self, msg: PointStamped):
@@ -126,9 +227,10 @@ def main(args=None):
     rclpy.init(args=args)
 
     node = GraphNode()
+    executor = MultiThreadedExecutor()
 
     try:
-        rclpy.spin(node)
+        rclpy.spin(node, executor=executor)
     except KeyboardInterrupt:
         node.get_logger().info("KeyboardInterrupt")
 
