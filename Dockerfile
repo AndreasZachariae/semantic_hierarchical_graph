@@ -78,6 +78,7 @@ COPY ./config ./config
 COPY ./data/graphs ./data/graphs
 COPY ./path_planner_suite ./path_planner_suite
 COPY ./ros2 ./ros2
+COPY ./ros2_interfaces ./ros2_interfaces
 COPY ./semantic_hierarchical_graph ./semantic_hierarchical_graph
 
 ENV TURTLEBOT3_MODEL=waffle

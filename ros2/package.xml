@@ -25,6 +25,7 @@
   <depend>nav2_costmap_2d</depend>
   <depend>nav2_core</depend>
   <depend>pluginlib</depend>
+  <depend>shg_interfaces</depend>
 
 
   <test_depend>ament_copyright</test_depend>

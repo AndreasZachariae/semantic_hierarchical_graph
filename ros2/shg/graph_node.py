@@ -23,6 +23,7 @@ from nav2_msgs.srv import ClearEntireCostmap
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
+from shg_interfaces.srv import GetNextGoal
 
 
 from semantic_hierarchical_graph.planners.shg_planner import SHGPlanner
@@ -52,16 +53,16 @@ class GraphNode(Node):
 
         self.get_logger().info("Graph name: " + str(self.graph_name) + ", initial floor: " + str(self.initial_map))
 
-        self.shg_planner = SHGPlanner(graph_path, "graph.pickle", False)
+        self.shg_planner = SHGPlanner(graph_path, "graph.pickle", True)
 
         self.plan_srv = self.create_service(GetPlan, 'shg/plan_path', self.plan_path_callback)
         self.map_client = self.create_client(GetMap, 'map_server/map')
         self.point_sub = self.create_subscription(PointStamped, 'clicked_point', self.clicked_point_callback, 10)
-        self.goal_floor_srv = self.create_service(SaveMap, 'shg/goal_floor', self.goal_floor_callback)
+        self.get_next_goal_srv = self.create_service(
+            GetNextGoal, 'shg/get_next_goal', self.get_next_goal_callback)
 
         self.current_map = self.get_initial_map()
         self.current_floor_name = self.initial_map
-        self.goal_floor_name = None
 
         self.shg_planner.update_floor((self.current_map.info.origin.position.x, self.current_map.info.origin.position.y),
                                       self.current_map.info.resolution,
@@ -106,9 +107,27 @@ class GraphNode(Node):
         initial_map: OccupancyGrid = future.result().map  # type: ignore
         return initial_map
 
-    def goal_floor_callback(self, request: SaveMap.Request, response: SaveMap.Response) -> SaveMap.Response:
-        self.goal_floor_name = request.filename
-        self.get_logger().info("Goal floor: " + str(self.goal_floor_name))
+    def get_next_goal_callback(self, request: GetNextGoal.Request, response: GetNextGoal.Response) -> GetNextGoal.Response:
+        path_list = self.shg_planner.get_path_on_floor([request.map_name], "position", None)
+        if len(path_list) == 0:
+            self.get_logger().error("No path found on selected floor, call 'shg/plan_path' service first " + str(request.map_name))
+            return response
+
+        goal: Position = path_list[-1]
+        goal_in_map_frame = goal.to_map_frame((self.current_map.info.origin.position.x, self.current_map.info.origin.position.y),
+                                              self.current_map.info.resolution,
+                                              (self.current_map.info.height, self.current_map.info.width))
+
+        response.goal_pose = Pose()
+        response.goal_pose.position.x = goal[0]
+        response.goal_pose.position.y = goal[1]
+        q = tf_transformations.quaternion_about_axis(goal[2], (0, 0, 1))
+        response.goal_pose.orientation.x = q[0]
+        response.goal_pose.orientation.y = q[1]
+        response.goal_pose.orientation.z = q[2]
+        response.goal_pose.orientation.w = q[3]
+
+        self.get_logger().info("Goal pos on next floor: " + str(goal_in_map_frame))
         return response
 
     def change_map_callback(self, request: LoadMap.Request, response: LoadMap.Response) -> LoadMap.Response:
@@ -141,7 +160,7 @@ class GraphNode(Node):
         if not res.success:
             self.get_logger().error("Could not set new position")
             return response
-        self.get_logger().info("New position set")
+        self.get_logger().info("Moved to new position")
 
         # Load new map
         req = LoadMap.Request()
@@ -150,7 +169,25 @@ class GraphNode(Node):
         if not res:
             self.get_logger().error("Could not load map")
             return response
+
+        self.current_map = res.map
+        self.current_floor_name = map_name
+        self.shg_planner.update_floor((self.current_map.info.origin.position.x, self.current_map.info.origin.position.y),
+                                      self.current_map.info.resolution,
+                                      (self.current_map.info.height, self.current_map.info.width),
+                                      self.current_floor_name)
         self.get_logger().info("Map loaded")
+
+        # Set initial pose
+        # TODO: Adapt to new pose on new floor
+        req = PoseWithCovarianceStamped()
+        req.header.frame_id = "map"
+        req.pose.pose.position.x = t.transform.translation.x
+        req.pose.pose.position.y = t.transform.translation.y
+        req.pose.pose.position.z = t.transform.translation.z
+        req.pose.pose.orientation = t.transform.rotation
+        self.initial_pose_publisher.publish(req)
+        self.get_logger().info("Initial pose set")
 
         sleep(2)
 

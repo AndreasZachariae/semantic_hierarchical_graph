@@ -33,6 +33,7 @@ find_package(tf2_ros REQUIRED)
 find_package(nav2_costmap_2d REQUIRED)
 find_package(nav2_core REQUIRED)
 find_package(pluginlib REQUIRED)
+find_package(shg_interfaces REQUIRED)
 
 
 include_directories(
@@ -56,6 +57,7 @@ set(DEPENDENCIES
     nav2_costmap_2d
     nav2_core
     pluginlib
+    shg_interfaces
 )
 
 add_library(${library_name} SHARED
@@ -71,14 +73,6 @@ target_compile_definitions(${library_name} PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNC
 
 pluginlib_export_plugin_description_file(nav2_core global_planner_plugin.xml)
 
-
-# add_executable(cpp_node
-#    src/cpp_node.cpp
-# )
-
-# ament_target_dependencies(cpp_node
-#    ${DEPENDENCIES}
-# )
 
 install(TARGETS ${library_name}
   ARCHIVE DESTINATION lib
@@ -118,12 +112,6 @@ install(PROGRAMS
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
-  # the following line skips the linter which checks for copyrights
-  # uncomment the line when a copyright and license is not present in all source files
-  #set(ament_cmake_copyright_FOUND TRUE)
-  # the following line skips cpplint (only works in a git repo)
-  # uncomment the line when this package is not in a git repo
-  #set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
 
