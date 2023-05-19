@@ -70,3 +70,12 @@ class Position():
     def __hash__(self):
         """Overrides the default implementation"""
         return hash(tuple(sorted(self.__dict__.items())))
+
+
+def convert_map_pos_to_hierarchy(map, map_x, map_y, watershed):
+    x, y = Position.from_map_frame((map_x, map_y),
+                                   (map.info.origin.position.x, map.info.origin.position.y),
+                                   map.info.resolution,
+                                   (map.info.height, map.info.width)).xy
+    room_str = "room_"+str(watershed[y, x])
+    return [room_str, (x, y)]
