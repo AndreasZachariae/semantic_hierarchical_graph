@@ -237,12 +237,14 @@ Floor change
 - [ ] Start multiple map servers with each floor map
 - [ ] change floor map in RVIZ per topic
 - [ ] plan in rviz and give as map frame the floor name
-- [ ] In SHG Planner take floor name from frame_id and plan to respective floor
+- [x] In SHG Planner take floor name from frame_id and plan to respective floor
 - [ ] Create behavior tree action to trigger floor change
-- [ ] Gazebo service to teleport robot to next floor
-- [ ] Behavior tree to coordinate complete change
+- [x] Gazebo service to teleport robot to next floor
+- [x] Behavior tree to coordinate complete change
+- [ ] Split change_map function to separate from simulation
 
 Visualization
 
 - [ ] Show panel with subplots for each hierarchy with planned path
+- [ ] CLI tool which launches map server and rviz. Guide through creation of elevator connections. With clicked point and map change. Save positions in graph.yaml
 
