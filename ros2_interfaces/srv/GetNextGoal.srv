@@ -1,5 +1,0 @@
-# request
-string map_name
----
-# response
-geometry_msgs/Pose goal_pose

@@ -33,7 +33,7 @@ set(DEPENDENCIES
 #file (GLOB SERVICES srv/*.srv)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-  "srv/GetNextGoal.srv"
+  "srv/GetElevatorData.srv"
 
   #${MSGS}
   #${ACTIONS}
