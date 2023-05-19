@@ -23,12 +23,13 @@ from nav2_msgs.srv import ClearEntireCostmap
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
-from shg_interfaces.srv import GetNextGoal
+from shg_interfaces.srv import GetElevatorData
 
 
 from semantic_hierarchical_graph.planners.shg_planner import SHGPlanner
 from semantic_hierarchical_graph.types.exceptions import SHGPlannerError
-from semantic_hierarchical_graph.types.position import Position
+from semantic_hierarchical_graph.types.position import Position, convert_map_pos_to_hierarchy
+from semantic_hierarchical_graph.utils import path_to_list
 
 
 class GraphNode(Node):
@@ -43,23 +44,25 @@ class GraphNode(Node):
                                   'semantic_hierarchical_graph', 'ros2', 'config', graph_path)
         graph_config_path = os.path.join(graph_path, 'graph.yaml')
         print(graph_config_path)
-        graph_config = yaml.load(open(graph_config_path), Loader=yaml.FullLoader)
-        self.graph_name = graph_config["graph_name"]
-        self.initial_map = graph_config["initial_map"]
-        self.floor_height = graph_config["floor_height"]
+        self.graph_config = yaml.load(open(graph_config_path), Loader=yaml.FullLoader)
+        self.graph_name = self.graph_config["graph_name"]
+        self.initial_map = self.graph_config["initial_map"]
+        self.floor_height = self.graph_config["floor_height"]
         self.map_paths = {map_config["hierarchy"][-1]:
                           os.path.join(graph_path, map_config["yaml_path"])
-                          for map_config in graph_config["maps"]}
+                          for map_config in self.graph_config["maps"]}
+        self.force_build_new_graph = self.declare_parameter(
+            "force_build_new_graph", False).get_parameter_value().bool_value
 
         self.get_logger().info("Graph name: " + str(self.graph_name) + ", initial floor: " + str(self.initial_map))
 
-        self.shg_planner = SHGPlanner(graph_path, "graph.pickle", True)
+        self.shg_planner = SHGPlanner(graph_path, "graph.pickle", self.force_build_new_graph)
 
         self.plan_srv = self.create_service(GetPlan, 'shg/plan_path', self.plan_path_callback)
         self.map_client = self.create_client(GetMap, 'map_server/map')
         self.point_sub = self.create_subscription(PointStamped, 'clicked_point', self.clicked_point_callback, 10)
-        self.get_next_goal_srv = self.create_service(
-            GetNextGoal, 'shg/get_next_goal', self.get_next_goal_callback)
+        self.get_elevator_data_srv = self.create_service(
+            GetElevatorData, 'shg/get_elevator_data', self.get_elevator_data_callback)
 
         self.current_map = self.get_initial_map()
         self.current_floor_name = self.initial_map
@@ -107,27 +110,77 @@ class GraphNode(Node):
         initial_map: OccupancyGrid = future.result().map  # type: ignore
         return initial_map
 
-    def get_next_goal_callback(self, request: GetNextGoal.Request, response: GetNextGoal.Response) -> GetNextGoal.Response:
-        path_list = self.shg_planner.get_path_on_floor([request.map_name], "position", None)
+    def get_elevator_data_callback(self, request: GetElevatorData.Request, response: GetElevatorData.Response) -> GetElevatorData.Response:
+        # get next floor
+        floor_list = path_to_list(self.shg_planner.path, [], True)
+        next_index = floor_list.index(self.current_floor_name) + 1
+        # if next_index >= len(floor_list):
+        #     self.get_logger().info("No more floors to visit")
+        #     return response
+        # next_floor = floor_list[next_index]
+        next_floor = self.current_floor_name
+        response.next_floor = next_floor
+        print("Next floor: " + str(next_floor))
+
+        # Get elevator direction
+        current_pos_z = self.shg_planner.graph.get_child_by_hierarchy([self.current_floor_name]).pos_abs.z
+        next_pos_z = self.shg_planner.graph.get_child_by_hierarchy([next_floor]).pos_abs.z
+        direction = "up" if next_pos_z > current_pos_z else "down"
+        response.direction = direction
+        print("Direction: " + str(direction))
+
+        # Get marker id
+        for map_config in self.graph_config["maps"]:
+            if next_floor in map_config["hierarchy"]:
+                marker_id = map_config["marker_id"]
+                break
+        else:
+            self.get_logger().error("Floor " + str(next_floor) + " not found in graph config")
+            return response
+        response.marker_id = marker_id
+        print("Marker id: " + str(marker_id))
+
+        # Get elevator parameters
+        current_path_list = self.shg_planner.get_path_on_floor([next_floor], "node", None)
+        # import semantic_hierarchical_graph.utils as utils
+        # print("current_path_list", utils.map_names_to_nodes(current_path_list))
+        print(current_path_list[-1].data_dict)
+        if current_path_list[-1].data_dict:
+            orientation_angle = current_path_list[-1].data_dict["orientation_angle"]
+            call_button = current_path_list[-1].data_dict["call_button"]
+            selection_panel = current_path_list[-1].data_dict["selection_panel"]
+            response.orientation_angle = orientation_angle
+            response.call_button.x = call_button[0]
+            response.call_button.y = call_button[1]
+            response.call_button.z = call_button[2]
+            response.selection_panel.x = selection_panel[0]
+            response.selection_panel.y = selection_panel[1]
+            response.selection_panel.z = selection_panel[2]
+            print("orientation_angle", orientation_angle)
+            print("call_button", call_button)
+            print("selection_panel", selection_panel)
+
+        # Get next floor start pose
+        path_list = self.shg_planner.get_path_on_floor([next_floor], "position", None)
         if len(path_list) == 0:
-            self.get_logger().error("No path found on selected floor, call 'shg/plan_path' service first " + str(request.map_name))
+            self.get_logger().error("No path found on selected floor, call 'shg/plan_path' service first " + str(next_floor))
             return response
 
-        goal: Position = path_list[-1]
-        goal_in_map_frame = goal.to_map_frame((self.current_map.info.origin.position.x, self.current_map.info.origin.position.y),
-                                              self.current_map.info.resolution,
-                                              (self.current_map.info.height, self.current_map.info.width))
+        next_floor_start: Position = path_list[0]
+        start_in_map_frame = next_floor_start.to_map_frame((self.current_map.info.origin.position.x, self.current_map.info.origin.position.y),
+                                                           self.current_map.info.resolution,
+                                                           (self.current_map.info.height, self.current_map.info.width))
 
-        response.goal_pose = Pose()
-        response.goal_pose.position.x = goal[0]
-        response.goal_pose.position.y = goal[1]
-        q = tf_transformations.quaternion_about_axis(goal[2], (0, 0, 1))
-        response.goal_pose.orientation.x = q[0]
-        response.goal_pose.orientation.y = q[1]
-        response.goal_pose.orientation.z = q[2]
-        response.goal_pose.orientation.w = q[3]
+        response.next_floor_start = Pose()
+        response.next_floor_start.position.x = start_in_map_frame[0]
+        response.next_floor_start.position.y = start_in_map_frame[1]
+        q = tf_transformations.quaternion_about_axis(start_in_map_frame[2], (0, 0, 1))
+        response.next_floor_start.orientation.x = q[0]
+        response.next_floor_start.orientation.y = q[1]
+        response.next_floor_start.orientation.z = q[2]
+        response.next_floor_start.orientation.w = q[3]
 
-        self.get_logger().info("Goal pos on next floor: " + str(goal_in_map_frame))
+        self.get_logger().info("Start pos on next floor: " + str(next_floor) + " " + str(start_in_map_frame))
         return response
 
     def change_map_callback(self, request: LoadMap.Request, response: LoadMap.Response) -> LoadMap.Response:
@@ -208,25 +261,22 @@ class GraphNode(Node):
 
     def clicked_point_callback(self, msg: PointStamped):
         self.get_logger().info("Clicked point: " + str(msg.point))
-        x, y = Position.from_map_frame((msg.point.x, msg.point.y),
-                                       (self.current_map.info.origin.position.x, self.current_map.info.origin.position.y),
-                                       self.current_map.info.resolution,
-                                       (self.current_map.info.height, self.current_map.info.width)).xy
-        print(x, y)
-        room = self.shg_planner.graph._get_child(self.current_floor_name).watershed[y, x]
-        room_str = "room_"+str(room)
-        self.get_logger().info("Graph hierarchy: " + str([self.current_floor_name, room_str, (x, y)]))
+        room_hierarchy = convert_map_pos_to_hierarchy(self.current_map, msg.point.x, msg.point.y,
+                                                      self.shg_planner.graph._get_child(self.current_floor_name).watershed)
+        hierarchy = [self.current_floor_name] + room_hierarchy
+
+        self.get_logger().info("Graph hierarchy: " + str(hierarchy))
 
     def plan_path_callback(self, request: GetPlan.Request, response: GetPlan.Response) -> GetPlan.Response:
         start_time = time()
         start_pose = (request.start.pose.position.x, request.start.pose.position.y)
         goal_pose = (request.goal.pose.position.x, request.goal.pose.position.y)
         self.get_logger().info("Plan from (" + str(round(start_pose[0], 2)) + ", " + str(round(start_pose[1], 2)) +
-                               ") to (" + str(round(goal_pose[0], 2)) + ", " + str(round(goal_pose[1], 2)) + ")")
+                               ") to (" + str(round(goal_pose[0], 2)) + ", " + str(round(goal_pose[1], 2)) + ") floor: " + str(request.goal.header.frame_id))
 
         # TODO: Use correct floors for hierarchical planning
         start_floor = self.current_floor_name
-        goal_floor = self.current_floor_name
+        goal_floor = self.current_floor_name if request.goal.header.frame_id == "map" else request.goal.header.frame_id
 
         path_list, distance = self.shg_planner.plan_in_map_frame(start_pose, start_floor,
                                                                  goal_pose, goal_floor,
