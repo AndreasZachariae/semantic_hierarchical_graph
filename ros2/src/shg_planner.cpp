@@ -103,7 +103,7 @@ namespace shg
   void SHGPlanner::callPythonPlanner(const geometry_msgs::msg::PoseStamped &start,
                                      const geometry_msgs::msg::PoseStamped &goal)
   {
-    auto node = rclcpp::Node::make_shared("minimal_client");
+    auto node = rclcpp::Node::make_shared("shg_planner");
     RCLCPP_INFO(node->get_logger(), "Calling python planner");
     auto client = node->create_client<nav_msgs::srv::GetPlan>("shg/plan_path");
     while (!client->wait_for_service(std::chrono::seconds(1)))

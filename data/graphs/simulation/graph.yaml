@@ -1,10 +1,20 @@
 graph_name: "simulation"
 hierarchy_level: ["floor", "room", "location"]
 initial_map: "aws1"
-floor_height: 3.01
+floor_height: 3.01 # For gazebo simulation teleport
 maps:
   - hierarchy: ["aws1"]
     yaml_path: "./floor/aws1.yaml"
+    marker_id: 1 # For ArUco detection of elevator button
   - hierarchy: ["aws2"]
     yaml_path: "./floor/aws2.yaml"
-connections: []
+    marker_id: 2
+connections:
+  - hierarchy:
+      [["aws1", "room_20", [164, 246]], ["aws2", "room_20", [164, 246]]]
+    # position (inside elevator): [160, 246] vs waiting_point: [164, 246]
+    name: "elevator"
+    cost: 10.0 # [m] for shortest path planning
+    orientation_angle: 0.0 # [rad] from x-axis in map_frame
+    call_button: [1, 2, 1] # [m] relative to waiting position
+    selection_panel: [-1, -1, 1.5]

@@ -2,4 +2,5 @@ graph_node:
   ros__parameters:
     use_sim_time: True
     graph_path: "./../../data/graphs/simulation"
+    force_build_new_graph: False
     interpolation_resolution: 0.2 # Distance between each Pose in [m]

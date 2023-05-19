@@ -26,6 +26,7 @@ class SHNode(Generic[T]):
         self.parent_node: SHNode = parent_node
         self.hierarchy: List[str] = parent_node.hierarchy + [unique_name] if not is_root else []
         self.child_graph: nx.Graph = nx.Graph()
+        self.data_dict: dict = {}
 
     def add_child_by_name(self, name: str, pos: Position, is_leaf: bool = False,
                           is_bridge: bool = False, bridge_to: List = [], type: str = "node") -> T:
