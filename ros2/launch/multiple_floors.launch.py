@@ -21,6 +21,9 @@ def generate_launch_description():
                  os.path.join(src_config_prefix, graph_path, map_config["yaml_path"])
                  for map_config in graph_config["maps"]}
 
+    # ros2 service call /map_server/load_map2 nav2_msgs/srv/LoadMap
+    # "{map_url: /home/docker/ros2_ws/install/shg/../../src/semantic_hierarchical_graph/ros2/config/./../../data/graphs/simulation/./floor/./aws1.yaml}"
+
     return LaunchDescription([
         Node(
             package='nav2_map_server',
@@ -28,6 +31,9 @@ def generate_launch_description():
             name='map_server',
             output='screen',
             parameters=[{'yaml_filename': map_paths[initial_map]}],
+            remappings=[('map', 'map2'),
+                        ('/map_server/load_map', '/map_server/load_map2'),
+                        ('/map_server/map', '/map_server/map2')],
             arguments=['--ros-args', '--log-level', 'info']),
         Node(
             package='nav2_lifecycle_manager',
