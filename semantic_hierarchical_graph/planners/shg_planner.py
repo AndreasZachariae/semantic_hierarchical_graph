@@ -10,7 +10,7 @@ from semantic_hierarchical_graph import roadmap_creation, segmentation, visualiz
 from semantic_hierarchical_graph.floor import Floor, Room
 from semantic_hierarchical_graph.graph import SHGraph
 from semantic_hierarchical_graph.path import SHPath
-from semantic_hierarchical_graph.types.exceptions import SHGGeometryError, SHGPlannerError
+from semantic_hierarchical_graph.types.exceptions import SHGGeometryError, SHGPlannerError, SHGValueError
 from semantic_hierarchical_graph.types.parameter import Parameter
 from semantic_hierarchical_graph.types.position import Position
 from semantic_hierarchical_graph.types.vector import Vector
@@ -65,8 +65,29 @@ class SHGPlanner():
 
     def _load_connections(self, graph: SHGraph):
         for connection in graph.params["connections"]:
-            graph.add_connection_recursive(connection[0], connection[1], distance=10.0, name="elevator")
-            print(connection)
+
+            self._check_connection_nodes_in_roadmap(graph, connection, 0)
+            self._check_connection_nodes_in_roadmap(graph, connection, 1)
+
+            graph.add_connection_recursive(connection["hierarchy"][0], connection["hierarchy"][1],
+                                           distance=connection["cost"], name=connection["name"])
+
+            print(connection["hierarchy"] + " added to graph")
+
+    def _check_connection_nodes_in_roadmap(self, graph: SHGraph, connection: Dict, id: int):
+        pos = Position.from_iter(connection["hierarchy"][id][-1])
+        connection["hierarchy"][id][-1] = pos.to_name()
+
+        try:
+            graph.get_child_by_hierarchy(connection["hierarchy"][id])
+        except SHGValueError:
+            room_node: Room = graph.get_child_by_hierarchy(connection["hierarchy"][id][:-1])  # type: ignore
+            self._add_path_to_roadmap(room_node, pos.to_name(), pos, connection["name"], temporary=False)
+
+        connection_node = graph.get_child_by_hierarchy(connection["hierarchy"][id])
+        connection_node.data_dict["orientation_angle"] = connection["orientation_angle"]
+        connection_node.data_dict["call_button"] = connection["call_button"]
+        connection_node.data_dict["selection_panel"] = connection["selection_panel"]
 
     def update_floor(self, origin: Tuple[float, float], resolution: float, map_shape: Tuple[int, int], current_floor: str):
         self.current_map_origin = origin
@@ -183,7 +204,7 @@ class SHGPlanner():
 
         return {}, 0
 
-    def _add_path_to_roadmap(self, room_node: Room, node_name, node_pos, type) -> float:
+    def _add_path_to_roadmap(self, room_node: Room, node_name, node_pos, type, temporary=True) -> float:
         if room_node.env._in_collision(Point(node_pos.xy)):
             raise SHGPlannerError(
                 f"Point {node_pos.xy} is not in the drivable area (boundary + safety margin) of the room")
@@ -193,14 +214,15 @@ class SHGPlanner():
         if len(connections) == 0 or closest_path is None:
             raise SHGPlannerError(f"No connection from point {node_pos.xy} to roadmap found")
 
+        type = "aux_node" if temporary else type
         nodes = deque(maxlen=2)
         nodes.append(room_node.add_child_by_name(node_name,
                                                  Position.from_iter(connections[0].coords[0]),
-                                                 True, type="aux_node"))
+                                                 True, type=type))
         distance = 0.0
         for connection in connections:
             pos = Position.from_iter(connection.coords[1])
-            nodes.append(room_node.add_child_by_name(pos.to_name(), pos, True, type="aux_node"))
+            nodes.append(room_node.add_child_by_name(pos.to_name(), pos, True, type=type))
             d = nodes[0].pos.distance(nodes[1].pos)
             distance += d
             room_node.add_connection_by_nodes(nodes[0], nodes[1], d)
@@ -217,17 +239,19 @@ class SHGPlanner():
             # print(f"Removing edge {edge_data} from roadmap")
             room_node.child_graph.remove_edge(path_1_node, path_2_node)
             room_node.env.path.remove(closest_path)
-            self.tmp_edge_removed.append((path_1_node, path_2_node, edge_data, closest_path))
+            if temporary:
+                self.tmp_edge_removed.append((path_1_node, path_2_node, edge_data, closest_path))
         room_node.add_connection_by_nodes(path_1_node, nodes[1], path_1_pos.distance(nodes[1].pos))
         # print(f"Added edge {path_1_node.unique_name, nodes[1].unique_name} to roadmap")
         room_node.add_connection_by_nodes(nodes[1], path_2_node, path_2_pos.distance(nodes[1].pos))
         # print(f"Added edge {nodes[1].unique_name, path_2_node.unique_name} to roadmap")
         path1 = LineString([path_1_pos.xy, nodes[1].pos.xy])
         path2 = LineString([nodes[1].pos.xy, path_2_pos.xy])
-        self.tmp_path_added.append(path1)
-        self.tmp_path_added.append(path2)
         room_node.env.add_path(path1)
         room_node.env.add_path(path2)
+        if temporary:
+            self.tmp_path_added.append(path1)
+            self.tmp_path_added.append(path2)
 
         return distance
 
