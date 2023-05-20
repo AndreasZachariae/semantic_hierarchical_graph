@@ -143,13 +143,13 @@ namespace shg
       return global_path_;
     }
 
-    if (goal.header.frame_id != global_frame_)
-    {
-      RCLCPP_INFO(
-          node_->get_logger(), "Planner will only accept goal position from %s frame",
-          global_frame_.c_str());
-      return global_path_;
-    }
+    // if (goal.header.frame_id != global_frame_)
+    // {
+    //   RCLCPP_INFO(
+    //       node_->get_logger(), "Planner will only accept goal position from %s frame",
+    //       global_frame_.c_str());
+    //   return global_path_;
+    // }
 
     std::thread t(&SHGPlanner::callPythonPlanner, this, start, goal);
 
