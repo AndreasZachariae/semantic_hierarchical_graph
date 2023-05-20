@@ -236,12 +236,12 @@ ROS node environment model
 Floor change
 - [ ] Start multiple map servers with each floor map
 - [ ] change floor map in RVIZ per topic
-- [ ] plan in rviz and give as map frame the floor name
+- [x] plan in rviz and give as map frame the floor name
 - [x] In SHG Planner take floor name from frame_id and plan to respective floor
-- [ ] Create behavior tree action to trigger floor change
+- [x] Create behavior tree action to trigger floor change
 - [x] Gazebo service to teleport robot to next floor
 - [x] Behavior tree to coordinate complete change
-- [ ] Split change_map function to separate from simulation
+- [x] Split change_map function to separate from simulation
 
 Visualization
 
