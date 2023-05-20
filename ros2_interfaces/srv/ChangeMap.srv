@@ -1,0 +1,5 @@
+# request
+string map_name
+geometry_msgs/Pose initial_pose
+---
+# response
