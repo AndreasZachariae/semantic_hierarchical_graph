@@ -10,21 +10,17 @@ from rclpy.executors import MultiThreadedExecutor
 from ament_index_python.packages import get_package_prefix
 import tf_transformations
 from nav_msgs.srv import GetPlan, GetMap
-from nav2_msgs.srv import LoadMap
 from nav_msgs.msg import OccupancyGrid
-from map_msgs.srv import SaveMap
-from geometry_msgs.msg import PoseStamped, Pose, Point, PointStamped
-
-# Services for map change
+from nav2_msgs.srv import LoadMap, ClearEntireCostmap
+from geometry_msgs.msg import PoseStamped, Pose, PointStamped, PoseWithCovarianceStamped
+from shg_interfaces.srv import GetElevatorData, ChangeMap
 from std_msgs.msg import Empty
+
+# For simulation teleport
 from gazebo_msgs.srv import SetEntityState
-from geometry_msgs.msg import PoseWithCovarianceStamped
-from nav2_msgs.srv import ClearEntireCostmap
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
-from shg_interfaces.srv import GetElevatorData
-
 
 from semantic_hierarchical_graph.planners.shg_planner import SHGPlanner
 from semantic_hierarchical_graph.types.exceptions import SHGPlannerError
@@ -37,8 +33,11 @@ class GraphNode(Node):
     def __init__(self):
         super().__init__('graph_node')  # type: ignore
 
+        # Load parameters
         self.interpolation_resolution = self.declare_parameter(
             "interpolation_resolution", 1).get_parameter_value().double_value
+        self.force_build_new_graph = self.declare_parameter(
+            "force_build_new_graph", False).get_parameter_value().bool_value
         graph_path = self.declare_parameter("graph_path", "graph").get_parameter_value().string_value
         graph_path = os.path.join(get_package_prefix('shg'), '..', '..', 'src',
                                   'semantic_hierarchical_graph', 'ros2', 'config', graph_path)
@@ -51,19 +50,31 @@ class GraphNode(Node):
         self.map_paths = {map_config["hierarchy"][-1]:
                           os.path.join(graph_path, map_config["yaml_path"])
                           for map_config in self.graph_config["maps"]}
-        self.force_build_new_graph = self.declare_parameter(
-            "force_build_new_graph", False).get_parameter_value().bool_value
 
+        # Create graph
         self.get_logger().info("Graph name: " + str(self.graph_name) + ", initial floor: " + str(self.initial_map))
-
         self.shg_planner = SHGPlanner(graph_path, "graph.pickle", self.force_build_new_graph)
 
+        # Create services and subscribers
         self.plan_srv = self.create_service(GetPlan, 'shg/plan_path', self.plan_path_callback)
         self.map_client = self.create_client(GetMap, 'map_server/map')
         self.point_sub = self.create_subscription(PointStamped, 'clicked_point', self.clicked_point_callback, 10)
         self.get_elevator_data_srv = self.create_service(
             GetElevatorData, 'shg/get_elevator_data', self.get_elevator_data_callback)
+        self.change_map_srv = self.create_service(ChangeMap, 'shg/change_map', self.change_map_callback)
 
+        # Create clients from within callbacks
+        self.mutex_cb_group = MutuallyExclusiveCallbackGroup()
+        self.initial_pose_publisher = self.create_publisher(
+            PoseWithCovarianceStamped, "/initialpose", 10, callback_group=self.mutex_cb_group)
+        self.clear_local_costmap_client = self.create_client(
+            ClearEntireCostmap, "/local_costmap/clear_entirely_local_costmap", callback_group=self.mutex_cb_group)
+        self.clear_global_costmap_client = self.create_client(
+            ClearEntireCostmap, "/global_costmap/clear_entirely_global_costmap", callback_group=self.mutex_cb_group)
+        self.load_map_client = self.create_client(
+            LoadMap, "/map_server/load_map", callback_group=self.mutex_cb_group)
+
+        # Initialize graph
         self.current_map = self.get_initial_map()
         self.current_floor_name = self.initial_map
 
@@ -72,31 +83,20 @@ class GraphNode(Node):
                                       (self.current_map.info.height, self.current_map.info.width),
                                       self.current_floor_name)
 
-        # Services to change map and spawn simulation robot on new floor
+        # Services only for gazebo simulation teleport
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        self.change_map_srv = self.create_service(LoadMap, 'shg/change_map', self.change_map_callback)
-        self.gazebo_calls_group = MutuallyExclusiveCallbackGroup()
-        self.initial_pose_publisher = self.create_publisher(
-            PoseWithCovarianceStamped, "/initialpose", 10, callback_group=self.gazebo_calls_group)
-        self.clear_local_costmap_client = self.create_client(
-            ClearEntireCostmap, "/local_costmap/clear_entirely_local_costmap", callback_group=self.gazebo_calls_group)
-        self.clear_global_costmap_client = self.create_client(
-            ClearEntireCostmap, "/global_costmap/clear_entirely_global_costmap", callback_group=self.gazebo_calls_group)
+        self.gazebo_teleport_srv = self.create_service(ChangeMap, 'shg/gazebo_teleport', self.gazebo_teleport_callback)
         self.set_entity_state_client = self.create_client(
-            SetEntityState, "/gazebo/set_entity_state", callback_group=self.gazebo_calls_group)
-        self.load_map_client = self.create_client(
-            LoadMap, "/map_server/load_map", callback_group=self.gazebo_calls_group)
+            SetEntityState, "/gazebo/set_entity_state", callback_group=self.mutex_cb_group)
 
+        # Wait for external services to be ready
         while not (self.set_entity_state_client.wait_for_service(timeout_sec=1.0) and
                    self.load_map_client.wait_for_service(timeout_sec=1.0) and
                    self.clear_local_costmap_client.wait_for_service(timeout_sec=1.0) and
                    self.clear_global_costmap_client.wait_for_service(timeout_sec=1.0)):
-            self.get_logger().info('Necessary gazebo services not available, waiting again...')
-
-        # ros2 service call /gazebo/get_entity_state gazebo_msgs/srv/GetEntityState "{name: turtlebot3_waffle}"
-        # ros2 service call /gazebo/set_entity_state gazebo_msgs/srv/SetEntityState "{state: {name: turtlebot3_waffle, pose: {position: {x: 3, y: 2}}}}"
+            self.get_logger().info('Necessary services not available, waiting again...')
 
         self.get_logger().info("Started graph_node")
 
@@ -114,11 +114,11 @@ class GraphNode(Node):
         # get next floor
         floor_list = path_to_list(self.shg_planner.path, [], True)
         next_index = floor_list.index(self.current_floor_name) + 1
-        # if next_index >= len(floor_list):
-        #     self.get_logger().info("No more floors to visit")
-        #     return response
-        # next_floor = floor_list[next_index]
-        next_floor = self.current_floor_name
+        if next_index >= len(floor_list):
+            self.get_logger().info("No more floors to visit")
+            return response
+        next_floor = floor_list[next_index]
+        # next_floor = self.current_floor_name
         response.next_floor = next_floor
         print("Next floor: " + str(next_floor))
 
@@ -183,48 +183,56 @@ class GraphNode(Node):
         self.get_logger().info("Start pos on next floor: " + str(next_floor) + " " + str(start_in_map_frame))
         return response
 
-    def change_map_callback(self, request: LoadMap.Request, response: LoadMap.Response) -> LoadMap.Response:
-        map_name = request.map_url
-        if map_name not in self.map_paths:
-            self.get_logger().error("Map name not available, choose from: " + str(self.map_paths.keys()))
-            return response
-        self.get_logger().info("Changing map to: " + str(map_name))
-
+    def gazebo_teleport_callback(self, request: ChangeMap.Request, response: ChangeMap.Response) -> ChangeMap.Response:
         # Get current position
-        try:
-            t = self.tf_buffer.lookup_transform(
-                "map",
-                "base_footprint",
-                rclpy.time.Time())
-        except TransformException as ex:
-            self.get_logger().error(
-                f'Could not transform {"map"} to {"base_footprint"}: {ex}')
-            return response
+        # try:
+        #     t = self.tf_buffer.lookup_transform(
+        #         "map",
+        #         "base_footprint",
+        #         rclpy.time.Time())
+        # except TransformException as ex:
+        #     self.get_logger().error(
+        #         f'Could not transform {"map"} to {"base_footprint"}: {ex}')
+        #     return response
+
+        # Get direction
+        current_pos_z = self.shg_planner.graph.get_child_by_hierarchy([self.current_floor_name]).pos_abs.z
+        next_pos_z = self.shg_planner.graph.get_child_by_hierarchy([request.map_name]).pos_abs.z
+        offset_z = (next_pos_z - current_pos_z) * self.floor_height
 
         # Teleport robot to new floor
         new_position = SetEntityState.Request()
         new_position.state.name = "turtlebot3_waffle"
-        new_position.state.pose.position.x = t.transform.translation.x
-        new_position.state.pose.position.y = t.transform.translation.y
-        new_position.state.pose.position.z = t.transform.translation.z + self.floor_height
-        new_position.state.pose.orientation = t.transform.rotation
+        new_position.state.pose = request.initial_pose
+        new_position.state.pose.position.z += offset_z
 
         res = self.set_entity_state_client.call(new_position)
         if not res.success:
             self.get_logger().error("Could not set new position")
             return response
-        self.get_logger().info("Moved to new position")
+        self.get_logger().info("Moved to new position: (" + str(new_position.state.pose.position.x) + ", " +
+                               str(new_position.state.pose.position.y) + ", " + str(new_position.state.pose.position.z) + ")")
+
+        return response
+
+    def change_map_callback(self, request: ChangeMap.Request, response: ChangeMap.Response) -> ChangeMap.Response:
+        if request.map_name not in self.map_paths:
+            self.get_logger().error("Map name not available, choose from: " + str(self.map_paths.keys()))
+            return response
+        self.get_logger().info("Changing map to: " + str(request.map_name))
 
         # Load new map
         req = LoadMap.Request()
-        req.map_url = self.map_paths[map_name]
+        req.map_url = self.map_paths[request.map_name]
         res = self.load_map_client.call(req)
         if not res:
             self.get_logger().error("Could not load map")
             return response
 
+        sleep(2)
+
         self.current_map = res.map
-        self.current_floor_name = map_name
+        self.current_floor_name = request.map_name
         self.shg_planner.update_floor((self.current_map.info.origin.position.x, self.current_map.info.origin.position.y),
                                       self.current_map.info.resolution,
                                       (self.current_map.info.height, self.current_map.info.width),
@@ -232,17 +240,11 @@ class GraphNode(Node):
         self.get_logger().info("Map loaded")
 
         # Set initial pose
-        # TODO: Adapt to new pose on new floor
         req = PoseWithCovarianceStamped()
         req.header.frame_id = "map"
-        req.pose.pose.position.x = t.transform.translation.x
-        req.pose.pose.position.y = t.transform.translation.y
-        req.pose.pose.position.z = t.transform.translation.z
-        req.pose.pose.orientation = t.transform.rotation
+        req.pose.pose = request.initial_pose
         self.initial_pose_publisher.publish(req)
         self.get_logger().info("Initial pose set")
-
-        sleep(2)
 
         # Clear costmaps
         req = ClearEntireCostmap.Request()
@@ -271,12 +273,11 @@ class GraphNode(Node):
         start_time = time()
         start_pose = (request.start.pose.position.x, request.start.pose.position.y)
         goal_pose = (request.goal.pose.position.x, request.goal.pose.position.y)
-        self.get_logger().info("Plan from (" + str(round(start_pose[0], 2)) + ", " + str(round(start_pose[1], 2)) +
-                               ") to (" + str(round(goal_pose[0], 2)) + ", " + str(round(goal_pose[1], 2)) + ") floor: " + str(request.goal.header.frame_id))
-
-        # TODO: Use correct floors for hierarchical planning
         start_floor = self.current_floor_name
         goal_floor = self.current_floor_name if request.goal.header.frame_id == "map" else request.goal.header.frame_id
+
+        self.get_logger().info("Plan from (" + str(round(start_pose[0], 2)) + ", " + str(round(start_pose[1], 2)) +
+                               ") to (" + str(round(goal_pose[0], 2)) + ", " + str(round(goal_pose[1], 2)) + ") floor: " + str(goal_floor))
 
         path_list, distance = self.shg_planner.plan_in_map_frame(start_pose, start_floor,
                                                                  goal_pose, goal_floor,
