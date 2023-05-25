@@ -211,6 +211,7 @@ Evaluation
 - [ ] Evaluate against roadmap of prm or rrt
 - [x] Make ILIR revert graph faster like in SHGPlanner
 - [ ] Create LTC extrem test environment to show multiple hierarchy connections and campus, building, floor, room, .. level
+- [ ] Add Metric for longer straight path. Average length of path before a turn is made.
 
 Semantics
 
