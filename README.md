@@ -211,7 +211,9 @@ Evaluation
 - [ ] Evaluate against roadmap of prm or rrt
 - [x] Make ILIR revert graph faster like in SHGPlanner
 - [ ] Create LTC extrem test environment to show multiple hierarchy connections and campus, building, floor, room, .. level
-- [ ] Add Metric for longer straight path. Average length of path before a turn is made.
+- [ ] LTC Test How many unique paths in leaf graph? How many nodes are searched?
+- [x] Add Metric for longer straight path. Average length of path before a turn is made.
+- [ ] Straight path length etc has to be evaluated on ROS level with the nav2 standard planners
 
 Semantics
 
