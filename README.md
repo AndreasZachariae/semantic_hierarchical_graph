@@ -227,9 +227,9 @@ ROS node environment model
 - [x] Fix connection from room7 to corridor
 - [x] Improve decoupled service call to python planner
 - [ ] Plan around dynamic obstacles (Maybe just configure Local Planner)
-- [ ] Simulate floor change
+- [x] Simulate floor change
 - [x] Fix cleanup revert to original graph, Erros: Found paths 513000
-- [ ] Use correct floors for hierarchical planning
+- [x] Use correct floors for hierarchical planning
 - [ ] Fix orientation
 - [ ] Fix direction of path to roadmap added
 
