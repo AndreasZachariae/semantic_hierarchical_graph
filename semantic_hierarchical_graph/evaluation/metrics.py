@@ -7,67 +7,60 @@ from math import comb
 import numpy as np
 import cv2
 from shapely import Point
-import sys
 
 import semantic_hierarchical_graph.segmentation as segmentation
 from semantic_hierarchical_graph.types.vector import Vector
 from semantic_hierarchical_graph.types.position import Position
-from semantic_hierarchical_graph.floor import Room, Floor
+from semantic_hierarchical_graph.floor import Room
 from semantic_hierarchical_graph.planners.astar_planner import AStarPlanner
 from semantic_hierarchical_graph.planners.ilir_planner import ILIRPlanner
 from semantic_hierarchical_graph.planners.prm_planner import PRMPlanner
 from semantic_hierarchical_graph.planners.rrt_planner import RRTPlanner
-from semantic_hierarchical_graph.planners.shg_planner import SHGPlanner
-from semantic_hierarchical_graph.metrics_plots import plot_metrics
-import semantic_hierarchical_graph.utils as utils
-
-print("Recursion limit increased from", sys.getrecursionlimit(), "to", 2000)
-sys.setrecursionlimit(2000)
+from semantic_hierarchical_graph.evaluation.metrics_plots import plot_room_metrics
 
 
 class Metrics():
-    def __init__(self, floor: Floor, graph_path: str) -> None:
+    def __init__(self, room: Room) -> None:
         self.metrics: Dict[str, Any] = {}
-        self.metrics.update(floor.params)
-        self.metrics["floor_name"] = floor.unique_name
-        self.metrics["num_rooms"] = len(floor.child_graph)
+        self.metrics.update(room.params)
+        self.metrics["room_name"] = room.unique_name
+        self.metrics["room_id"] = room.id
+        self.metrics["num_nodes"] = len(room.child_graph)
+        self.metrics["ILIR_path_length"] = sum([path.length for path in room.env.path])
+        self.metrics["ILIR_avg_line_length"] = self.metrics["ILIR_path_length"] / len(room.env.path)
 
-        bridge_points = [point for points in floor.all_bridge_nodes.values() for point in points]
+        bridge_points = [point for points in room.bridge_nodes.values() for point in points]
         self.metrics["num_bridge_points"] = len(bridge_points)
 
-        random_points = [(1219, 253), (1090, 500), (674, 277), (487, 412), (621, 263), (484, 95), (508, 131), (100, 500), (1209, 483), (
-            1373, 177), (784, 54), (554, 189), (804, 149), (812, 57), (1510, 379), (350, 45), (258, 255), (511, 383), (535, 193), (1140, 261)]
+        # random_points = self._get_random_valid_points(room, n=10)
+        # Room 2
+        random_points = [(380, 72), (363, 63), (325, 43), (276, 129), (302, 170),
+                         (273, 45), (373, 193), (342, 161), (393, 43), (339, 76)]
+        # Room 11
+        # random_points = [(75, 275), (554, 341), (611, 287), (509, 283), (198, 296),
+        #                  (484, 300), (440, 303), (446, 314), (480, 265), (556, 296)]
+        # Hou2 room 9
+        # random_points = [(280, 433), (435, 230), (171, 276), (297, 456), (280, 448),
+        #                  (153, 222), (111, 224), (283, 399), (452, 264), (300, 366)]
 
-        # random_points = self._get_random_valid_points(floor, n=20)
         self.metrics["num_random_points"] = len(random_points)
         print("Random points:", random_points)
         bridge_points.extend(random_points)
         self.metrics["num_paths"] = comb(len(bridge_points), 2)
 
-        prm_config = {"radius": 100, "numNodes": 3000,
-                      "smoothing_algorithm": "random", "smoothing_max_iterations": 100, "smoothing_max_k": 50}
-        rrt_config = {"numberOfGeneratedNodes": 3000, "testGoalAfterNumberOfNodes": 100,
-                      "smoothing_algorithm": "random", "smoothing_max_iterations": 100, "smoothing_max_k": 50}
-        astar_config = {"heuristic": 'euclidean', "w": 0.5, 'max_iterations': 1000000,
-                        "smoothing_algorithm": "random", "smoothing_max_iterations": 100, "smoothing_max_k": 50}
-
-        # PRMPlanner(floor, prm_config), RRTPlanner(floor, rrt_config), AStarPlanner(floor, astar_config), SHGPlanner(graph_path)
-        for planner in [AStarPlanner(floor, astar_config)]:
-            path_metrics, room_mask_with_paths = self._calc_single_path_metrics(floor, bridge_points, planner)
+        # AStarPlanner(room), ILIRPlanner(room), PRMPlanner(room), RRTPlanner(room)
+        for planner in [ILIRPlanner(room), AStarPlanner(room), PRMPlanner(room), RRTPlanner(room), ]:
+            path_metrics, room_mask_with_paths = self._calc_single_path_metrics(room, bridge_points, planner)
             self.metrics[planner.name] = planner.config
-            # TODO: Adapt to floor
-            # path_metrics["disturbance"] = self._calc_disturbance(floor.mask, room_mask_with_paths)
-            segmentation.show_imgs(room_mask_with_paths,
-                                   name=f"{self.metrics['floor_name']}_{list(self.metrics.keys())[-1]}",
-                                   save=False)
+            path_metrics["disturbance"] = self._calc_disturbance(room.mask, room_mask_with_paths)
             self.metrics[planner.name].update(path_metrics)
 
-        # TODO: exclude bridge points not connected
-        print("Bridge points not connected:", floor.bridge_points_not_connected)
-        # room_img = cv2.cvtColor(room_mask_with_paths, cv2.COLOR_GRAY2RGB)
+        print("Bridge points not connected:", room.bridge_points_not_connected)
+        # room_img = cv2.cvtColor(room.mask, cv2.COLOR_GRAY2RGB)
+        # segmentation.show_imgs(room_img)
 
-    def _calc_single_path_metrics(self, floor: Floor, points: List, planner) -> Tuple[Dict, np.ndarray]:
-        floor_mask: np.ndarray = floor.watershed.copy()
+    def _calc_single_path_metrics(self, room: Room, points: List, planner) -> Tuple[Dict, np.ndarray]:
+        room_mask: np.ndarray = room.mask.copy()
         path_metrics: Dict[str, Any] = {}
         path_metrics["success_rate"] = []
         path_metrics["planning_time"] = []
@@ -80,11 +73,12 @@ class Metrics():
         path_metrics["obstacle_clearance"] = []
         path_metrics["obstacle_clearance_min"] = np.inf
         path_metrics["centroid_distance"] = []
+        path_metrics["straight_path_length"] = []
 
         for point_1, point_2 in itertools.combinations(points, 2):
             print(f"Planning path {len(path_metrics['success_rate'])+1}/{self.metrics['num_paths']}")
             ts = time()
-            path, vis_graph, smoothing_time = planner.plan_on_floor(floor.unique_name, point_1, point_2, True)
+            path, vis_graph, smoothing_time = planner.plan(point_1, point_2, True)
             te = time()
             path_metrics["planning_time"].append(te - ts)
             path_metrics["smoothing_time"].append(smoothing_time)
@@ -98,19 +92,19 @@ class Metrics():
             path_metrics["num_turns"].append(turns)
             path_metrics["cumulative_turning_angle"].append(angles)
             path_metrics["smoothness"].append(smoothness)
-            clearance, clearance_min, clearance_std = self._calc_obstacle_clearance(floor, path)
+            clearance, clearance_min, clearance_std = self._calc_obstacle_clearance(room, path)
             path_metrics["obstacle_distance_std"].append(clearance_std)
             path_metrics["obstacle_clearance"].append(clearance)
             path_metrics["obstacle_clearance_min"] = min(clearance_min, path_metrics["obstacle_clearance_min"])
-            # TODO: Adapt to floor
-            # path_metrics["centroid_distance"].append(
-            #     self._calc_centroid_distance(floor.centroid, floor.mask.copy(),  path))
+            path_metrics["centroid_distance"].append(
+                self._calc_centroid_distance(room.centroid, room.mask.copy(),  path))
+            path_metrics["straight_path_length"].append(self._calc_straight_path_length(path))
 
-            self._draw_path(floor_mask, path, 1, (22))
-            # segmentation.show_imgs(floor_mask)
+            self._draw_path(room_mask, path, (0))
+            # segmentation.show_imgs(room_mask)
             # vis.draw_child_graph(room, path, vis_graph)
 
-        return self._average_metrics(path_metrics), floor_mask
+        return self._average_metrics(path_metrics), room_mask
 
     def _average_metrics(self, path_metrics: Dict) -> Dict:
         new_metrics = {}
@@ -131,13 +125,13 @@ class Metrics():
 
         return path_metrics
 
-    def _get_random_valid_points(self, floor: Floor, n: int) -> List[Tuple]:
+    def _get_random_valid_points(self, room: Room, n: int) -> List[Tuple]:
         points = []
-        shape = floor.ws_erosion.shape
+        box = cv2.boundingRect(room.mask)
         while len(points) < n:
-            x = np.random.randint(0, shape[1])
-            y = np.random.randint(0, shape[0])
-            if int(floor.ws_erosion[y, x]) not in [0, -1, 1]:
+            x = np.random.randint(box[0], box[0] + box[2])
+            y = np.random.randint(box[1], box[1] + box[3])
+            if not room.env._in_collision(Point(x, y)):
                 points.append((x, y))
 
         return points
@@ -192,20 +186,47 @@ class Metrics():
 
         return turns, angles, normalized_smoothness
 
-    def _calc_obstacle_clearance(self, floor: Floor, path) -> Tuple[float, float, float]:
-        dist_transform = floor.dist_transform  # type: ignore
+    def _calc_obstacle_clearance(self, room: Room, path) -> Tuple[float, float, float]:
+        dist_transform = room.parent_node.dist_transform  # type: ignore
         path_mask: np.ndarray = np.zeros(dist_transform.shape, dtype=np.uint8)
-        self._draw_path(path_mask, path, 1, 1)
+        self._draw_path(path_mask, path, 1)
         path_mask = np.where(path_mask == 1, True, False)
         path_distances = dist_transform[path_mask]
         # segmentation.show_imgs(path_mask)
         return np.mean(path_distances).item(), np.min(path_distances).item(), np.std(path_distances).item()
 
     def _calc_centroid_distance(self, centroid: Position, room_mask: np.ndarray, path) -> float:
-        self._draw_path(room_mask, path, 1, 1)
+        self._draw_path(room_mask, path, 1)
         path_points = np.argwhere(room_mask == 1)
         distances = [((centroid.x - point[1]) ** 2 + (centroid.y - point[0]) ** 2)**0.5 for point in path_points]
         return np.mean(distances).item()
+
+    def _calc_straight_path_length(self, path) -> float:
+        turns, angles = 0, 0
+
+        vectors = deque(maxlen=2)
+        v0 = Vector.from_two_points(path[0].pos.xy, path[1].pos.xy)
+        vectors.append(v0)
+        straight_length_list = []
+        length = v0.norm()
+
+        for i in range(1, len(path)-1):
+            vectors.append(Vector.from_two_points(path[i].pos.xy, path[i + 1].pos.xy))
+            angle = np.degrees(vectors[0].angle(vectors[1]))
+            if angle != 0:
+                straight_length_list.append(length)
+                length = 0
+
+            length += vectors[1].norm()
+
+            if angle > 0:
+                turns += 1
+                angles += angle
+
+        if length > 0:
+            straight_length_list.append(length)
+
+        return np.mean(straight_length_list).item()
 
     def _calc_disturbance(self, room_mask, room_mask_with_paths: np.ndarray) -> float:
         # 0. remove not connected bridge nodes from list or try to plan and adjust success rate
@@ -233,11 +254,11 @@ class Metrics():
 
         return 1 - (largest_free_area / area)
 
-    def _draw_path(self, img: np.ndarray, path: List, thickness, color):
+    def _draw_path(self, img: np.ndarray, path: List, color):
         for i in range(len(path) - 1):
             pt1 = np.round(path[i].pos.xy).astype("int32")
             pt2 = np.round(path[i + 1].pos.xy).astype("int32")
-            cv2.line(img, pt1, pt2, color, thickness, cv2.LINE_4)
+            cv2.line(img, pt1, pt2, color, 1, cv2.LINE_4)
 
     def print_metrics(self) -> None:
         print(self.metrics)
@@ -249,24 +270,24 @@ class Metrics():
 
 if __name__ == "__main__":
     from semantic_hierarchical_graph.graph import SHGraph
+    from semantic_hierarchical_graph.floor import Floor
 
-    # G = SHGraph(root_name="Benchmark", root_pos=Position(0, 0, 0))
-    # floor_ryu = Floor("ryu", G, Position(0, 0, 1), 'data/benchmark_maps/ryu.png', "config/ryu_params.yaml")
-    # floor_hou2 = Floor("hou2", G, Position(0, 0, 1), 'data/benchmark_maps/hou2_clean.png', "config/hou2_params.yaml")
-    # G.add_child_by_node(floor_ryu)
-    # G.add_child_by_node(floor_hou2)
-    # floor_ryu.create_rooms()
-    # floor_ryu.create_bridges()
-    # floor_hou2.create_rooms()
-    # floor_hou2.create_bridges()
-
-    # G.save_graph("data/tmp/graph.pickle")
-    G = SHGraph.load_graph("data/tmp/graph.pickle")
+    G = SHGraph(root_name="Benchmark", root_pos=Position(0, 0, 0))
+    floor = Floor("ryu", G, Position(0, 0, 1), 'data/benchmark_maps/ryu.png', "config/ryu_params.yaml")
+    # floor = Floor("hou2", G, Position(0, 0, 1), 'data/benchmark_maps/hou2_clean.png', "config/hou2_params.yaml")
+    G.add_child_by_node(floor)
     print(G.get_childs("name"))
 
-    metrics = Metrics(G._get_child("ryu"), "data/tmp")
-    # metrics.print_metrics()
-    # metrics.save_metrics("data/floor_hou2_metrics.json")
-    metrics.save_metrics("data/tmp/floor_ryu_metrics.json")
+    floor.create_rooms()
+    floor.create_bridges()
 
-    # plot_metrics(metrics.metrics, "data/tmp/floor_ryu_metrics.png")
+    room = floor._get_child("room_2")
+    # room = floor._get_child("room_11")
+    # room = floor._get_child("room_9")
+
+    metrics = Metrics(room)
+    # metrics.print_metrics()
+    # metrics.save_metrics("data/hou2_metrics.json")
+    metrics.save_metrics("data/ryu_metrics.json")
+
+    plot_room_metrics(metrics.metrics, "data/ryu_metrics.png")

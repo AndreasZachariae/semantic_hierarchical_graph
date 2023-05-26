@@ -59,7 +59,7 @@ class ILIRPlanner(PlannerInterface):
             self.tmp_edge_removed = []
             self.tmp_path_added = []
 
-        return path, vis_graph
+        return path, vis_graph, 0.0  # no smoothing time
 
     def _check_for_direct_connection(self, start_pos: Position, goal_pos: Position) -> Tuple:
         connection = self.room.env.get_valid_connection(Point(start_pos.xy), Point(goal_pos.xy))
