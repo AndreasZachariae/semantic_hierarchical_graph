@@ -313,7 +313,10 @@ class GraphNode(Node):
         self.current_pose_publisher.publish(request.start)
 
         self.get_logger().info("Path length: " + str(round(distance, 2)) + ", nodes:" + str(len(response.plan.poses)))
-        self.get_logger().info("Planning time: " + str(round(planning_time, 6)))
+        if planning_time > 1.0:
+            self.get_logger().warn("Planning time: " + str(round(planning_time, 6)))
+        else:
+            self.get_logger().info("Planning time: " + str(round(planning_time, 6)))
         return response
 
 
