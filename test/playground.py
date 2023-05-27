@@ -4,7 +4,7 @@ from shapely.plotting import plot_polygon, plot_line
 from shapely.ops import split
 import numpy as np
 import cv2
-from shapely import Point, Polygon, LineString, snap
+from shapely import Point, Polygon, LineString, snap, unary_union
 from semantic_hierarchical_graph.environment import Environment
 
 
@@ -87,8 +87,14 @@ if __name__ == '__main__':
     result = cut(line, point)
     print(result)
 
+    # Test union giving non empty GeometryCollection
+    polygon = Polygon([(0, 0), (1, 1), (1, 0)])
+    union = unary_union([line, polygon])
+    print(union)
+
     fig, ax = plt.subplots()
     plot_line(line)
+    plot_line(polygon)
     plot_line(point)
     plot_line(p2)
     plt.show()

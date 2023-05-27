@@ -3,7 +3,7 @@ from typing import List, Union
 import matplotlib.pyplot as plt
 from shapely import MultiLineString
 from shapely.plotting import plot_polygon, plot_line
-from shapely.geometry import Point, Polygon, LineString, MultiPolygon
+from shapely.geometry import Point, Polygon, LineString, MultiPolygon, GeometryCollection
 from shapely.ops import nearest_points, transform
 from semantic_hierarchical_graph.types.exceptions import SHGGeometryError
 from semantic_hierarchical_graph.types.vector import Vector
@@ -222,7 +222,14 @@ class Environment():
                     wall = wall.difference(Point(edge[0]).buffer(4))
                 else:
                     wall = wall.difference(LineString(edge).buffer(4, cap_style="flat"))
-            self.scene[i] = wall
+
+            if isinstance(wall, GeometryCollection):
+                wall = [geom for geom in wall.geoms if isinstance(geom, Polygon)]
+                self.scene[i] = wall[0]
+                for j in range(1, len(wall)):
+                    self.scene.append(wall[j])
+            else:
+                self.scene[i] = wall
 
     def plot(self):
         fig, ax = plt.subplots(figsize=(10, 10))
