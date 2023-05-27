@@ -74,6 +74,10 @@ class GraphNode(Node):
         self.load_map_client = self.create_client(
             LoadMap, "/map_server/load_map", callback_group=self.mutex_cb_group)
 
+        # Only for tablet visualization
+        self.current_pose_publisher = self.create_publisher(
+            PoseStamped, "/shg/current_position", 10, callback_group=self.mutex_cb_group)
+
         # Initialize graph
         self.current_map = self.get_initial_map()
         self.current_floor_name = self.initial_map
@@ -305,6 +309,9 @@ class GraphNode(Node):
         response.plan.header.frame_id = "map"
         response.plan.header.stamp = self.get_clock().now().to_msg()
         planning_time = time() - start_time
+
+        self.current_pose_publisher.publish(request.start)
+
         self.get_logger().info("Path length: " + str(round(distance, 2)) + ", nodes:" + str(len(response.plan.poses)))
         self.get_logger().info("Planning time: " + str(round(planning_time, 6)))
         return response
