@@ -251,6 +251,7 @@ class GraphNode(Node):
         self.get_logger().info("Initial pose set")
 
         # Clear costmaps
+        # TODO: Unnecessary because it is done in behavior tree again
         req = ClearEntireCostmap.Request()
         req.request = Empty()
         res = self.clear_local_costmap_client.call(req)
