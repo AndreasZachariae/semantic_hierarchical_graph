@@ -80,6 +80,8 @@ def draw_child_graph_3d(parent_node: SHNode, path: Union[Dict, List, None] = Non
     ax.set_ylabel("y")
     ax.set_zlabel("z")  # type: ignore
     ax.set_title("Child graph of " + parent_node.unique_name)
+    limits = np.array([getattr(ax, f'get_{axis}lim')() for axis in 'xyz'])
+    ax.set_box_aspect(np.ptp(limits, axis=1))
 
     fig.tight_layout()
     plt.show()
