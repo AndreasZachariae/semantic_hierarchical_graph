@@ -126,23 +126,21 @@ class GraphNode(Node):
         response.next_floor = next_floor
         print("Next floor: " + str(next_floor))
 
-        # Get elevator direction
-        current_pos_z = self.shg_planner.graph.get_child_by_hierarchy([self.current_floor_name]).pos_abs.z
-        next_pos_z = self.shg_planner.graph.get_child_by_hierarchy([next_floor]).pos_abs.z
-        direction = "up" if next_pos_z > current_pos_z else "down"
-        response.direction = direction
-        print("Direction: " + str(direction))
-
         # Get marker id
         for map_config in self.graph_config["maps"]:
             if next_floor in map_config["hierarchy"]:
-                marker_id = map_config["marker_id"]
+                floor_marker_id = map_config["marker_id"]
                 break
         else:
             self.get_logger().error("Floor " + str(next_floor) + " not found in graph config")
             return response
-        response.marker_id = marker_id
-        print("Marker id: " + str(marker_id))
+        response.floor_marker_id = floor_marker_id
+        print("Marker id: " + str(floor_marker_id))
+
+        # Get elevator direction
+        current_pos_z = self.shg_planner.graph.get_child_by_hierarchy([self.current_floor_name]).pos_abs.z
+        next_pos_z = self.shg_planner.graph.get_child_by_hierarchy([next_floor]).pos_abs.z
+        call_button_marker_id = "call_button_marker_id_up" if next_pos_z > current_pos_z else "call_button_marker_id_down"
 
         # Get elevator parameters
         current_path_list = self.shg_planner.get_path_on_floor([next_floor], "node", None)
@@ -150,41 +148,57 @@ class GraphNode(Node):
         # print("current_path_list", utils.map_names_to_nodes(current_path_list))
         print(current_path_list[-1].data_dict)
         if current_path_list[-1].data_dict:
-            orientation_angle = current_path_list[-1].data_dict["orientation_angle"]
-            call_button = current_path_list[-1].data_dict["call_button"]
-            selection_panel = current_path_list[-1].data_dict["selection_panel"]
-            response.orientation_angle = orientation_angle
-            response.call_button.x = call_button[0]
-            response.call_button.y = call_button[1]
-            response.call_button.z = call_button[2]
-            response.selection_panel.x = selection_panel[0]
-            response.selection_panel.y = selection_panel[1]
-            response.selection_panel.z = selection_panel[2]
-            print("orientation_angle", orientation_angle)
-            print("call_button", call_button)
-            print("selection_panel", selection_panel)
+            # call_button_angle = current_path_list[-1].data_dict["call_button_angle"]
+            response.call_button_marker_id = current_path_list[-1].data_dict[call_button_marker_id]
+            response.waiting_start.position.x = current_path_list[-1].data_dict["waiting_pose_start_position"][0]
+            response.waiting_start.position.y = current_path_list[-1].data_dict["waiting_pose_start_position"][1]
+            response.waiting_start.position.z = current_path_list[-1].data_dict["waiting_pose_start_position"][2]
+            response.waiting_start.orientation.x = current_path_list[-1].data_dict["waiting_pose_start_orientation"][0]
+            response.waiting_start.orientation.y = current_path_list[-1].data_dict["waiting_pose_start_orientation"][1]
+            response.waiting_start.orientation.z = current_path_list[-1].data_dict["waiting_pose_start_orientation"][2]
+            response.waiting_start.orientation.w = current_path_list[-1].data_dict["waiting_pose_start_orientation"][3]
+            response.waiting_goal.position.x = current_path_list[-1].data_dict["waiting_pose_goal_position"][0]
+            response.waiting_goal.position.y = current_path_list[-1].data_dict["waiting_pose_goal_position"][1]
+            response.waiting_goal.position.z = current_path_list[-1].data_dict["waiting_pose_goal_position"][2]
+            response.waiting_goal.orientation.x = current_path_list[-1].data_dict["waiting_pose_goal_orientation"][0]
+            response.waiting_goal.orientation.y = current_path_list[-1].data_dict["waiting_pose_goal_orientation"][1]
+            response.waiting_goal.orientation.z = current_path_list[-1].data_dict["waiting_pose_goal_orientation"][2]
+            response.waiting_goal.orientation.w = current_path_list[-1].data_dict["waiting_pose_goal_orientation"][3]
+            response.panel_start.x = current_path_list[-1].data_dict["panel_point_start"][0]
+            response.panel_start.y = current_path_list[-1].data_dict["panel_point_start"][1]
+            response.panel_goal.z = current_path_list[-1].data_dict["panel_point_start"][2]
+            response.panel_goal.x = current_path_list[-1].data_dict["panel_point_goal"][0]
+            response.panel_goal.y = current_path_list[-1].data_dict["panel_point_goal"][1]
+            response.panel_goal.z = current_path_list[-1].data_dict["panel_point_goal"][2]
+
+            print("call_button_marker_id", response.call_button_marker_id)
+            print("waiting_start (", response.waiting_start.x, response.waiting_start.y, ")")
+            print("waiting_goal (", response.waiting_goal.x, response.waiting_goal.y, ")")
+            print("panel_start (", response.panel_start.x, response.panel_start.y, response.panel_start.z, ")")
+            print("panel_goal (", response.panel_goal.x, response.panel_goal.y, response.panel_goal.z, ")")
 
         # Get next floor start pose
-        path_list = self.shg_planner.get_path_on_floor([next_floor], "position", None)
-        if len(path_list) == 0:
-            self.get_logger().error("No path found on selected floor, call 'shg/plan_path' service first " + str(next_floor))
-            return response
+        # path_list = self.shg_planner.get_path_on_floor([next_floor], "position", None)
+        # if len(path_list) == 0:
+        #     self.get_logger().error("No path found on selected floor, call 'shg/plan_path' service first " + str(next_floor))
+        #     return response
 
-        next_floor_start: Position = path_list[0]
-        start_in_map_frame = next_floor_start.to_map_frame((self.current_map.info.origin.position.x, self.current_map.info.origin.position.y),
-                                                           self.current_map.info.resolution,
-                                                           (self.current_map.info.height, self.current_map.info.width))
+        # next_floor_start: Position = path_list[0]
+        # start_in_map_frame = next_floor_start.to_map_frame((self.current_map.info.origin.position.x, self.current_map.info.origin.position.y),
+        #                                                    self.current_map.info.resolution,
+        #                                                    (self.current_map.info.height, self.current_map.info.width))
 
-        response.next_floor_start = Pose()
-        response.next_floor_start.position.x = start_in_map_frame[0]
-        response.next_floor_start.position.y = start_in_map_frame[1]
-        q = tf_transformations.quaternion_about_axis(start_in_map_frame[2], (0, 0, 1))
-        response.next_floor_start.orientation.x = q[0]
-        response.next_floor_start.orientation.y = q[1]
-        response.next_floor_start.orientation.z = q[2]
-        response.next_floor_start.orientation.w = q[3]
+        # response.next_floor_start = Pose()
+        # response.next_floor_start.position.x = start_in_map_frame[0]
+        # response.next_floor_start.position.y = start_in_map_frame[1]
+        # q = tf_transformations.quaternion_about_axis(start_in_map_frame[2], (0, 0, 1))
+        # response.next_floor_start.orientation.x = q[0]
+        # response.next_floor_start.orientation.y = q[1]
+        # response.next_floor_start.orientation.z = q[2]
+        # response.next_floor_start.orientation.w = q[3]
 
-        self.get_logger().info("Start pos on next floor: " + str(next_floor) + " " + str(start_in_map_frame))
+        # self.get_logger().info("Start pos on next floor: " + str(next_floor) + " " + str(start_in_map_frame))
+
         return response
 
     def gazebo_teleport_callback(self, request: ChangeMap.Request, response: ChangeMap.Response) -> ChangeMap.Response:
@@ -294,7 +308,7 @@ class GraphNode(Node):
             pose.pose.position.y = y
             pose.pose.position.z = 0.0
 
-            if tuple([x, y, rz]) == path_list[-1]:
+            if tuple([x, y, rz]) == path_list[-1] and rz is None:
                 pose.pose.orientation = request.goal.pose.orientation
             else:
                 q = tf_transformations.quaternion_about_axis(rz, (0, 0, 1))

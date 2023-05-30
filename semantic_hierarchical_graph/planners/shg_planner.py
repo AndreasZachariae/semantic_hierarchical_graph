@@ -87,9 +87,15 @@ class SHGPlanner():
             self._add_path_to_roadmap(room_node, pos.to_name(), pos, connection["name"], temporary=False)
 
         connection_node = graph.get_child_by_hierarchy(connection["hierarchy"][id])
-        connection_node.data_dict["orientation_angle"] = connection["orientation_angle"]
-        connection_node.data_dict["call_button"] = connection["call_button"]
-        connection_node.data_dict["selection_panel"] = connection["selection_panel"]
+        connection_node.data_dict["call_button_angle"] = connection["call_button"]["angle"]
+        connection_node.data_dict["call_button_marker_id_up"] = connection["call_button"]["marker_id_up"]
+        connection_node.data_dict["call_button_marker_id_down"] = connection["call_button"]["marker_id_down"]
+        connection_node.data_dict["waiting_pose_start_orientation"] = connection["waiting_pose_start"]["orientation"]
+        connection_node.data_dict["waiting_pose_start_position"] = connection["waiting_pose_start"]["position"]
+        connection_node.data_dict["waiting_pose_goal_orientation"] = connection["waiting_pose_goal"]["orientation"]
+        connection_node.data_dict["waiting_pose_goal_position"] = connection["waiting_pose_goal"]["position"]
+        connection_node.data_dict["panel_point_start"] = connection["panel_point_start"]
+        connection_node.data_dict["panel_point_goal"] = connection["panel_point_goal"]
 
     def update_floor(self, origin: Tuple[float, float], resolution: float, map_shape: Tuple[int, int], current_floor: str):
         self.current_map_origin = origin
@@ -341,6 +347,12 @@ class SHGPlanner():
                     angle = Vector.from_two_points(path_list[i].xy, path_list[i+1].xy).angle_to_grid()
                     path_list[i].rz = angle
                     # print(path_list[i].xy, path_list[i+1].xy, angle)
+
+            # last node on floor has to get call button orientation defined in graph.yaml
+            call_button_angle = self.graph.get_child_by_hierarchy(
+                [hierarchy_to_floor, path_list[-1].to_name()]).data_dict.get("call_button_angle")
+            if call_button_angle is not None:
+                path_list[-1].rz = call_button_angle
 
         if interpolation_resolution is not None:
             path_list = self._interpolate_path(path_list, interpolation_resolution)

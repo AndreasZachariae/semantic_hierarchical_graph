@@ -12,9 +12,19 @@ maps:
 connections:
   - hierarchy:
       [["aws1", "room_20", [164, 246]], ["aws2", "room_20", [164, 246]]]
-    # position (inside elevator): [160, 246] vs waiting_point: [164, 246]
+    # position (inside elevator): [160, 246] vs call_button: [164, 246]
     name: "elevator"
     cost: 10.0 # [m] for shortest path planning
-    orientation_angle: 0.0 # [rad] from x-axis in map_frame
-    call_button: [1, 2, 1] # [m] relative to waiting position
-    selection_panel: [-1, -1, 1.5]
+
+    call_button:
+      angle: 0.0 # [rad] angle in map_frame
+      marker_id_up: 1 # For ArUco detection of elevator button
+      marker_id_down: 2
+    waiting_pose_start: # [m] in map_frame
+      position: [160, 246, 0]
+      orientation: [0, 0, 0, 1]
+    waiting_pose_goal: # [m] in map_frame
+      position: [164, 246, 0]
+      orientation: [0, 0, 0, 1]
+    panel_point_start: [1, 2, 1] # [m] relative to waiting position
+    panel_point_goal: [1, 2, 1] # [m] x-Axis is direction of waiting pose
