@@ -42,7 +42,10 @@ class SHGPlanner():
         return self._create_graph()
 
     def _load_graph(self, graph_name: str) -> SHGraph:
-        return SHGraph.load_graph(self.graph_path + "/" + graph_name)
+        G = SHGraph.load_graph(self.graph_path + "/" + graph_name)
+        G.params = Parameter(self.graph_path + "/graph.yaml", is_map=False).params
+        self._load_connections(G)
+        return G
 
     def _create_graph(self) -> SHGraph:
         params = Parameter(self.graph_path + "/graph.yaml", is_map=False).params
@@ -112,7 +115,7 @@ class SHGPlanner():
             pos = Position.from_iter(pos)
 
         floor_node: Floor = self.graph._get_child(floor)
-        room_id = int(floor_node.watershed[pos.y, pos.x])  # type: ignore
+        room_id = int(floor_node.watershed[int(pos.y), int(pos.x)])  # type: ignore
 
         if room_id == 0 or room_id == 1:
             raise SHGPlannerError("Position is not in a valid room")
@@ -349,15 +352,19 @@ class SHGPlanner():
                     # print(path_list[i].xy, path_list[i+1].xy, angle)
 
             # last node on floor has to get call button orientation defined in graph.yaml
-            call_button_angle = self.graph.get_child_by_hierarchy(
-                [hierarchy_to_floor, path_list[-1].to_name()]).data_dict.get("call_button_angle")
-            if call_button_angle is not None:
-                path_list[-1].rz = call_button_angle
+            hierarchy = self._get_hierarchy(path_list[-1], hierarchy_to_floor[0])
+            hierarchy_to_floor.append("room_" + str(hierarchy[1].id))
+            hierarchy_to_floor.append(path_list[-1].to_name())
+            try:
+                call_button_angle = self.graph.get_child_by_hierarchy(
+                    hierarchy_to_floor).data_dict.get("call_button_angle")
+                if call_button_angle is not None:
+                    path_list[-1].rz = call_button_angle
+            except:
+                pass
 
         if interpolation_resolution is not None:
             path_list = self._interpolate_path(path_list, interpolation_resolution)
-
-        # [print(node.xy, node.rz) for node in path_list]
 
         return path_list
 
@@ -414,7 +421,7 @@ if __name__ == '__main__':
     # path_dict, distance = shg_planner._plan(["ryu", "room_8", "(1418, 90)"], ["hou2", "room_17", "(186, 505)"])
     # path_dict, distance = shg_planner._plan(["aws1", "room_7", (136, 194)], ["aws1", 'room_7', (156, 144)])
     # path_dict, distance = shg_planner._plan(["aws1", "room_7", (143, 196)], ["aws1", 'room_20', (180, 240)])
-    path_dict, distance = shg_planner._plan(['aws1', 'room_7', (163, 246)], ['aws1', 'room_20', (142, 190)])
+    path_dict, distance = shg_planner._plan(['aws1', 'room_7', (163, 246)], ['aws2', 'room_20', (142, 190)])
     ryu_path = shg_planner.get_path_on_floor(["aws1"], key="position", interpolation_resolution=None)
     # hou2_path = shg_planner.get_path_on_floor(["hou2"], key="position", interpolation_resolution=10)
     print("Final path length:", distance, "n:", len(ryu_path))
