@@ -143,37 +143,46 @@ class GraphNode(Node):
         call_button_marker_id = "call_button_marker_id_up" if next_pos_z > current_pos_z else "call_button_marker_id_down"
 
         # Get elevator parameters
-        current_path_list = self.shg_planner.get_path_on_floor([next_floor], "node", None)
+        current_path_list = self.shg_planner.get_path_on_floor([self.current_floor_name], "node", None)
         # import semantic_hierarchical_graph.utils as utils
         # print("current_path_list", utils.map_names_to_nodes(current_path_list))
+        print(current_path_list[-1].hierarchy)
         print(current_path_list[-1].data_dict)
         if current_path_list[-1].data_dict:
             # call_button_angle = current_path_list[-1].data_dict["call_button_angle"]
             response.call_button_marker_id = current_path_list[-1].data_dict[call_button_marker_id]
-            response.waiting_start.position.x = current_path_list[-1].data_dict["waiting_pose_start_position"][0]
-            response.waiting_start.position.y = current_path_list[-1].data_dict["waiting_pose_start_position"][1]
-            response.waiting_start.position.z = current_path_list[-1].data_dict["waiting_pose_start_position"][2]
-            response.waiting_start.orientation.x = current_path_list[-1].data_dict["waiting_pose_start_orientation"][0]
-            response.waiting_start.orientation.y = current_path_list[-1].data_dict["waiting_pose_start_orientation"][1]
-            response.waiting_start.orientation.z = current_path_list[-1].data_dict["waiting_pose_start_orientation"][2]
-            response.waiting_start.orientation.w = current_path_list[-1].data_dict["waiting_pose_start_orientation"][3]
-            response.waiting_goal.position.x = current_path_list[-1].data_dict["waiting_pose_goal_position"][0]
-            response.waiting_goal.position.y = current_path_list[-1].data_dict["waiting_pose_goal_position"][1]
-            response.waiting_goal.position.z = current_path_list[-1].data_dict["waiting_pose_goal_position"][2]
-            response.waiting_goal.orientation.x = current_path_list[-1].data_dict["waiting_pose_goal_orientation"][0]
-            response.waiting_goal.orientation.y = current_path_list[-1].data_dict["waiting_pose_goal_orientation"][1]
-            response.waiting_goal.orientation.z = current_path_list[-1].data_dict["waiting_pose_goal_orientation"][2]
-            response.waiting_goal.orientation.w = current_path_list[-1].data_dict["waiting_pose_goal_orientation"][3]
-            response.panel_start.x = current_path_list[-1].data_dict["panel_point_start"][0]
-            response.panel_start.y = current_path_list[-1].data_dict["panel_point_start"][1]
-            response.panel_goal.z = current_path_list[-1].data_dict["panel_point_start"][2]
-            response.panel_goal.x = current_path_list[-1].data_dict["panel_point_goal"][0]
-            response.panel_goal.y = current_path_list[-1].data_dict["panel_point_goal"][1]
-            response.panel_goal.z = current_path_list[-1].data_dict["panel_point_goal"][2]
+            response.waiting_start.position.x = float(current_path_list[-1].data_dict["waiting_pose_start_position"][0])
+            response.waiting_start.position.y = float(current_path_list[-1].data_dict["waiting_pose_start_position"][1])
+            response.waiting_start.position.z = float(current_path_list[-1].data_dict["waiting_pose_start_position"][2])
+            response.waiting_start.orientation.x = float(
+                current_path_list[-1].data_dict["waiting_pose_start_orientation"][0])
+            response.waiting_start.orientation.y = float(
+                current_path_list[-1].data_dict["waiting_pose_start_orientation"][1])
+            response.waiting_start.orientation.z = float(
+                current_path_list[-1].data_dict["waiting_pose_start_orientation"][2])
+            response.waiting_start.orientation.w = float(
+                current_path_list[-1].data_dict["waiting_pose_start_orientation"][3])
+            response.waiting_goal.position.x = float(current_path_list[-1].data_dict["waiting_pose_goal_position"][0])
+            response.waiting_goal.position.y = float(current_path_list[-1].data_dict["waiting_pose_goal_position"][1])
+            response.waiting_goal.position.z = float(current_path_list[-1].data_dict["waiting_pose_goal_position"][2])
+            response.waiting_goal.orientation.x = float(
+                current_path_list[-1].data_dict["waiting_pose_goal_orientation"][0])
+            response.waiting_goal.orientation.y = float(
+                current_path_list[-1].data_dict["waiting_pose_goal_orientation"][1])
+            response.waiting_goal.orientation.z = float(
+                current_path_list[-1].data_dict["waiting_pose_goal_orientation"][2])
+            response.waiting_goal.orientation.w = float(
+                current_path_list[-1].data_dict["waiting_pose_goal_orientation"][3])
+            response.panel_start.x = float(current_path_list[-1].data_dict["panel_point_start"][0])
+            response.panel_start.y = float(current_path_list[-1].data_dict["panel_point_start"][1])
+            response.panel_start.z = float(current_path_list[-1].data_dict["panel_point_start"][2])
+            response.panel_goal.x = float(current_path_list[-1].data_dict["panel_point_goal"][0])
+            response.panel_goal.y = float(current_path_list[-1].data_dict["panel_point_goal"][1])
+            response.panel_goal.z = float(current_path_list[-1].data_dict["panel_point_goal"][2])
 
             print("call_button_marker_id", response.call_button_marker_id)
-            print("waiting_start (", response.waiting_start.x, response.waiting_start.y, ")")
-            print("waiting_goal (", response.waiting_goal.x, response.waiting_goal.y, ")")
+            print("waiting_start (", response.waiting_start.position.x, response.waiting_start.position.y, ")")
+            print("waiting_goal (", response.waiting_goal.position.x, response.waiting_goal.position.y, ")")
             print("panel_start (", response.panel_start.x, response.panel_start.y, response.panel_start.z, ")")
             print("panel_goal (", response.panel_goal.x, response.panel_goal.y, response.panel_goal.z, ")")
 
