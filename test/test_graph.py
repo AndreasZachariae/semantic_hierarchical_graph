@@ -562,7 +562,7 @@ def main():
                                ["Terrace", "Floor 0", "Garden"], name="open")
 
     G.add_connection_recursive(["Terrace", "Floor 0", "Garden"],
-                               ["Terrace", "Floor 1", "Ring D"], name="open")
+                               ["Terrace", "Floor 1", "Ring D"], distance=15.0, name="open")
     # G.add_connection_recursive(["Terrace", "Floor 0", "Elevator"],
     #                            ["Terrace", "Floor 1", "Elevator"], distance=4.0, name="elevator_T")
     # G.add_connection_recursive(["Terrace", "Floor 1", "Elevator"],
@@ -585,9 +585,10 @@ def main():
     # G.save_graph("data/graph.pickle")
     # G = SHGraph.load_graph("data/graph.pickle")
 
-    path_dict, distance = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 1", "Cantina"])
+    # path_dict, distance = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 1", "Cantina"])
     # path_dict, distance = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building F", "Floor 3", "Office"])
-    # path_dict, distance = G.plan_recursive(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 0", "Entrance"])
+    path_dict, distance = G.plan_recursive(["Building F", "Floor 3", "Meeting Room"], [
+                                           "Building D", "Floor 1", "Fitness"])
 
     # leaf_path_list = G.plan_in_leaf_graph(["Building F", "Floor 0", "Lab"], ["Building A", "Floor 0", "Entrance"])
 
