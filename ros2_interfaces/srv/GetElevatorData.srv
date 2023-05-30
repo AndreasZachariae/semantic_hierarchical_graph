@@ -3,9 +3,9 @@
 ---
 # response
 string next_floor
-uint8 marker_id
-string direction
-float64 orientation_angle
-geometry_msgs/Point call_button
-geometry_msgs/Point selection_panel
-geometry_msgs/Pose next_floor_start
+uint8 floor_marker_id
+uint8 call_button_marker_id
+geometry_msgs/Pose waiting_start
+geometry_msgs/Pose waiting_goal
+geometry_msgs/Point panel_start
+geometry_msgs/Point panel_goal
