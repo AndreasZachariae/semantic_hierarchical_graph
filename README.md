@@ -251,3 +251,11 @@ Visualization
 - [ ] Show panel with subplots for each hierarchy with planned path
 - [ ] CLI tool which launches map server and rviz. Guide through creation of elevator connections. With clicked point and map change. Save positions in graph.yaml
 
+Real Robot Implementation
+
+- [ ] Create roadmap of IRAS Lab
+- [ ] Create Roadmap of Augsburg hospital
+- [ ] Change robot to neobotix 
+- [ ] Which neobotix robot is used on PeTRA mpo500 mp500
+- [ ] Integrate ROS2 Navigation Stack
+
