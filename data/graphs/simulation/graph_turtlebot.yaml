@@ -10,7 +10,8 @@ maps:
     yaml_path: "./floor/aws2.yaml"
     marker_id: 2
 connections:
-  - hierarchy: [["aws1", "room_7", [140, 28]], ["aws2", "room_7", [140, 28]]]
+  - hierarchy:
+      [["aws1", "room_20", [164, 246]], ["aws2", "room_20", [164, 246]]]
     # position (inside elevator): [160, 246] vs call_button: [164, 246]
     name: "elevator"
     cost: 10.0 # [m] for shortest path planning
@@ -20,10 +21,10 @@ connections:
       marker_id_up: 1 # For ArUco detection of elevator button
       marker_id_down: 2
     waiting_pose_start: # [m] in map_frame
-      position: [1.5, 18.0, 0]
+      position: [4.0, -3.6, 0]
       orientation: [0, 0, 0, 1]
     waiting_pose_goal: # [m] in map_frame
-      position: [1.5, 18.0, 0]
+      position: [4.0, -3.6, 0]
       orientation: [0, 0, 0, 1]
     panel_point_start: [1, 2, 1] # [m] relative to waiting position
     panel_point_goal: [1, 2, 1] # [m] x-Axis is direction of waiting pose

@@ -184,7 +184,7 @@ controller_server:
       min_stop_dist: 0.6
 
       # If robot has differential drive, holonomic otherwise
-      differential_drive: true
+      differential_drive: false
 
 local_costmap:
   local_costmap:

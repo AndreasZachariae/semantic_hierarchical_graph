@@ -7,7 +7,10 @@ occupied_thresh: 0.65
 free_thresh: 0.196
 
 # ROBOT
-base_size: [4, 4] # width x length in drive direction
+# TURTLEBOT:
+# base_size: [4, 4] # width x length in drive direction
+# NEOBOTIX MMO_500:
+base_size: [6, 6] # width x length in drive direction
 safety_margin: 3 # additional to base_size
 
 # SEGMENTATION
