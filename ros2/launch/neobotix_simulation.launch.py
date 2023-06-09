@@ -62,15 +62,25 @@ def generate_launch_description():
                   prefix='xterm -e',
                   name='teleop')
 
-    gazebo = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(get_package_share_directory('gazebo_ros'), 'launch', 'gazebo.launch.py')
-        ),
-        launch_arguments={
-            'world': default_world_path,
-            'verbose': 'true'
-        }.items()
-    )
+    # gazebo = IncludeLaunchDescription(
+    #     PythonLaunchDescriptionSource(
+    #         os.path.join(get_package_share_directory('gazebo_ros'), 'launch', 'gazebo.launch.py')
+    #     ),
+    #     launch_arguments={
+    #         'world': default_world_path,
+    #         'verbose': 'true'
+    #     }.items()
+    # )
+
+    start_gazebo_server_cmd = ExecuteProcess(
+        cmd=['gzserver', '-s', 'libgazebo_ros_init.so',
+             '-s', 'libgazebo_ros_factory.so',
+             '-s', 'libgazebo_ros_state.so', default_world_path],
+        cwd=[get_package_share_directory('neo_simulation2')], output='screen')
+
+    start_gazebo_client_cmd = ExecuteProcess(
+        cmd=['gzclient'],
+        cwd=[get_package_share_directory('neo_simulation2')], output='screen')
 
     rviz = Node(
         package='rviz2',
@@ -127,5 +137,6 @@ def generate_launch_description():
         spawn_entity,
         start_robot_state_publisher_cmd,
         teleop,
-        gazebo,
+        start_gazebo_server_cmd,
+        start_gazebo_client_cmd,
         rviz])
