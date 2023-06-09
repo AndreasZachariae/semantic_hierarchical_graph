@@ -2,7 +2,7 @@
 # Author: Pradheep Padmanabhan
 
 import launch
-from ament_index_python.packages import get_package_share_directory
+from ament_index_python.packages import get_package_share_directory, get_package_prefix
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, ExecuteProcess
 from launch.launch_description_sources import PythonLaunchDescriptionSource
@@ -16,6 +16,7 @@ MY_NEO_ENVIRONMENT = os.environ['MAP_NAME']
 
 
 def generate_launch_description():
+    planner_src_dir = os.path.join(get_package_prefix('shg'), '..', '..', 'src', 'semantic_hierarchical_graph', 'ros2')
     aws_hospital_dir = get_package_share_directory('aws_robomaker_hospital_world')
     default_world_path = os.path.join(aws_hospital_dir, 'worlds', MY_NEO_ENVIRONMENT + '.world')
 
@@ -87,12 +88,16 @@ def generate_launch_description():
         default=os.path.join(aws_hospital_dir, 'maps', 'aws_robomaker_hospital.yaml'))
 
     param_file_name = 'navigation.yaml'
+    # param_dir = LaunchConfiguration(
+    #     'params_file',
+    #     default=os.path.join(
+    #         get_package_share_directory('neo_simulation2'),
+    #         'configs/'+MY_NEO_ROBOT,
+    #         param_file_name))
     param_dir = LaunchConfiguration(
         'params_file',
-        default=os.path.join(
-            get_package_share_directory('neo_simulation2'),
-            'configs/'+MY_NEO_ROBOT,
-            param_file_name))
+        default=os.path.join(planner_src_dir,
+                             'config', MY_NEO_ROBOT + '_' + param_file_name))
 
     nav2_launch_file_dir = os.path.join(get_package_share_directory('nav2_bringup'), 'launch')
 
