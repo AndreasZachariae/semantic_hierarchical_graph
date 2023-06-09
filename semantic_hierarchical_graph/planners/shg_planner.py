@@ -417,6 +417,7 @@ class SHGPlanner():
 if __name__ == '__main__':
     # shg_planner = SHGPlanner("data/graphs/benchmarks", "graph.pickle", False)
     shg_planner = SHGPlanner("data/graphs/simulation", "graph.pickle", False)
+    # shg_planner = SHGPlanner("data/graphs/iras", "graph.pickle", False)
 
     # path_dict, distance = shg_planner._plan(["ryu", "room_8", "(1418, 90)"], ["hou2", "room_17", "(186, 505)"])
     # path_dict, distance = shg_planner._plan(["aws1", "room_7", (136, 194)], ["aws1", 'room_7', (156, 144)])
