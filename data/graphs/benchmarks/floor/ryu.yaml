@@ -3,7 +3,7 @@ map_name: benchmark_maps/ryu.png
 grid_size: 1.0 # [m/px]
 
 # ROBOT
-base_size: [10, 20] # width x lenght in drive direction
+base_size: [10, 20] # width x length in drive direction
 safety_margin: 5 # additional to base_size
 
 # SEGMENTATION

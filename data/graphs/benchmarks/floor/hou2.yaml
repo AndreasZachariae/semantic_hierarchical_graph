@@ -3,7 +3,7 @@ map_name: benchmark_maps/hou2_clean.png
 grid_size: 1.0 # [m/px]
 
 # ROBOT
-base_size: [7, 14] # width x lenght in drive direction
+base_size: [7, 14] # width x length in drive direction
 safety_margin: 3 # additional to base_size
 
 # SEGMENTATION
