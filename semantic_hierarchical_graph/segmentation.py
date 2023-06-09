@@ -12,7 +12,11 @@ def marker_controlled_watershed(img: np.ndarray, params: dict) -> Tuple[np.ndarr
     except cv2.error:
         gray = slam_map_to_img(img)
 
-    ret, thresh = cv2.threshold(gray, 0, 1, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    if "threshold" in params:
+        print("Use free threshold:", int(params["threshold"]*255))
+        ret, thresh = cv2.threshold(gray, int(params["threshold"]*255), 1, cv2.THRESH_BINARY)
+    else:
+        ret, thresh = cv2.threshold(gray, 0, 1, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
     # noise removal
     kernel = np.ones((3, 3), np.uint8)
@@ -151,10 +155,12 @@ def slam_map_to_img(map):
 
 
 if __name__ == '__main__':
-    # img = cv2.imread('data/benchmark_maps/hou2_clean.png')
+    # img = cv2.imread('data/benchmark_maps/ryu.png')
+    # params = Parameter("config/ryu_params.yaml").params
+    # img = cv2.imread('data/graphs/iras/floor/iras1.pgm')
+    # params = Parameter("data/graphs/iras/floor/iras1.yaml").params
     img = cv2.imread('data/graphs/simulation/floor/aws1.pgm')
     params = Parameter("data/graphs/simulation/floor/aws1.yaml").params
-    # params = Parameter("config/hou2_params.yaml").params
 
     ws, ws_erosion, dist_transform = marker_controlled_watershed(img, params)
     bridge_nodes, bridge_edges = find_bridge_nodes(ws_erosion, dist_transform)
