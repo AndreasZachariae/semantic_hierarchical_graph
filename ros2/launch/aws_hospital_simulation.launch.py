@@ -182,6 +182,10 @@ def generate_launch_description():
                           'default_bt_xml_filename': default_bt_xml_filename,
                           'autostart': autostart}.items())
 
+    # TODO: Add texture to the urdf. Currently turtlebot is transparent
+    # spawn_entity = Node(package='gazebo_ros', executable='spawn_entity.py', arguments=[
+    #                     '-entity', 'turtlebot3_waffle', '-file', urdf, '-x', '2', '-y', '2'], output='screen')
+
     # Create the launch description and populate
     ld = LaunchDescription()
 
@@ -210,5 +214,6 @@ def generate_launch_description():
     ld.add_action(start_robot_state_publisher_cmd)
     ld.add_action(rviz_cmd)
     ld.add_action(bringup_cmd)
+    # ld.add_action(spawn_entity)
 
     return ld
