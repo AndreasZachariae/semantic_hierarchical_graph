@@ -11,7 +11,7 @@ from launch_ros.actions import Node
 import os
 from pathlib import Path
 
-MY_NEO_ROBOT = os.environ['MY_ROBOT']
+MY_NEO_ROBOT = os.environ['ROBOT_NAME']
 MY_NEO_ENVIRONMENT = os.environ['MAP_NAME']
 
 
@@ -24,17 +24,6 @@ def generate_launch_description():
     #     'neo_simulation2'), 'worlds', MY_NEO_ENVIRONMENT + '.world')
 
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
-
-    robot_dir = LaunchConfiguration(
-        'robot_dir',
-        default=os.path.join(get_package_share_directory('neo_simulation2'),
-                             'robots/'+MY_NEO_ROBOT,
-                             MY_NEO_ROBOT+'.urdf'))
-
-    # declare_use_sim_time_cmd = DeclareLaunchArgument(
-    #     'use_sim_time',
-    #     default_value='false',
-    #     description='Use simulation (Gazebo) clock if true')
 
     use_robot_state_pub = LaunchConfiguration('use_robot_state_pub')
 
@@ -62,25 +51,15 @@ def generate_launch_description():
                   prefix='xterm -e',
                   name='teleop')
 
-    # gazebo = IncludeLaunchDescription(
-    #     PythonLaunchDescriptionSource(
-    #         os.path.join(get_package_share_directory('gazebo_ros'), 'launch', 'gazebo.launch.py')
-    #     ),
-    #     launch_arguments={
-    #         'world': default_world_path,
-    #         'verbose': 'true'
-    #     }.items()
-    # )
-
-    start_gazebo_server_cmd = ExecuteProcess(
-        cmd=['gzserver', '-s', 'libgazebo_ros_init.so',
-             '-s', 'libgazebo_ros_factory.so',
-             '-s', 'libgazebo_ros_state.so', default_world_path],
-        cwd=[get_package_share_directory('neo_simulation2')], output='screen')
-
-    start_gazebo_client_cmd = ExecuteProcess(
-        cmd=['gzclient'],
-        cwd=[get_package_share_directory('neo_simulation2')], output='screen')
+    gazebo = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(get_package_share_directory('gazebo_ros'), 'launch', 'gazebo.launch.py')
+        ),
+        launch_arguments={
+            'world': default_world_path,
+            'verbose': 'true'
+        }.items()
+    )
 
     rviz = Node(
         package='rviz2',
@@ -92,7 +71,6 @@ def generate_launch_description():
 
     # NAVIGATION
 
-    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
     map_dir = LaunchConfiguration(
         'map',
         default=os.path.join(aws_hospital_dir, 'maps', 'aws_robomaker_hospital.yaml'))
@@ -137,6 +115,5 @@ def generate_launch_description():
         spawn_entity,
         start_robot_state_publisher_cmd,
         teleop,
-        start_gazebo_server_cmd,
-        start_gazebo_client_cmd,
+        gazebo,
         rviz])
