@@ -16,7 +16,7 @@ connections:
     cost: 10.0 # [m] for shortest path planning
 
     call_button:
-      angle: 0.707 # [rad] angle in map_frame
+      angle: -1.57 # [rad] angle in map_frame
       marker_id_up: 1 # For ArUco detection of elevator button
       marker_id_down: 2
     waiting_pose_start: # [m] in map_frame

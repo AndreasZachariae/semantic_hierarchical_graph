@@ -114,6 +114,6 @@ def generate_launch_description():
         ),
         spawn_entity,
         start_robot_state_publisher_cmd,
-        teleop,
+        # teleop,
         gazebo,
         rviz])
