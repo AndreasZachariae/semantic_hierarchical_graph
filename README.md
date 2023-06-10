@@ -265,4 +265,5 @@ Lessons Learned
 - [ ] Make multiple rectagnles / polygons connect to each other
 - [ ] Use Voronoi diagram
 - [ ] Use Astar wit start list instead of multiple goal list
+- [ ] Replan with dynamic obstacles
 
