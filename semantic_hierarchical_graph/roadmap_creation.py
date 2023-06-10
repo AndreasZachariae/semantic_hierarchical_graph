@@ -208,9 +208,13 @@ def connect_point_to_path(point: Tuple[float, float], env: Environment, params: 
             print("No connection found for point", point)
             return [], None
 
-        connections = [LineString([path[i].pos.xy, path[i+1].pos.xy]) for i in range(0, len(path)-1)]  # type: ignore
-        # TODO: Why is this producing a false connection?
-        # connections.append(LineString([path[-1].pos.xy, point]))
+        # TODO: Modiefied, check if this is still producing errors somewhre else
+        if len(path) == 1:
+            connections = [LineString([path[0].pos.xy, point])]
+        else:
+            connections = [LineString([path[i].pos.xy, path[i+1].pos.xy])
+                           for i in range(0, len(path)-1)]  # type: ignore
+
         return connections, closest_path
 
     return [connection], closest_path
