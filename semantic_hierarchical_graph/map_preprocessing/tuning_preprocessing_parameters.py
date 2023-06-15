@@ -386,22 +386,3 @@ if __name__ == '__main__':
     }
 
     optimize_parameter_pipeline(param_dict, "data\\benchmark_maps\\prepared_for_testing", 10)
-
-    # test = read_in_all_images_from_file(
-    # "data\\benchmark_maps\\prepared_for_testing")
-
-    # test_all_param_combinations(param_dict, evaluation_runs=1)
-
-    # file_path = "parameter_tuning\\tested_parameters_version_9.csv"
-    # df = load_csv_as_dataframe(file_path)
-    # best_param = read_out_the_best_param_combination_of_df(df)
-    # print(best_param)
-
-
-"""
-to do:
-3. yaml file for the parameter ranges (could be done with a tuple, to serialize tuples the constructor of yaml can be modified)
-
-4. load the yaml file and run the tuning process with it
-
-"""
