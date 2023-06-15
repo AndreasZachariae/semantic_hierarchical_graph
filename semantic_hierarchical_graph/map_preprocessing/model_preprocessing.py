@@ -1,12 +1,13 @@
+# Standard library imports
+import math
+
+# Third-party imports
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-import math
-
 from sklearn.cluster import DBSCAN
 
-from semantic_hierarchical_graph import segmentation
-from semantic_hierarchical_graph.types.parameter import Parameter
+# Local/application specific imports
 from semantic_hierarchical_graph.types.vector import Vector
 from testing_and_visualize_map_preprocessing import *
 from utils_preprocessing import *
@@ -403,14 +404,16 @@ class model_preprocessing:
 
 
 if __name__ == '__main__':
-    img = cv2.imread('data\\benchmark_maps\\prepared_for_testing\\ryu.png')
-    test_all_intermediate_steps()
+    # Read the tuned parameters
+    params = load_yaml('parameter_tuning\\tested_parameters_version_1\\parameters_param_combination_with_lowest_loss')
 
     # Create test images and store returned values
     rotated_imgs = create_test_imgs()
 
+    show_all_imgs_of_instance(model_preprocessing(rotated_imgs[0][1], **params))
+
     # Preprocess each image and store returned model_preprocessing objects
-    preprocessed_imgs = [model_preprocessing(img_data[1]) for img_data in rotated_imgs]
+    preprocessed_imgs = [model_preprocessing(img_data[1], **params) for img_data in rotated_imgs]
 
     # Extract the preprocessed images (rotated_image attribute) and filenames for display
     imgs = [preprocessed.rotated_image for preprocessed in preprocessed_imgs]
@@ -418,6 +421,3 @@ if __name__ == '__main__':
 
     # Display all preprocessed images with titles
     show_all_imgs(imgs, titles)
-
-
-# Ansatz 2: Edge Detection (Canny)-> Ausrichtungen der Wände -> Rausfinden zweier Cluster: horizontale & vertikale Wände (k-means) oder horizontale Wände Skalarpordukt=1 und vertikale Wände Skalarprodukt=0

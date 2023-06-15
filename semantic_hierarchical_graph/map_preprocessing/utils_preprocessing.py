@@ -1,10 +1,12 @@
+# Standard library imports
 import cProfile
+import os
+import random
+import yaml
+
+# Third-party imports
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
-from edit_maps_from_online_ressources import edit_maps_from_online_ressources
-import random
-import os
 
 
 def testing_speed():
@@ -53,8 +55,8 @@ def rotate(img, degree):
     Returns
     -------
     numpy.ndarray
-        A processed image which is first rotated by the specified degree and then cropped 
-        to minimize the size while preserving all relevant content. The returned image 
+        A processed image which is first rotated by the specified degree and then cropped
+        to minimize the size while preserving all relevant content. The returned image
         is in grayscale format with the same data type as the original.
     """
     # Get the dimensions of the image
@@ -83,7 +85,7 @@ def rotate(img, degree):
     return rotated_img[crop_y1:crop_y2, crop_x1:crop_x2]
 
 
-def randomly_rotate(imgs):
+def randomly_rotate(filenames_imgs):
     """
     Takes a list of images and rotate every image around a random angle and save the random angle
 
@@ -101,18 +103,18 @@ def randomly_rotate(imgs):
 
     """
     rotated_imgs = []
-    for img in imgs:
+    for filenames_img in filenames_imgs:
         random_number = random.uniform(0, 90)
         # gray_img = cv2.cvtColor(img[1], cv2.COLOR_BGR2GRAY)
         # Determine the dimensions of the image
-        height, width = img[1].shape[:2]
+        height, width = filenames_img[1].shape[:2]
         # Set the amount to crop from each edge
         crop_amount = 2
         # Crop the image by slicing the array
         # some images have a thin frame, with croping it will be removed
-        cropped_img = img[1][crop_amount:height-crop_amount, crop_amount:width-crop_amount]
+        cropped_img = filenames_img[1][crop_amount:height-crop_amount, crop_amount:width-crop_amount]
         rotated_img = rotate(cropped_img, random_number)
-        rotated_imgs.append((img[0], rotated_img, random_number))
+        rotated_imgs.append((filenames_img[0], rotated_img, random_number))
     return rotated_imgs
 
 
@@ -120,14 +122,14 @@ def find_bounding_box(threshed_image):
     """
     Determines the coordinates of a bounding box that contains all non-zero pixels in a binary image.
 
-    This function finds all non-zero pixels in the given image and returns their minimum and maximum x and y coordinates, 
+    This function finds all non-zero pixels in the given image and returns their minimum and maximum x and y coordinates,
     which together form the bounding box.
 
     Parameters:
     threshed_image (numpy.ndarray): A binary image, where non-zero pixels are considered as 'object' pixels.
 
     Returns:
-    tuple: A tuple containing four elements in the following order: 
+    tuple: A tuple containing four elements in the following order:
         min_x (int): The minimum x-coordinate of non-zero pixels.
         max_x (int): The maximum x-coordinate of non-zero pixels.
         min_y (int): The minimum y-coordinate of non-zero pixels.
@@ -145,6 +147,11 @@ def find_bounding_box(threshed_image):
     return (min_x, min_y, max_x - min_x, max_y - min_y)
 
 
+def load_yaml(filepath):
+    with open(filepath, 'r') as file:
+        return yaml.safe_load(file)
+
+
 def read_in_all_images_from_file(path):
     """
     This function takes the path of a directory containing images as input.
@@ -158,7 +165,7 @@ def read_in_all_images_from_file(path):
     Returns
     -------
     List
-        List of all images in this folder
+        List of all images and filenames in this folder
     """
     image_files = []
     # Loop through all files in the directory

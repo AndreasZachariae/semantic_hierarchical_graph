@@ -1,6 +1,6 @@
 # **Preprocessing Overview**
 The model_preprocessing class provided in this project is designed to process images in a specific manner to prepare them for further analysis.
-*before and after image mark the diffrences note the goal number right next to it
+
 ## **Preprocessing Goals**
 The primary goals of the preprocessing pipeline can be divided into two major tasks:
 ![Model Preprocessing Goal](./assets/model_preprocessing_goal.PNG)
@@ -24,7 +24,7 @@ The challenge here lies in determining the angle of rotation. We must first dete
 
 3. **Removal of Incorrectly Measured Values:** Any incorrectly measured values in the image are removed. These could be due to noise, inaccuracies in data collection, or other factors.
 
-4. **Orientation of Walls:** The orientation and lengths of walls in the image are calculated. This information is used to identify clusters of walls, with the orientation of the largest cluster being used to rotate the image. This rotation aligns the main orientation of the layout with the X-axis.
+4. **Orientation of Walls:** The orientation and lengths of walls in the image are calculated. This information is used to identify clusters of walls, with the orientation of the largest cluster being used to rotate the image. This rotation aligns the main orientation of the layout with the X-axis. Further Information in the next chapter.
 
 5. **Rotation of Image:** The final step in the preprocessing is to rotate the image according to the orientation of the largest cluster of walls. This step ensures that the primary structure of the layout is oriented horizontally.
 
@@ -38,7 +38,7 @@ The challenge here lies in determining the angle of rotation. We must first dete
 
 4. **Orientation and Length Calculation:** From the lines detected by the Hough Transform, we can easily calculate the orientation and length of each line. This information is crucial for the next step, which is clustering.
 
-## Clustering
+## **Clustering**
 Clustering is performed on the wall orientations obtained from the previous steps. The objective is to find groups (clusters) of lines that have similar orientations. This is based on the idea that walls in a building often share similar orientations. Moreover, the importance of each orientation in the clustering process is weighted by the corresponding wall's length. This ensures that longer walls, which likely represent significant architectural features, have a greater impact on the clustering result.
 
 The specific algorithm used for clustering in this project is [DBSCAN](https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html) (Density-Based Spatial Clustering of Applications with Noise). This algorithm groups together points that are packed closely together (points with many nearby neighbors), marking points that lie alone in low-density regions as outliers.
@@ -47,9 +47,36 @@ In this case, the points being clustered are the wall orientations. The DBSCAN a
 
 The output of the clustering step is the orientation of the largest cluster of walls. This orientation is then used to rotate the image so that the primary layout structure aligns with the X-axis.
 
-## Usage
+## **Parameter Tuning**
 
-Here's a quick example of how you might use this class:
+To perform parameter tuning for the preprocessing step, you can follow these steps:
+
+1. Define the parameter ranges: In the main script, define a dictionary `param_dict` that contains the names of the parameters as keys and the values to be tested as lists.
+
+2. Run the parameter tuning: Call the `optimize_parameter_pipeline` function, passing `param_dict` as the parameter along with the path to the images that will be used for hyperparameter optimization. A GUI will be displayed, showcasing all the images in the specified folder. Here, you can select the images you want to use for optimization.  Next, input the number of evaluation runs. This represents how many times an image will be tested with different rotation degrees. 
+
+
+    ```python
+    param_dict = {
+        "kernel_size": [3],
+        "rho": [0.8],
+        "theta": [np.pi/360, np.pi/120],
+        "threshold": [30],
+        "minLineLength": [40],
+        "maxLineGap": [2],
+        "lengths_divisor": [20],
+        "eps": [0.5, 1],
+        "min_samples": [10]
+    }
+
+    optimize_parameter_pipeline(param_dict, "data\\benchmark_maps\\prepared_for_testing", 1)
+    ```
+
+    The function will save all the results in a .csv and the parameter combination, that reached the lowest loss, as a yaml-file. The path to the folder, containings these files, is printed in the output.
+
+## **Usage**
+
+Here's a quick example of how you can use the 'model_preprocessing' class:
 
 ```python
     from preprocessing import model_preprocessing
@@ -58,13 +85,16 @@ Here's a quick example of how you might use this class:
     # Read the input image
     img = cv2.imread('path_to_your_image')
 
+    # Read the tuned parameters
+    params = load_yaml('path_to_your_yaml_file')
+
     # Create a model_preprocessing object
-    preprocessor = model_preprocessing(img)
+    preprocessor = model_preprocessing(img, **params)
 
     # Access the final preprocessed image
     preprocessed_image = preprocessor.rotated_image
 ```
 
-## Conclusion
+## **Conclusion**
 
 The model_preprocessing class provides a comprehensive way to preprocess images for subsequent analysis. By identifying barriers and open spaces, correcting inaccuracies, identifying wall orientations, and aligning the image correctly, we can prepare complex images for more effective processing in subsequent steps.

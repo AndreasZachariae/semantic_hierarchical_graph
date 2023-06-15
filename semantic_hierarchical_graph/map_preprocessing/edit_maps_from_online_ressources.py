@@ -61,50 +61,6 @@ class edit_maps_from_online_ressources:
                 if response == "n":
                     break
 
-    """@ staticmethod
-    def rotate(img, angle_degrees):
-        
-        Rotates the given image around the given angle
-
-        Parameters
-        ----------
-        img : _type_
-            Image to rotate
-        angle_degrees : Float
-            Angle to rotate in degree
-
-        Returns
-        -------
-        _type_
-            rotated image
-        
-        # Determine the center of the image
-        height, width = img.shape[:2]  # image shape has 3 dimensions
-        # getRotationMatrix2D needs coordinates in reverse order (width, height) compared to shape
-        image_center = (width/2, height/2)
-
-        # Define the rotation matrix
-        rotation_mat = cv2.getRotationMatrix2D(image_center, angle_degrees, 1.)
-
-        # rotation calculates the cos and sin, taking absolutes of those.
-        abs_cos = abs(rotation_mat[0, 0])
-        abs_sin = abs(rotation_mat[0, 1])
-
-        # find the new width and height bounds
-        bound_w = int(height * abs_sin + width * abs_cos)
-        bound_h = int(height * abs_cos + width * abs_sin)
-
-        # subtract old image center (bringing image back to origo) and adding the new image center coordinates
-        rotation_mat[0, 2] += bound_w/2 - image_center[0]
-        rotation_mat[1, 2] += bound_h/2 - image_center[1]
-
-        # rotate image with the new bounds and translated rotation matrix
-        rotated_mat = cv2.warpAffine(img, rotation_mat, (bound_w, bound_h), borderValue=[
-            205, 205, 205], flags=cv2.INTER_NEAREST)
-
-        return rotated_mat"""
-
-    @ staticmethod
     @ staticmethod
     def correct_the_degree_manually(imgs):
         """

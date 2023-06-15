@@ -1,8 +1,10 @@
-from model_preprocessing import model_preprocessing
-from utils_preprocessing import *
+# Third-party imports
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
+
+# Local/application specific imports
+from utils_preprocessing import *
 
 
 def show_all_imgs_of_instance(model_preprocessing_object):
@@ -61,25 +63,6 @@ def show_all_imgs_of_instance(model_preprocessing_object):
     plt.show()
 
 
-def test_all_intermediate_steps(img=cv2.imread('data\\benchmark_maps\\prepared_for_testing\\aa_labor_floor_cleaned_up.png'), degree=45):
-    """Perform preprocessing steps on a given image and display all the intermediate steps.
-
-    This function rotates the given image by a certain degree, applies the preprocessing steps
-    defined in the 'model_preprocessing' class, and then shows the intermediate images generated
-    during these steps using the 'show_all_imgs_of_instance' function
-
-    Parameters
-    ----------
-    img : ndarray
-        Input image to be preprocessed. Default is an image loaded from a path in the file system.
-    degree : int, optional
-        The number of degrees to rotate the image before preprocessing. Default is 45.
-    """
-    rotated_imgs = rotate(img, degree)
-    preprocessed = model_preprocessing(rotated_imgs)
-    show_all_imgs_of_instance(preprocessed)
-
-
 def plot_cluster(X, labels, db, largest_cluster_centroid, axs):
     """This function is for visualize the results of DBSCAN clustering.
     Set the parameter "bool_plot_clustering" in the function "find_largest_cluster_of_the_orientations"
@@ -107,7 +90,7 @@ def plot_cluster(X, labels, db, largest_cluster_centroid, axs):
     axs.set_title(f"Estimated number of clusters: {n_clusters_}")
 
 
-def create_test_imgs():
+def create_test_imgs(filenames_imgs=None):
     """
     Read in all images from a specified file, apply a random rotation, and return the processed images.
 
@@ -125,9 +108,10 @@ def create_test_imgs():
     ----
     The directory from which images are read is hardcoded into the function and may need to be adjusted depending on the file structure.
     """
-    imgs = read_in_all_images_from_file(
-        "data\\benchmark_maps\\prepared_for_testing")
-    rotated_imgs = randomly_rotate(imgs)
+    if filenames_imgs is None:
+        filenames_imgs = read_in_all_images_from_file(
+            "data\\benchmark_maps\\prepared_for_testing")
+    rotated_imgs = randomly_rotate(filenames_imgs)
     return rotated_imgs  # rotated_imgs[0] -> filename, rotated_imgs[1] -> image, rotated_imgs[2] -> rotated angle
 
 
