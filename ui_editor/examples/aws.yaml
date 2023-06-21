@@ -1,0 +1,25 @@
+# MAP
+image: ./aws.pgm
+resolution: 0.100000 # [m/px]
+origin: [-12.500000, -35.000000, 0.000000]
+negate: 0
+occupied_thresh: 0.65
+free_thresh: 0.196
+
+# ROBOT
+# TURTLEBOT:
+# base_size: [4, 4] # width x length in drive direction
+# NEOBOTIX MMO_500:
+base_size: [6, 6] # width x length in drive direction
+safety_margin: 3 # additional to base_size
+
+# SEGMENTATION
+distance_threshold: 9 # 3 * safety_distance
+
+# PATH PLANNING
+# safety_distance: round_up(base_size[0]/2 + safety_margin)
+# values on image with erosion
+min_contour_area: 1000 # 4 * (2*safety_distance)**2
+min_roadmap_area: 1000 # 2*safety_distance
+max_corridor_width: 20 # 5.5 * safety_distance
+max_distance_to_connect_points: 200

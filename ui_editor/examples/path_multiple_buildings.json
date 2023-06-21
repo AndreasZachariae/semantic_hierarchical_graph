@@ -1,0 +1,35 @@
+{
+    "Building F": {
+        "Floor 3": {
+            "Meeting Room": {},
+            "Corridor": {},
+            "Elevator": {},
+            "Floor 2_Elevator_bridge": {}
+        },
+        "Floor 2": {
+            "Floor 3_Elevator_bridge": {},
+            "Elevator": {},
+            "Corridor": {},
+            "Terrace2": {},
+            "Terrace_Floor 1_Ring F_bridge": {}
+        },
+        "Terrace_Floor 1_bridge": {}
+    },
+    "Terrace": {
+        "Building F_Floor 2_bridge": {},
+        "Floor 1": {
+            "Building F_Floor 2_Terrace2_bridge": {},
+            "Ring F": {},
+            "Ring D": {},
+            "Building D_Floor 1_Fitness_bridge": {}
+        },
+        "Building D_Floor 1_bridge": {}
+    },
+    "Building D": {
+        "Terrace_Floor 1_bridge": {},
+        "Floor 1": {
+            "Terrace_Floor 1_Ring D_bridge": {},
+            "Fitness": {}
+        }
+    }
+}
