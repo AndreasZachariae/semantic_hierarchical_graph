@@ -34,6 +34,7 @@ class GraphNode(Node):
         super().__init__('graph_node')  # type: ignore
 
         # Load parameters
+        self.robot_name = os.environ['ROBOT_NAME']
         self.interpolation_resolution = self.declare_parameter(
             "interpolation_resolution", 1).get_parameter_value().double_value
         self.force_build_new_graph = self.declare_parameter(
@@ -229,13 +230,13 @@ class GraphNode(Node):
 
         # Teleport robot to new floor
         new_position = SetEntityState.Request()
-        new_position.state.name = "turtlebot3_waffle"
+        new_position.state.name = self.robot_name
         new_position.state.pose = request.initial_pose
         new_position.state.pose.position.z += offset_z
 
         res = self.set_entity_state_client.call(new_position)
         if not res.success:
-            self.get_logger().error("Could not set new position")
+            self.get_logger().error("Could not set new position. Is env ROBOT_NAME set? current: " + self.robot_name)
             return response
         self.get_logger().info("Moved to new position: (" + str(new_position.state.pose.position.x) + ", " +
                                str(new_position.state.pose.position.y) + ", " + str(new_position.state.pose.position.z) + ")")

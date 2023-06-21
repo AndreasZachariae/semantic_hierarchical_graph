@@ -1,0 +1,23 @@
+# MAP
+image: ./iras1.pgm
+resolution: 0.030000
+origin: [-20.010000, -20.010000, 0.000000]
+negate: 0
+occupied_thresh: 0.65
+free_thresh: 0.196
+
+# ROBOT
+base_size: [25, 40] # width x length in drive direction
+safety_margin: 0 # additional to base_size
+
+# SEGMENTATION
+threshold: 0.82
+distance_threshold: 20 # 3 * safety_distance
+
+# PATH PLANNING
+# safety_distance: round_up(base_size[0]/2 + safety_margin)
+# values on image with erosion
+min_contour_area: 2700 # 4 * (2*safety_distance)**2
+min_roadmap_area: 2300 # 2*safety_distance
+max_corridor_width: 70 # 5.5 * safety_distance
+max_distance_to_connect_points: 660

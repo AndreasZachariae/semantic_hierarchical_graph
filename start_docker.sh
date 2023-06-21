@@ -14,4 +14,4 @@ docker run \
     -v ./ros2_interfaces:/home/docker/ros2_ws/src/semantic_hierarchical_graph/ros2_interfaces:rw \
     -v ./data/graphs:/home/docker/ros2_ws/src/semantic_hierarchical_graph/data/graphs:rw \
     -v ./.vscode:/home/docker/.vscode:rw \
-    shg/ros:foxy
+    shg_neobotix/ros:foxy

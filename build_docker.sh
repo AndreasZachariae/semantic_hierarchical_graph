@@ -4,4 +4,4 @@ gid=$(eval "id -g")
 docker build \
     --build-arg UID="$uid" \
     --build-arg GID="$gid" \
-    -t shg/ros:foxy .
+    -t shg_neobotix/ros:foxy .
