@@ -1,23 +1,35 @@
 {
     "Building F": {
-        "Floor 0": {
-            "Lab": {},
-            "Building A_Floor 0_Entrance_bridge": {}
+        "Floor 3": {
+            "Meeting Room": {},
+            "Corridor": {},
+            "Elevator": {},
+            "Floor 2_Elevator_bridge": {}
         },
-        "Building A_Floor 0_bridge": {}
+        "Floor 2": {
+            "Floor 3_Elevator_bridge": {},
+            "Elevator": {},
+            "Corridor": {},
+            "Terrace2": {},
+            "Terrace_Floor 1_Ring F_bridge": {}
+        },
+        "Terrace_Floor 1_bridge": {}
     },
-    "Building A": {
-        "Building F_Floor 0_bridge": {},
-        "Floor 0": {
-            "Building F_Floor 0_Lab_bridge": {},
-            "Entrance": {},
-            "Staircase": {},
-            "Floor 1_Staircase_bridge": {}
-        },
+    "Terrace": {
+        "Building F_Floor 2_bridge": {},
         "Floor 1": {
-            "Floor 0_Staircase_bridge": {},
-            "Staircase": {},
-            "Cantina": {}
+            "Building F_Floor 2_Terrace2_bridge": {},
+            "Ring F": {},
+            "Ring D": {},
+            "Building D_Floor 1_Fitness_bridge": {}
+        },
+        "Building D_Floor 1_bridge": {}
+    },
+    "Building D": {
+        "Terrace_Floor 1_bridge": {},
+        "Floor 1": {
+            "Terrace_Floor 1_Ring D_bridge": {},
+            "Fitness": {}
         }
     }
 }
