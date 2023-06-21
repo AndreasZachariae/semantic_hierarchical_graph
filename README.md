@@ -148,6 +148,10 @@ Comparision of the disturbance of public space for the A* and ILIR planner.
 | ------------------------------------------------- | ------------------------------------------- |
 | ![Alt text](docs/ryu_room2_disturbance_astar.png) | ![Alt text](docs/ryu_room2_disturbance.png) |
 
+## Demonstration Video
+
+<iframe src="https://drive.google.com/file/d/1Boi4VC25kInCFyKnIo9Y3S3s7iXJiNXW/preview" width="640" height="480" allow="autoplay"></iframe>
+
 
 ## License
 
