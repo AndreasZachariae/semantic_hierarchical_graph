@@ -115,6 +115,15 @@ python -m timeit -r 10 -s 'from semantic_hierarchical_graph.main import main; G 
     ![Alt text](docs/ryu_plan_path.png)
 10. Send global path to the ROS2 navigation plugin to be executed by a mobile robot. Local path, dynamic obstacle avoidance and smoothing is done by the controller server of the navigation stack.
 
+## Navigate over multiple floors
+
+1. Integrate hierarchical planner as plugin into Nav2 stack.
+    ![Alt text](docs/concept_nav2.png)
+2. Hierarchical planner uses H-Graph to recursively find the optimal solution.
+    ![Alt text](docs/h_graph_uml.png)
+3. Behavior tree executes the multi-floor navigation with elevator changes.
+    ![Alt text](docs/bt_navigate_multi_floor.png)
+
 ## Evaluation against other path planners
 
 Evaluation is only done per room level for the roadmap as other planners can not plan hierarchically.  
