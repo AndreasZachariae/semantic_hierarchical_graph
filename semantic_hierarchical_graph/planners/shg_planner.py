@@ -419,18 +419,22 @@ if __name__ == '__main__':
     shg_planner = SHGPlanner("data/graphs/simulation", "graph.pickle", False)
     # shg_planner = SHGPlanner("data/graphs/iras", "graph.pickle", False)
 
-    # path_dict, distance = shg_planner._plan(["ryu", "room_8", "(1418, 90)"], ["hou2", "room_17", "(186, 505)"])
+    # path_dict, distance = shg_planner._plan(["ryu", "room_16", (130, 425)], ["ryu", "room_12", (1450, 450)])
     # path_dict, distance = shg_planner._plan(["aws1", "room_7", (136, 194)], ["aws1", 'room_7', (156, 144)])
     # path_dict, distance = shg_planner._plan(["aws1", "room_7", (143, 196)], ["aws1", 'room_20', (180, 240)])
     path_dict, distance = shg_planner._plan(['aws1', 'room_7', (163, 246)], ['aws2', 'room_20', (142, 190)])
-    ryu_path = shg_planner.get_path_on_floor(["aws1"], key="position", interpolation_resolution=None)
+    # ryu_path = shg_planner.get_path_on_floor(["ryu"], key="position", interpolation_resolution=None)
     # hou2_path = shg_planner.get_path_on_floor(["hou2"], key="position", interpolation_resolution=10)
-    print("Final path length:", distance, "n:", len(ryu_path))
+    # print("Final path length:", distance, "n:", len(ryu_path))
     # print(len(hou2_path))
 
     shg_planner.draw_path(save=False, name="path.png")
+    # SHPath.save_path(path_dict, "data/aws_path.json")
 
     G = shg_planner.graph
+
+    # SHPath.save_path(G.get_dict(), "data/aws_graph.json")
+
     floor_ryu = G._get_child("aws1")
     # floor_hou2 = G._get_child("hou2")
     ryu_room_8 = floor_ryu._get_child("room_20")
