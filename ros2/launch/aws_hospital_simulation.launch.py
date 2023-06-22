@@ -28,11 +28,12 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     # Get the launch directory
+    MAP_NAME = os.environ['MAP_NAME']
     bringup_dir = get_package_share_directory('nav2_bringup')
     planner_src_dir = os.path.join(get_package_prefix('shg'), '..', '..', 'src', 'semantic_hierarchical_graph', 'ros2')
     launch_dir = os.path.join(bringup_dir, 'launch')
     aws_hospital_dir = get_package_share_directory('aws_robomaker_hospital_world')
-    world_path = os.path.join(aws_hospital_dir, 'worlds', 'hospital_two_floors.world')
+    world_path = os.path.join(aws_hospital_dir, 'worlds', MAP_NAME + '.world')
 
     # Create the launch configuration variables
     slam = LaunchConfiguration('slam')
@@ -182,6 +183,10 @@ def generate_launch_description():
                           'default_bt_xml_filename': default_bt_xml_filename,
                           'autostart': autostart}.items())
 
+    # TODO: Add texture to the urdf. Currently turtlebot is transparent
+    # spawn_entity = Node(package='gazebo_ros', executable='spawn_entity.py', arguments=[
+    #                     '-entity', 'turtlebot3_waffle', '-file', urdf, '-x', '2', '-y', '2'], output='screen')
+
     # Create the launch description and populate
     ld = LaunchDescription()
 
@@ -210,5 +215,6 @@ def generate_launch_description():
     ld.add_action(start_robot_state_publisher_cmd)
     ld.add_action(rviz_cmd)
     ld.add_action(bringup_cmd)
+    # ld.add_action(spawn_entity)
 
     return ld

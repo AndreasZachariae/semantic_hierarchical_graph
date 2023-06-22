@@ -1,6 +1,7 @@
 import itertools
 from typing import Any, Dict, List, Optional, Set, Tuple
 import numpy as np
+import time
 import cv2
 from shapely.ops import nearest_points, unary_union, polygonize_full
 from shapely import MultiLineString, Polygon, LineString, MultiPolygon, GeometryCollection, Point
@@ -82,6 +83,7 @@ def calc_largest_rectangles(ws_erosion: np.ndarray, env: Environment, params: Di
 def _path_from_rectangle(rectangle: np.ndarray, params: dict, is_corridor: List, first_loop: bool) -> LineString:
     x, y, w, h = rectangle
 
+    # TODO: This check is reduntant to "min_contour_area" put them together
     if (w * h) < params["min_roadmap_area"]:
         # print("area for roadmap too small")
         return LineString()
@@ -206,8 +208,13 @@ def connect_point_to_path(point: Tuple[float, float], env: Environment, params: 
             print("No connection found for point", point)
             return [], None
 
-        connections = [LineString([path[i].pos.xy, path[i+1].pos.xy]) for i in range(0, len(path)-1)]  # type: ignore
-        connections.append(LineString([path[-1].pos.xy, point]))
+        # TODO: Modiefied, check if this is still producing errors somewhre else
+        if len(path) == 1:
+            connections = [LineString([path[0].pos.xy, point])]
+        else:
+            connections = [LineString([path[i].pos.xy, path[i+1].pos.xy])
+                           for i in range(0, len(path)-1)]  # type: ignore
+
         return connections, closest_path
 
     return [connection], closest_path
@@ -222,14 +229,19 @@ def _connect_point_with_rrt(point: Tuple[float, float], env: Environment, params
     config["smoothing_max_k"] = 50
     planner = rrt_planner.RRTPlanner.around_point(point, params["max_distance_to_connect_points"], env.scene, config)
 
+    # goal_list = _get_goal_points(env)
+
     pos = Point(point[0], point[1])
     closest_path = min(env.path, key=lambda x: x.distance(pos))
     closest_point: Point = nearest_points(closest_path, pos)[0]
-    return planner.plan(point, (closest_point.x, closest_point.y, True))[0]  # type: ignore
+    ts = time.time()
+    # path = planner.plan_with_lists([[point[0], point[1]]], goal_list, True)[0]
+    path = planner.plan((point[0], point[1]), (int(closest_point.x), int(closest_point.y)), True)[0]
+    print("Time", time.time() - ts)
+    return path  # type: ignore
 
 
 def _connect_point_with_astar(point: Tuple[float, float], env: Environment, params: dict) -> List:
-    import time
     config = dict()
     config["heuristic"] = 'euclidean'
     config["w"] = 0.5
@@ -290,6 +302,8 @@ if __name__ == '__main__':
     # params = Parameter("config/hou2_params.yaml").params
     img = cv2.imread('data/graphs/simulation/floor/aws1.pgm')
     params = Parameter("data/graphs/simulation/floor/aws1.yaml").params
+    # img = cv2.imread('data/graphs/iras/floor/iras1.pgm')
+    # params = Parameter("data/graphs/iras/floor/iras1.yaml").params
 
     ws, ws_erosion, dist_transform = segmentation.marker_controlled_watershed(img, params)
     bridge_nodes, bridge_edges = segmentation.find_bridge_nodes(ws_erosion, dist_transform)

@@ -179,15 +179,15 @@ class ILIRPlanner(PlannerInterface):
 
 
 if __name__ == "__main__":
-    # G = SHGraph(root_name="Benchmark", root_pos=Position(0, 0, 0))
-    # floor = Floor("ryu", G, Position(0, 0, 1), 'data/benchmark_maps/ryu.png', "config/ryu_params.yaml")
-    # G.add_child_by_node(floor)
-    # print(G.get_childs("name"))
+    G = SHGraph(root_name="Benchmark", root_pos=Position(0, 0, 0))
+    floor = Floor("ryu", G, Position(0, 0, 1), 'data/benchmark_maps/ryu.png', "config/ryu_params.yaml")
+    G.add_child_by_node(floor)
+    print(G.get_childs("name"))
 
-    # floor.create_rooms()
-    # floor.create_bridges()
+    floor.create_rooms()
+    floor.create_bridges()
 
-    # G.save_graph("data/tmp/graph.pickle")
+    G.save_graph("data/tmp/graph.pickle")
     G = SHGraph.load_graph("data/tmp/graph.pickle")
     floor = G._get_child("ryu")
 
@@ -201,4 +201,4 @@ if __name__ == "__main__":
     path_list = util.map_names_to_nodes(path)
 
     print(path_list)
-    vis.draw_child_graph_3d(room_11, path, vis_graph)
+    vis.draw_child_graph_3d(room_2, path, vis_graph)

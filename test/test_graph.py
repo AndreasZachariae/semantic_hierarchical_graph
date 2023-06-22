@@ -58,7 +58,7 @@ def main():
     floor_e2 = G.add_child_by_hierarchy(hierarchy=["Building E"], name="Floor 2", pos=Position(0, 0, 8))
     floor_e3 = G.add_child_by_hierarchy(hierarchy=["Building E"], name="Floor 3", pos=Position(0, 0, 12))
 
-    floor_fu = G.add_child_by_hierarchy(hierarchy=["Building F"], name="Floor -1", pos=Position(0, 0, -4))
+    # floor_fu = G.add_child_by_hierarchy(hierarchy=["Building F"], name="Floor -1", pos=Position(0, 0, -4))
     floor_f0 = G.add_child_by_hierarchy(hierarchy=["Building F"], name="Floor 0", pos=Position(0, 0, 0))
     floor_f1 = G.add_child_by_hierarchy(hierarchy=["Building F"], name="Floor 1", pos=Position(0, 0, 4))
     floor_f2 = G.add_child_by_hierarchy(hierarchy=["Building F"], name="Floor 2", pos=Position(0, 0, 8))
@@ -596,11 +596,12 @@ def main():
 
     print(util.path_to_list(path_dict, [], with_names=True, is_leaf=True))
 
-    # vis.draw_child_graph(G, path_dict)
-    # vis.draw_child_graph(build_f, path_dict, view_axis="x")
+    vis.draw_child_graph(G, path_dict)
+    vis.draw_child_graph(build_f, path_dict, view_axis="x")
+    vis.draw_child_graph_3d(build_f, path_dict)
     # vis.draw_child_graph(build_a, path_dict, view_axis="x")
     # vis.draw_child_graph(floor_f0, path_dict)
-    # vis.draw_child_graph(floor_f1, path_dict)
+    vis.draw_child_graph(floor_f2, path_dict)
     # vis.draw_child_graph(floor_a1, path_dict)
     # vis.draw_child_graph(floor_a0, path_dict)
 

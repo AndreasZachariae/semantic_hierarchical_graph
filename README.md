@@ -115,6 +115,15 @@ python -m timeit -r 10 -s 'from semantic_hierarchical_graph.main import main; G 
     ![Alt text](docs/ryu_plan_path.png)
 10. Send global path to the ROS2 navigation plugin to be executed by a mobile robot. Local path, dynamic obstacle avoidance and smoothing is done by the controller server of the navigation stack.
 
+## Navigate over multiple floors
+
+1. Integrate hierarchical planner as plugin into Nav2 stack.
+    ![Alt text](docs/concept_nav2.png)
+2. Hierarchical planner uses H-Graph to recursively find the optimal solution.
+    ![Alt text](docs/h_graph_uml.png)
+3. Behavior tree executes the multi-floor navigation with elevator changes.
+    ![Alt text](docs/bt_navigate_multi_floor.png)
+
 ## Evaluation against other path planners
 
 Evaluation is only done per room level for the roadmap as other planners can not plan hierarchically.  
@@ -138,6 +147,10 @@ Comparision of the disturbance of public space for the A* and ILIR planner.
 | A*                                                | ILIR                                        |
 | ------------------------------------------------- | ------------------------------------------- |
 | ![Alt text](docs/ryu_room2_disturbance_astar.png) | ![Alt text](docs/ryu_room2_disturbance.png) |
+
+## Demonstration Video
+
+<iframe src="https://drive.google.com/file/d/1Boi4VC25kInCFyKnIo9Y3S3s7iXJiNXW/preview" width="640" height="480" allow="autoplay"></iframe>
 
 
 ## License
@@ -210,7 +223,7 @@ Evaluation
 - [x] Automate process to generate only metric diagramms
 - [ ] Evaluate against roadmap of prm or rrt
 - [x] Make ILIR revert graph faster like in SHGPlanner
-- [ ] Create LTC extrem test environment to show multiple hierarchy connections and campus, building, floor, room, .. level
+- [x] Create LTC extrem test environment to show multiple hierarchy connections and campus, building, floor, room, .. level
 - [ ] LTC Test How many unique paths in leaf graph? How many nodes are searched?
 - [x] Add Metric for longer straight path. Average length of path before a turn is made.
 - [ ] Straight path length etc has to be evaluated on ROS level with the nav2 standard planners
@@ -234,7 +247,7 @@ ROS node environment model
 - [x] Fix cleanup revert to original graph, Erros: Found paths 513000
 - [x] Use correct floors for hierarchical planning
 - [ ] Fix orientation
-- [ ] Fix direction of path to roadmap added
+- [x] Fix direction of path to roadmap added
 
 Floor change
 - [ ] Start multiple map servers with each floor map
@@ -250,4 +263,20 @@ Visualization
 
 - [ ] Show panel with subplots for each hierarchy with planned path
 - [ ] CLI tool which launches map server and rviz. Guide through creation of elevator connections. With clicked point and map change. Save positions in graph.yaml
+
+Real Robot Implementation
+
+- [x] Create roadmap of IRAS Lab
+- [ ] Create Roadmap of Augsburg hospital
+- [x] Change robot to neobotix 
+- [x] Which neobotix robot is used on PeTRA mpo500 mp500
+- [ ] Integrate ROS2 Navigation Stack
+
+Lessons Learned
+
+- [ ] Problem with obstacles in middle of the room
+- [ ] Make multiple rectagnles / polygons connect to each other
+- [ ] Use Voronoi diagram
+- [ ] Use Astar wit start list instead of multiple goal list
+- [ ] Replan with dynamic obstacles
 
