@@ -1,4 +1,10 @@
 graph_name: "benchmarks"
 hierarchy_level: ["floor", "room", "location"]
-connections:
-  - [["ryu", "room_17", "(668, 399)"], ["hou2", "room_13", "(722, 257)"]]
+maps:
+  - hierarchy: ["ryu"]
+    yaml_path: "./floor/ryu.yaml"
+    marker_id: 1 # For ArUco detection of elevator button
+  - hierarchy: ["hou2"]
+    yaml_path: "./floor/hou2.yaml"
+    marker_id: 2
+connections: []
