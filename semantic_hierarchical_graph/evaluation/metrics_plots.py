@@ -55,7 +55,7 @@ def plot_room_metrics(metrics, path):
     distance_centroid = [planner["centroid_distance"]["mean"] for planner in planners]
 
     metric_names = ["Success rate", "Planning time", "Path length", "Smoothness",
-                    "Obstacle clearance", "Distance std", "Distance to centroid", "Disturbance"]
+                    "Obstacle clearance", "Obstacle clearance std", "Distance to centroid", "Disturbance"]
     metrics = [success_rate, planning_time, path_length, smoothness,
                obstacle_clearance, distance_std, distance_centroid, disturbance]
     colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:gray', 'tab:brown', 'tab:olive']
@@ -79,5 +79,5 @@ def plot_room_metrics(metrics, path):
 
 
 if __name__ == "__main__":
-    metrics = load_json("data/floor_ryu_metrics_ALL.json")
-    plot_floor_metrics(metrics, "data/floor_ryu_metrics.png")
+    metrics = load_json("data/hou2_room9_metrics.json")
+    plot_room_metrics(metrics, "data/hou2_room9_metrics.png")
