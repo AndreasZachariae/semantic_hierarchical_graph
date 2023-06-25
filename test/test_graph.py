@@ -596,6 +596,27 @@ def main():
 
     print(util.path_to_list(path_dict, [], with_names=True, is_leaf=True))
 
+    # Count all nodes an each nested level by traversing through the whole graph structure:
+    nodes_on_l1 = len(G.get_childs())
+    nodes_on_l2 = 0
+    nodes_on_l3 = 0
+    nodes_on_l4 = 20  # Average number of nodes on each roadmap
+    nodes_on_l5 = 80*100  # Average number of cells on each gridmap
+    for child in G.get_childs():
+        nodes_on_l2 += len(child.get_childs())
+        for child2 in child.get_childs():
+            nodes_on_l3 += len(child2.get_childs())
+            for child3 in child2.get_childs():
+                nodes_on_l4 += len(child3.get_childs())
+
+    print("Nodes on level 1: ", nodes_on_l1)
+    print("Nodes on level 2: ", nodes_on_l2)
+    print("Nodes on level 3: ", nodes_on_l3)
+    print("Nodes on level 4: ", nodes_on_l4 * nodes_on_l3)
+    print("Nodes on level 5: ", nodes_on_l5 * nodes_on_l3)
+    print("Total nodes: ", nodes_on_l1 + nodes_on_l2 + nodes_on_l3 +
+          nodes_on_l4 * nodes_on_l3)
+
     vis.draw_child_graph(G, path_dict)
     vis.draw_child_graph(build_f, path_dict, view_axis="x")
     vis.draw_child_graph_3d(build_f, path_dict)
