@@ -45,12 +45,12 @@ def plot_floor_metrics(metrics, path):
 def plot_room_metrics(metrics, path):
     names = ["ILIR", "AStar", "PRM", "RRT"]
     planners = [metrics[name] for name in names]
-    success_rate = [planner["success_rate"] for planner in planners]
+    success_rate = [planner["success_rate"]*100 for planner in planners]
     planning_time = [planner["planning_time"]["mean"] for planner in planners]
     path_length = [planner["path_length"]["mean"] for planner in planners]
     smoothness = [planner["smoothness"]["mean"] for planner in planners]
     obstacle_clearance = [planner["obstacle_clearance"]["mean"] for planner in planners]
-    disturbance = [planner["disturbance"] for planner in planners]
+    disturbance = [planner["disturbance"]*100 for planner in planners]
     distance_std = [planner["obstacle_distance_std"]["mean"] for planner in planners]
     distance_centroid = [planner["centroid_distance"]["mean"] for planner in planners]
 
@@ -70,7 +70,7 @@ def plot_room_metrics(metrics, path):
         axis.set_title(metric_name)
         # axis.set_xticklabels(names, rotation=45)
         if ylim:
-            axis.set_ylim(bottom=0, top=1)
+            axis.set_ylim(bottom=0, top=100)
         axis.set_ylabel(f"{metric_name} [{unit}]", color=color)
 
     fig.tight_layout()
@@ -79,5 +79,5 @@ def plot_room_metrics(metrics, path):
 
 
 if __name__ == "__main__":
-    metrics = load_json("data/hou2_room9_metrics.json")
-    plot_room_metrics(metrics, "data/hou2_room9_metrics.png")
+    metrics = load_json("data/ryu_room2_metrics.json")
+    plot_room_metrics(metrics, "data/ryu_room2_metrics.png")
