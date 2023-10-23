@@ -9,6 +9,7 @@ docker run \
     -e DISPLAY=$DISPLAY \
     --rm \
     -v ./semantic_hierarchical_graph:/home/docker/ros2_ws/src/semantic_hierarchical_graph/semantic_hierarchical_graph:rw \
+    -v ./petra_description:/home/docker/ros2_ws/src/petra_description:rw \
     -v ./path_planner_suite:/home/docker/ros2_ws/src/semantic_hierarchical_graph/path_planner_suite:rw \
     -v ./ros2:/home/docker/ros2_ws/src/semantic_hierarchical_graph/ros2:rw \
     -v ./ros2_interfaces:/home/docker/ros2_ws/src/semantic_hierarchical_graph/ros2_interfaces:rw \
