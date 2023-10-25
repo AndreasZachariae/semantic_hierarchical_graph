@@ -30,6 +30,7 @@ def generate_launch_description():
     # Get the launch directory
     MAP_NAME = os.environ['MAP_NAME']
     bringup_dir = get_package_share_directory('nav2_bringup')
+    robot_description_dir = get_package_share_directory('petra_description')
     planner_src_dir = os.path.join(get_package_prefix('shg'), '..', '..', 'src', 'semantic_hierarchical_graph', 'ros2')
     launch_dir = os.path.join(bringup_dir, 'launch')
     aws_hospital_dir = get_package_share_directory('aws_robomaker_hospital_world')
@@ -151,7 +152,7 @@ def generate_launch_description():
         cmd=['gzclient'],
         cwd=[launch_dir], output='screen')
 
-    urdf = os.path.join(bringup_dir, 'urdf', 'turtlebot3_waffle.urdf')
+    urdf = os.path.join(robot_description_dir, 'urdf', 'petra.urdf.xacro')
 
     start_robot_state_publisher_cmd = Node(
         condition=IfCondition(use_robot_state_pub),
@@ -184,8 +185,8 @@ def generate_launch_description():
                           'autostart': autostart}.items())
 
     # TODO: Add texture to the urdf. Currently turtlebot is transparent
-    # spawn_entity = Node(package='gazebo_ros', executable='spawn_entity.py', arguments=[
-    #                     '-entity', 'turtlebot3_waffle', '-file', urdf, '-x', '2', '-y', '2'], output='screen')
+    spawn_entity = Node(package='gazebo_ros', executable='spawn_entity.py', arguments=[
+                        '-entity', 'petra', '-file', urdf, '-x', '2', '-y', '2'], output='screen')
 
     # Create the launch description and populate
     ld = LaunchDescription()
@@ -215,6 +216,6 @@ def generate_launch_description():
     ld.add_action(start_robot_state_publisher_cmd)
     ld.add_action(rviz_cmd)
     ld.add_action(bringup_cmd)
-    # ld.add_action(spawn_entity)
+    ld.add_action(spawn_entity)
 
     return ld
